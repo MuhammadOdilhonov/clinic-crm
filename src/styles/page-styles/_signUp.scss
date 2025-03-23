@@ -1,0 +1,369 @@
+// Variables
+$primary-color: #2563eb;
+$secondary-color: #1e40af;
+$accent-color: #3b82f6;
+$light-color: #f8fafc;
+$dark-color: #1e293b;
+$text-color: #334155;
+$light-gray: #e2e8f0;
+$error-color: #ef4444;
+$success-color: #10b981;
+$border-radius: 8px;
+$box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+// Mixins
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes dna-float {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes particle-animation {
+    0% {
+        transform: scale(0) translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    25% {
+        opacity: 1;
+    }
+
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) translateY(-100px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+// Global styles
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: $text-color;
+    line-height: 1.6;
+    background-color: $light-color;
+}
+
+// Signup container
+.signup-container {
+    min-height: 100vh;
+    @include flex-center;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    position: relative;
+    overflow: hidden;
+}
+
+// Animations
+.animation-left,
+.animation-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20%;
+    @include flex-center;
+    z-index: 1;
+}
+
+.animation-left {
+    left: 0;
+}
+
+.animation-right {
+    right: 0;
+}
+
+// DNA Animation
+.dna-container {
+    width: 100px;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dna-helix {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba($primary-color, 0.3), rgba($accent-color, 0.3));
+    animation: dna-float 5s ease-in-out infinite;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba($primary-color, 0.3), rgba($accent-color, 0.3));
+        filter: blur(5px);
+    }
+}
+
+.dna-step {
+    position: relative;
+    height: 20px;
+}
+
+.dna-base {
+    position: absolute;
+    top: 50%;
+    width: 30px;
+    height: 4px;
+    background-color: $primary-color;
+    transform-origin: left center;
+    transform: translateY(-50%);
+
+    &.dna-base-left {
+        left: -30px;
+        transform: translateY(-50%) rotate(30deg);
+    }
+
+    &.dna-base-right {
+        right: -30px;
+        background-color: $accent-color;
+        transform: translateY(-50%) rotate(-30deg);
+    }
+}
+
+// Particles Animation
+.particles-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: rgba($accent-color, 0.5);
+    border-radius: 50%;
+    animation: particle-animation infinite;
+}
+
+// Signup content
+.signup-content {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: $box-shadow;
+    width: 100%;
+    max-width: 700px;
+    padding: 2.5rem;
+    z-index: 2;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        left: -50px;
+        width: 100px;
+        height: 100px;
+        background-color: rgba($primary-color, 0.1);
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -50px;
+        right: -50px;
+        width: 100px;
+        height: 100px;
+        background-color: rgba($accent-color, 0.1);
+        border-radius: 50%;
+        z-index: -1;
+    }
+}
+
+.signup-header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    .logo-icon {
+        font-size: 3rem;
+        color: $primary-color;
+        margin-bottom: 1rem;
+    }
+
+    h1 {
+        color: $dark-color;
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    p {
+        color: $text-color;
+        opacity: 0.8;
+    }
+}
+
+.signup-form {
+    @include flex-column;
+    gap: 1.2rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+
+    .form-group {
+        width: 100%;
+    }
+}
+
+.error{
+    color: $error-color;
+}
+
+
+.terms-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    label {
+        font-size: 0.9rem;
+        color: $text-color;
+
+        a {
+            color: $primary-color;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}
+
+.signup-button,
+.login-redirect-button {
+    width: 100%;
+    padding: 0.8rem;
+    border: none;
+    border-radius: $border-radius;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+}
+
+.signup-button {
+    background-color: $primary-color;
+    color: white;
+
+    &:hover {
+        background-color: $secondary-color;
+    }
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+
+    button {
+        background: none;
+        border: none;
+        color: $primary-color;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.success-message {
+    text-align: center;
+    @include flex-column;
+    align-items: center;
+    gap: 1.5rem;
+
+    .logo-icon {
+        font-size: 4rem;
+        color: $success-color;
+    }
+
+    h2 {
+        color: $dark-color;
+        font-size: 1.5rem;
+    }
+
+    p {
+        color: $text-color;
+        margin-bottom: 1.5rem;
+    }
+}
+
+.login-redirect-button {
+    background-color: $light-gray;
+    color: $text-color;
+
+    &:hover {
+        background-color: darken($light-gray, 5%);
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .signup-container {
+        padding: 1rem;
+    }
+
+    .animation-left,
+    .animation-right {
+        width: 15%;
+    }
+
+    .dna-container {
+        transform: scale(0.8);
+    }
+}
+
+@media (max-width: 576px) {
+    .signup-content {
+        padding: 1.5rem;
+    }
+
+    .animation-left,
+    .animation-right {
+        display: none;
+    }
+}

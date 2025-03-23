@@ -1,0 +1,16 @@
+// director styles common
+@import url('./derector/common-derector-styles.scss');
+
+// admin styles common
+@import url('./admin/common-admin-styles.scss');
+
+// doctor styles common
+@import url('./doctor/common-doctor-styles.scss');
+
+// common news 
+@import url('./_notifications.scss');
+
+// 
+@import url('./_header.scss');
+@import url('./_siderbar.scss');
+@import url('./profile.scss');

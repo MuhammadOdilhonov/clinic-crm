@@ -1,0 +1,222 @@
+// Variables
+$primary-color: #2563eb;
+$secondary-color: #1e40af;
+$accent-color: #3b82f6;
+$light-color: #f8fafc;
+$dark-color: #1e293b;
+$text-color: #334155;
+$light-gray: #e2e8f0;
+$sidebar-width: 260px;
+$border-radius: 8px;
+$transition: all 0.3s ease;
+
+// Director, Admin, Doctor colors
+$director-color: #0891b2;
+$admin-color: #7c3aed;
+$doctor-color: #16a34a;
+
+// Sidebar
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: $sidebar-width;
+    height: 100vh;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: $transition;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        transform: translateX(-100%);
+
+        &.mobile-open {
+            transform: translateX(0);
+        }
+    }
+}
+
+// Mobile toggle button
+.mobile-toggle {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    width: 40px;
+    height: 40px;
+    background-color: $primary-color;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: none;
+    display: none;
+
+    @media (max-width: 768px) {
+        display: flex;
+    }
+}
+
+// Sidebar backdrop
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+
+    @media (max-width: 768px) {
+        display: block;
+    }
+}
+
+// Sidebar header
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid $light-gray;
+
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $primary-color;
+        margin: 0;
+    }
+}
+
+// User info
+.user-info {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid $light-gray;
+
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        background-color: $primary-color;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .user-details {
+        h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: $dark-color;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .user-role {
+            font-size: 0.85rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+
+            &.director {
+                background-color: rgba($director-color, 0.1);
+                color: $director-color;
+            }
+
+            &.admin {
+                background-color: rgba($admin-color, 0.1);
+                color: $admin-color;
+            }
+
+            &.doctor {
+                background-color: rgba($doctor-color, 0.1);
+                color: $doctor-color;
+            }
+        }
+    }
+}
+
+// Sidebar navigation
+.sidebar-nav {
+    padding: 1rem 0;
+    flex: 1;
+    overflow-y: auto;
+
+    ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+            margin: 0.25rem 0;
+
+            a,
+            .logout-button {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1.5rem;
+                color: $text-color;
+                text-decoration: none;
+                transition: $transition;
+                font-size: 0.95rem;
+                width: 100%;
+                text-align: left;
+                background: none;
+                border: none;
+                cursor: pointer;
+                border-left: 3px solid transparent;
+
+                svg {
+                    font-size: 1.2rem;
+                    min-width: 1.2rem;
+                }
+
+                &:hover {
+                    background-color: rgba($primary-color, 0.05);
+                    color: $primary-color;
+                }
+
+                &.active {
+                    background-color: rgba($primary-color, 0.1);
+                    color: $primary-color;
+                    border-left: 3px solid $primary-color;
+                    font-weight: 600;
+                }
+            }
+
+            .logout-button {
+                color: #ef4444;
+
+                &:hover {
+                    background-color: rgba(#ef4444, 0.1);
+                    color: #ef4444;
+                }
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background-color: $light-gray;
+            margin: 1rem 1.5rem;
+        }
+    }
+}
+
+// Ensure text is visible on mobile
+@media (max-width: 768px) {
+
+    .sidebar-nav ul li a span,
+    .sidebar-nav ul li .logout-button span {
+        display: inline;
+    }
+}

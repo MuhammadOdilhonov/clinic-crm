@@ -1,0 +1,742 @@
+// Variables
+$primary-color: #2563eb;
+$secondary-color: #1e40af;
+$accent-color: #3b82f6;
+$light-color: #f8fafc;
+$dark-color: #1e293b;
+$text-color: #334155;
+$light-gray: #e2e8f0;
+$border-color: #cbd5e1;
+$error-color: #ef4444;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$border-radius: 12px;
+$box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+$transition: all 0.3s ease;
+
+// Director reports
+.director-reports {
+    margin-top: 50px;
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: $dark-color;
+            position: relative;
+            padding-bottom: 0.75rem;
+
+            &:after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 50px;
+                height: 4px;
+                background: linear-gradient(to right, $primary-color, $accent-color);
+                border-radius: 2px;
+            }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+    }
+
+    .report-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+
+        .report-types {
+            display: flex;
+            gap: 0.5rem;
+
+            .report-type-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.25rem;
+                border: 1px solid $border-color;
+                border-radius: $border-radius;
+                background-color: white;
+                color: $text-color;
+                font-weight: 500;
+                cursor: pointer;
+                transition: $transition;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+
+                &:hover {
+                    background-color: rgba($light-gray, 0.5);
+                    transform: translateY(-2px);
+                }
+
+                &.active {
+                    background-color: $primary-color;
+                    color: white;
+                    border-color: $primary-color;
+                }
+            }
+        }
+
+        .report-filters {
+            display: flex;
+            gap: 1rem;
+
+            .filter-group {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+
+                label {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                    font-weight: 500;
+                    color: $dark-color;
+                }
+
+                select {
+                    padding: 0.65rem 1rem;
+                    border: 1px solid $border-color;
+                    border-radius: $border-radius;
+                    background-color: white;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+
+                    &:focus {
+                        outline: none;
+                        border-color: $primary-color;
+                    }
+                }
+            }
+        }
+    }
+
+    .report-content {
+        .chart-card {
+            .chart-container {
+                height: 400px;
+                padding: 1.5rem;
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: $border-radius;
+            box-shadow: $box-shadow;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+
+            &:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            }
+
+            .stat-icon {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+                color: $primary-color;
+            }
+
+            .stat-value {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: $dark-color;
+                margin-bottom: 0.5rem;
+            }
+
+            .stat-label {
+                color: $text-color;
+                font-size: 0.9rem;
+            }
+
+            &.income {
+                background: linear-gradient(135deg, white, rgba($success-color, 0.1));
+
+                .stat-icon {
+                    color: $success-color;
+                }
+            }
+
+            &.expense {
+                background: linear-gradient(135deg, white, rgba($error-color, 0.1));
+
+                .stat-icon {
+                    color: $error-color;
+                }
+            }
+
+            &.profit {
+                background: linear-gradient(135deg, white, rgba($warning-color, 0.1));
+
+                .stat-icon {
+                    color: $warning-color;
+                }
+            }
+        }
+
+        .report-details {
+            padding: 1.5rem;
+
+            p {
+                margin-bottom: 0.75rem;
+
+                &:last-child {
+                    margin-bottom: 0;
+                }
+
+                strong {
+                    font-weight: 600;
+                    color: $dark-color;
+                }
+            }
+        }
+    }
+}
+
+// Modal
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+
+.modal-container {
+    background-color: white;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: modalFadeIn 0.3s ease;
+
+    &.history-modal {
+        width: 800px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid $border-color;
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: $dark-color;
+            margin: 0;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: $text-color;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: $transition;
+
+            &:hover {
+                background-color: rgba($error-color, 0.1);
+                color: $error-color;
+            }
+        }
+    }
+
+    .modal-content {
+        padding: 1.5rem;
+        overflow-y: auto;
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+
+                label {
+                    font-weight: 500;
+                    color: $dark-color;
+                }
+
+                input,
+                select,
+                textarea {
+                    padding: 0.85rem;
+                    border: 1px solid $border-color;
+                    border-radius: $border-radius;
+                    font-size: 1rem;
+                    transition: $transition;
+
+                    &:focus {
+                        outline: none;
+                        border-color: $primary-color;
+                        box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+                    }
+                }
+
+                textarea {
+                    resize: vertical;
+                    min-height: 100px;
+                }
+            }
+
+            .form-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 1rem;
+                margin-top: 1rem;
+            }
+        }
+
+        .history-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+
+            .year-selector {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1rem;
+                margin-bottom: 1rem;
+
+                .year-display {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    color: $dark-color;
+                    min-width: 100px;
+                    text-align: center;
+                }
+
+                .year-nav {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: $light-gray;
+                    color: $text-color;
+                    border: none;
+                    cursor: pointer;
+                    transition: $transition;
+
+                    &:hover:not(:disabled) {
+                        background-color: $primary-color;
+                        color: white;
+                    }
+
+                    &:disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                    }
+                }
+            }
+
+            .search-filter {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+
+                .search-input {
+                    position: relative;
+                    flex: 1;
+
+                    .search-icon {
+                        position: absolute;
+                        left: 1rem;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        color: rgba($text-color, 0.5);
+                    }
+
+                    input {
+                        width: 100%;
+                        padding: 0.75rem 1rem 0.75rem 2.5rem;
+                        border: 1px solid $border-color;
+                        border-radius: $border-radius;
+                        font-size: 0.95rem;
+                        transition: $transition;
+
+                        &:focus {
+                            outline: none;
+                            border-color: $primary-color;
+                            box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+                        }
+                    }
+                }
+
+                .filter-toggle-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.75rem 1.25rem;
+                    border: 1px solid $border-color;
+                    border-radius: $border-radius;
+                    background-color: white;
+                    color: $text-color;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: $transition;
+
+                    &:hover {
+                        background-color: rgba($light-gray, 0.5);
+                    }
+
+                    &.active {
+                        background-color: $primary-color;
+                        color: white;
+                        border-color: $primary-color;
+                    }
+                }
+            }
+
+            .history-filters {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                padding: 1rem;
+                background-color: rgba($light-gray, 0.3);
+                border-radius: $border-radius;
+                animation: slideDown 0.3s ease;
+
+                .filter-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+
+                    label {
+                        font-weight: 500;
+                        color: $dark-color;
+                    }
+
+                    select {
+                        padding: 0.65rem 1rem;
+                        border: 1px solid $border-color;
+                        border-radius: $border-radius;
+                        background-color: white;
+
+                        &:focus {
+                            outline: none;
+                            border-color: $primary-color;
+                        }
+                    }
+                }
+            }
+        }
+
+        .history-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: $border-radius;
+            border: 1px solid $border-color;
+
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: $light-gray;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: $accent-color;
+                border-radius: 3px;
+            }
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+
+            th,
+            td {
+                padding: 1rem;
+                text-align: left;
+                border-bottom: 1px solid $border-color;
+            }
+
+            th {
+                position: sticky;
+                top: 0;
+                background-color: rgba($light-gray, 0.3);
+                font-weight: 600;
+                color: $dark-color;
+                z-index: 10;
+            }
+
+            tr:last-child td {
+                border-bottom: none;
+            }
+
+            tr:hover td {
+                background-color: rgba($light-gray, 0.2);
+            }
+
+            .amount-cell {
+                font-weight: 600;
+                color: $error-color;
+            }
+
+            .no-data {
+                text-align: center;
+                padding: 2rem;
+                color: rgba($text-color, 0.6);
+            }
+        }
+    }
+}
+
+// Dashboard card
+.dashboard-card {
+    background-color: white;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    margin-bottom: 1.75rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid $light-gray;
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: $dark-color;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            svg {
+                color: $primary-color;
+            }
+        }
+    }
+}
+
+// Button styles
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: $border-radius;
+    font-weight: 500;
+    cursor: pointer;
+    transition: $transition;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+
+    &.btn-primary {
+        background-color: $primary-color;
+        color: white;
+
+        &:hover {
+            background-color: $secondary-color;
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    &.btn-secondary {
+        background-color: $light-gray;
+        color: $text-color;
+
+        &:hover {
+            background-color: darken($light-gray, 5%);
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    &.btn-outline {
+        background: none;
+        border: 1px solid $border-color;
+        color: $text-color;
+
+        &:hover {
+            border-color: $primary-color;
+            color: $primary-color;
+            background-color: rgba($primary-color, 0.05);
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    &.btn-icon {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
+
+// Animations
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// Responsive
+@media (max-width: 992px) {
+    .director-reports {
+        .report-controls {
+            flex-direction: column;
+            align-items: flex-start;
+
+            .report-types {
+                width: 100%;
+                justify-content: space-between;
+
+                .report-type-btn {
+                    flex: 1;
+                    justify-content: center;
+                }
+            }
+
+            .report-filters {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    }
+
+    .modal-container {
+        &.history-modal {
+            width: 90%;
+        }
+
+        .modal-content {
+            .history-controls {
+                .history-filters {
+                    grid-template-columns: 1fr;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .director-reports {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+
+            .header-actions {
+                width: 100%;
+                flex-wrap: wrap;
+
+                .btn {
+                    flex: 1;
+                    justify-content: center;
+                }
+            }
+        }
+    }
+
+    .modal-container {
+        .modal-content {
+            .history-controls {
+                .search-filter {
+                    flex-direction: column;
+
+                    .filter-toggle-btn {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .btn {
+        padding: 0.65rem 1.25rem;
+        font-size: 0.9rem;
+    }
+
+    .director-reports {
+        .report-content {
+            .chart-card {
+                .chart-container {
+                    height: 300px;
+                }
+            }
+        }
+    }
+}
