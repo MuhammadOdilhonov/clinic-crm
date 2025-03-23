@@ -1,6 +1,5 @@
 "use client"
-
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useState, useContext, useEffect } from "react"
 
 // Available languages
 const languages = {
@@ -49,7 +48,7 @@ const translations = {
         dashboard: "Dashboard",
         staff: "Xodimlar",
         cabinets: "Kabinetlar",
-        patients: "Mijozlar",
+        patients: "Bemorlar",
         appointments: "Qabullar",
         reports: "Hisobotlar",
         settings: "Sozlamalar",
@@ -150,9 +149,9 @@ const translations = {
         inactive_cabinets: "Nofaol kabinetlar",
 
         // Patients
-        add_new_patient: "Yangi mijoz qo'shish",
-        edit_patient: "Mijozni tahrirlash",
-        confirm_delete_patient: "Rostdan ham bu mijozni o'chirmoqchimisiz?",
+        add_new_patient: "Yangi bemor qo'shish",
+        edit_patient: "Bemorni tahrirlash",
+        confirm_delete_patient: "Rostdan ham bu bemorni o'chirmoqchimisiz?",
         age: "Yosh",
         gender: "Jins",
         male: "Erkak",
@@ -168,15 +167,15 @@ const translations = {
         emergency_contact: "Favqulodda aloqa",
         allergies: "Allergiyalar",
         medical_history: "Tibbiy tarix",
-        patient_id: "Mijoz ID",
+        patient_id: "Bemor ID",
         registration_date: "Ro'yxatga olingan sana",
-        patient_details: "Mijoz tafsilotlari",
-        patient_list: "Mijozlar ro'yxati",
-        patient_statistics: "Mijozlar statistikasi",
-        total_patients: "Jami mijozlar",
-        new_patients: "Yangi mijozlar",
-        returning_patients: "Qaytgan mijozlar",
-        patient_demographics: "Mijozlar demografiyasi",
+        patient_details: "Bemor tafsilotlari",
+        patient_list: "Bemorlar ro'yxati",
+        patient_statistics: "Bemorlar statistikasi",
+        total_patients: "Jami bemorlar",
+        new_patients: "Yangi bemorlar",
+        returning_patients: "Qaytgan bemorlar",
+        patient_demographics: "Bemorlar demografiyasi",
         age_distribution: "Yosh bo'yicha taqsimot",
         gender_distribution: "Jins bo'yicha taqsimot",
         visit_history: "Tashrif tarixi",
@@ -189,7 +188,7 @@ const translations = {
         insurance_provider: "Sug'urta provayderi",
         policy_number: "Polis raqami",
         coverage_details: "Qamrov tafsilotlari",
-        patient_notes: "Mijoz qaydlari",
+        patient_notes: "Bemor qaydlari",
         add_note: "Qayd qo'shish",
         upload_documents: "Hujjatlarni yuklash",
         download_report: "Hisobotni yuklab olish",
@@ -201,13 +200,14 @@ const translations = {
         sort_by_name: "Ism bo'yicha saralash",
         sort_by_date: "Sana bo'yicha saralash",
         sort_by_id: "ID bo'yicha saralash",
-        inactive_patients: "Nofaol mijozlar",
+        inactive_patients: "Nofaol bemorlar",
+        patients_count: "Bemorlar soni",
 
         // Appointments
         add_new_appointment: "Yangi qabul qo'shish",
         edit_appointment: "Qabulni tahrirlash",
         confirm_delete_appointment: "Rostdan ham bu qabulni o'chirmoqchimisiz?",
-        patient: "Mijoz",
+        patient: "Bemor",
         date: "Sana",
         time: "Vaqt",
         notes: "Izohlar",
@@ -215,7 +215,7 @@ const translations = {
         confirmed: "Tasdiqlangan",
         completed: "Yakunlangan",
         cancelled: "Bekor qilingan",
-        select_patient: "Mijozni tanlang",
+        select_patient: "Bemorni tanlang",
         select_doctor: "Shifokorni tanlang",
         appointment_details: "Qabul tafsilotlari",
         appointment_history: "Qabul tarixi",
@@ -343,7 +343,7 @@ const translations = {
 
         // Reports
         financialReports: "Moliyaviy hisobotlar",
-        patientReports: "Mijoz hisobotlari",
+        patientReports: "Bemor hisobotlari",
         staffReports: "Xodim hisobotlari",
         inventoryReports: "Inventar hisobotlari",
         appointmentReports: "Qabul hisobotlari",
@@ -376,10 +376,83 @@ const translations = {
         expenseReport: "Xarajat hisoboti",
         profitReport: "Foyda hisoboti",
         taxReport: "Soliq hisoboti",
-        patientVisitReport: "Mijoz tashrifi hisoboti",
+        patientVisitReport: "Bemor tashrifi hisoboti",
         staffPerformanceReport: "Xodim samaradorligi hisoboti",
         inventoryUsageReport: "Inventar foydalanish hisoboti",
         appointmentCompletionReport: "Qabul yakunlash hisoboti",
+
+        // Director Reports
+        financial: "Moliyaviy",
+        income: "Daromad",
+        expense: "Xarajat",
+        net_profit: "Sof foyda",
+        profitability: "Rentabellik",
+        financial_indicators: "Moliyaviy ko'rsatkichlar",
+        financial_report_details: "Moliyaviy hisobot tafsilotlari",
+        total_income: "Jami daromad",
+        total_expenses: "Jami xarajat",
+        patient_dynamics: "Bemorlar dinamikasi",
+        patient_report_details: "Bemorlar hisoboti tafsilotlari",
+        average_weekly: "O'rtacha haftalik",
+        average_monthly: "O'rtacha oylik",
+        average_quarterly: "O'rtacha choraklik",
+        average_weekly_patients: "O'rtacha haftalik bemorlar:",
+        average_monthly_patients: "O'rtacha oylik bemorlar:",
+        average_quarterly_patients: "O'rtacha choraklik bemorlar:",
+        growth: "O'sish",
+        doctor_efficiency: "Shifokorlar samaradorligi",
+        top_performing_doctor: "Eng samarali shifokor",
+        average_patients_per_doctor: "O'rtacha bemor soni",
+        staff_performance_report: "Xodimlar samaradorligi hisoboti",
+        period: "Davr",
+        month: "Oy",
+        quarter: "Chorak",
+        year: "Yil",
+        week1: "1-hafta",
+        week2: "2-hafta",
+        week3: "3-hafta",
+        week4: "4-hafta",
+        january: "Yanvar",
+        february: "Fevral",
+        march: "Mart",
+        quarter1: "1-chorak",
+        quarter2: "2-chorak",
+        quarter3: "3-chorak",
+        quarter4: "4-chorak",
+        history: "Tarix",
+        withdraw_cash: "Kassadan pul olish",
+        download_report_function: "Hisobot yuklab olish funksiyasi",
+        withdrawal_success: "Kassadan pul olish muvaffaqiyatli amalga oshirildi",
+        expense_history: "Xarajatlar tarixi",
+        category: "Kategoriya",
+        amount: "Summa",
+        description: "Izoh",
+        enter_amount: "Summani kiriting",
+        select_reason: "Sababni tanlang",
+        enter_additional_description: "Qo'shimcha izoh kiriting",
+        confirm: "Tasdiqlash",
+
+        // Withdrawal reasons
+        salary: "Shifokorlarga oylik",
+        salary_increase: "Shifokorlarga qo'shimcha oylik",
+        utilities: "Kommunal to'lovlar",
+        rent: "Ijara to'lovi",
+        supplies: "Tibbiy jihozlar xaridi",
+        medicine: "Dori-darmonlar xaridi",
+        repairs: "Ta'mirlash ishlari",
+        marketing: "Marketing xarajatlari",
+        taxes: "Soliqlar",
+        other_expenses: "Boshqa xarajatlar",
+        other: "Boshqa",
+
+        // Withdrawal descriptions
+        salary_payment_description: "Shifokorlarga oylik maosh to'lovi",
+        utilities_payment_description: "Elektr va suv to'lovlari",
+        supplies_payment_description: "Yangi tibbiy jihozlar xaridi",
+        medicine_payment_description: "Dori-darmonlar xaridi",
+        salary_increase_description: "Dr. Aziz Karimovga qo'shimcha oylik",
+        rent_payment_description: "Oylik ijara to'lovi",
+        all_branches: "Barcha filiallar",
     },
     ru: {
         // Auth
@@ -570,6 +643,7 @@ const translations = {
         sort_by_date: "Сортировать по дате",
         sort_by_id: "Сортировать по ID",
         inactive_patients: "Неактивные пациенты",
+        patients_count: "Количество пациентов",
 
         // Appointments
         add_new_appointment: "Добавить новый прием",
@@ -708,7 +782,6 @@ const translations = {
         workingHours: "Рабочие часы",
         workingDays: "Рабочие дни",
         website: "Веб-сайт",
-        guest: "Гость",
 
         // Reports
         financialReports: "Финансовые отчеты",
@@ -749,6 +822,79 @@ const translations = {
         staffPerformanceReport: "Отчет о производительности персонала",
         inventoryUsageReport: "Отчет об использовании инвентаря",
         appointmentCompletionReport: "Отчет о завершении приемов",
+
+        // Director Reports
+        financial: "Финансовый",
+        income: "Доход",
+        expense: "Расход",
+        net_profit: "Чистая прибыль",
+        profitability: "Рентабельность",
+        financial_indicators: "Финансовые показатели",
+        financial_report_details: "Детали финансового отчета",
+        total_income: "Общий доход",
+        total_expenses: "Общие расходы",
+        patient_dynamics: "Динамика пациентов",
+        patient_report_details: "Детали отчета по пациентам",
+        average_weekly: "Среднее за неделю",
+        average_monthly: "Среднее за месяц",
+        average_quarterly: "Среднее за квартал",
+        average_weekly_patients: "Среднее количество пациентов за неделю:",
+        average_monthly_patients: "Среднее количество пациентов за месяц:",
+        average_quarterly_patients: "Среднее количество пациентов за квартал:",
+        growth: "Рост",
+        doctor_efficiency: "Эффективность врачей",
+        top_performing_doctor: "Лучший врач",
+        average_patients_per_doctor: "Среднее количество пациентов на врача",
+        staff_performance_report: "Отчет о производительности персонала",
+        period: "Период",
+        month: "Месяц",
+        quarter: "Квартал",
+        year: "Год",
+        week1: "1-я неделя",
+        week2: "2-я неделя",
+        week3: "3-я неделя",
+        week4: "4-я неделя",
+        january: "Январь",
+        february: "Февраль",
+        march: "Март",
+        quarter1: "1-й квартал",
+        quarter2: "2-й квартал",
+        quarter3: "3-й квартал",
+        quarter4: "4-й квартал",
+        history: "История",
+        withdraw_cash: "Снять деньги из кассы",
+        download_report_function: "Функция загрузки отчета",
+        withdrawal_success: "Снятие денег из кассы успешно выполнено",
+        expense_history: "История расходов",
+        category: "Категория",
+        amount: "Сумма",
+        description: "Описание",
+        enter_amount: "Введите сумму",
+        select_reason: "Выберите причину",
+        enter_additional_description: "Введите дополнительное описание",
+        confirm: "Подтвердить",
+
+        // Withdrawal reasons
+        salary: "Зарплата врачам",
+        salary_increase: "Дополнительная зарплата врачам",
+        utilities: "Коммунальные платежи",
+        rent: "Арендная плата",
+        supplies: "Покупка медицинского оборудования",
+        medicine: "Покупка лекарств",
+        repairs: "Ремонтные работы",
+        marketing: "Маркетинговые расходы",
+        taxes: "Налоги",
+        other_expenses: "Другие расходы",
+        other: "Другое",
+
+        // Withdrawal descriptions
+        salary_payment_description: "Выплата ежемесячной зарплаты врачам",
+        utilities_payment_description: "Оплата электричества и воды",
+        supplies_payment_description: "Покупка нового медицинского оборудования",
+        medicine_payment_description: "Покупка лекарств",
+        salary_increase_description: "Дополнительная зарплата для Др. Азиза Каримова",
+        rent_payment_description: "Ежемесячная арендная плата",
+        all_branches: "Все филиалы",
     },
     en: {
         // Auth
@@ -939,6 +1085,7 @@ const translations = {
         sort_by_date: "Sort by Date",
         sort_by_id: "Sort by ID",
         inactive_patients: "Inactive Patients",
+        patients_count: "Patients Count",
 
         // Appointments
         add_new_appointment: "Add New Appointment",
@@ -1117,6 +1264,79 @@ const translations = {
         staffPerformanceReport: "Staff Performance Report",
         inventoryUsageReport: "Inventory Usage Report",
         appointmentCompletionReport: "Appointment Completion Report",
+
+        // Director Reports
+        financial: "Financial",
+        income: "Income",
+        expense: "Expense",
+        net_profit: "Net Profit",
+        profitability: "Profitability",
+        financial_indicators: "Financial Indicators",
+        financial_report_details: "Financial Report Details",
+        total_income: "Total Income",
+        total_expenses: "Total Expenses",
+        patient_dynamics: "Patient Dynamics",
+        patient_report_details: "Patient Report Details",
+        average_weekly: "Average Weekly",
+        average_monthly: "Average Monthly",
+        average_quarterly: "Average Quarterly",
+        average_weekly_patients: "Average Weekly Patients:",
+        average_monthly_patients: "Average Monthly Patients:",
+        average_quarterly_patients: "Average Quarterly Patients:",
+        growth: "Growth",
+        doctor_efficiency: "Doctor Efficiency",
+        top_performing_doctor: "Top Performing Doctor",
+        average_patients_per_doctor: "Average Patients per Doctor",
+        staff_performance_report: "Staff Performance Report",
+        period: "Period",
+        month: "Month",
+        quarter: "Quarter",
+        year: "Year",
+        week1: "Week 1",
+        week2: "Week 2",
+        week3: "Week 3",
+        week4: "Week 4",
+        january: "January",
+        february: "February",
+        march: "March",
+        quarter1: "Quarter 1",
+        quarter2: "Quarter 2",
+        quarter3: "Quarter 3",
+        quarter4: "Quarter 4",
+        history: "History",
+        withdraw_cash: "Withdraw Cash",
+        download_report_function: "Download Report Function",
+        withdrawal_success: "Cash withdrawal successful",
+        expense_history: "Expense History",
+        category: "Category",
+        amount: "Amount",
+        description: "Description",
+        enter_amount: "Enter amount",
+        select_reason: "Select reason",
+        enter_additional_description: "Enter additional description",
+        confirm: "Confirm",
+
+        // Withdrawal reasons
+        salary: "Salary for doctors",
+        salary_increase: "Additional salary for doctors",
+        utilities: "Utility payments",
+        rent: "Rent payment",
+        supplies: "Medical supplies purchase",
+        medicine: "Medicine purchase",
+        repairs: "Repair works",
+        marketing: "Marketing expenses",
+        taxes: "Taxes",
+        other_expenses: "Other expenses",
+        other: "Other",
+
+        // Withdrawal descriptions
+        salary_payment_description: "Monthly salary payment for doctors",
+        utilities_payment_description: "Electricity and water payments",
+        supplies_payment_description: "Purchase of new medical equipment",
+        medicine_payment_description: "Purchase of medicines",
+        salary_increase_description: "Additional salary for Dr. Aziz Karimov",
+        rent_payment_description: "Monthly rent payment",
+        all_branches: "All Branches",
     },
     kz: {
         // Auth
@@ -1154,7 +1374,7 @@ const translations = {
         dashboard: "Басқару тақтасы",
         staff: "Қызметкерлер",
         cabinets: "Кабинеттер",
-        patients: "Емделушілер",
+        patients: "Науқастар",
         appointments: "Қабылдаулар",
         reports: "Есептер",
         settings: "Параметрлер",
@@ -1255,9 +1475,9 @@ const translations = {
         inactive_cabinets: "Белсенді емес кабинеттер",
 
         // Patients
-        add_new_patient: "Жаңа емделуші қосу",
-        edit_patient: "Емделушіні өңдеу",
-        confirm_delete_patient: "Бұл емделушіні шынымен жойғыңыз келе ме?",
+        add_new_patient: "Жаңа науқас қосу",
+        edit_patient: "Науқасты өңдеу",
+        confirm_delete_patient: "Бұл науқасты шынымен жойғыңыз келе ме?",
         age: "Жас",
         gender: "Жыныс",
         male: "Ер",
@@ -1273,15 +1493,15 @@ const translations = {
         emergency_contact: "Төтенше байланыс",
         allergies: "Аллергиялар",
         medical_history: "Медициналық тарих",
-        patient_id: "Емделуші ID",
+        patient_id: "Науқас ID",
         registration_date: "Тіркелу күні",
-        patient_details: "Емделуші мәліметтері",
-        patient_list: "Емделушілер тізімі",
-        patient_statistics: "Емделушілер статистикасы",
-        total_patients: "Барлық емделушілер",
-        new_patients: "Жаңа емделушілер",
-        returning_patients: "Қайта келген емделушілер",
-        patient_demographics: "Емделушілер демографиясы",
+        patient_details: "Науқас мәліметтері",
+        patient_list: "Науқастар тізімі",
+        patient_statistics: "Науқастар статистикасы",
+        total_patients: "Барлық науқастар",
+        new_patients: "Жаңа науқастар",
+        returning_patients: "Қайта келген науқастар",
+        patient_demographics: "Науқастар демографиясы",
         age_distribution: "Жас бойынша бөлу",
         gender_distribution: "Жыныс бойынша бөлу",
         visit_history: "Келу тарихы",
@@ -1294,7 +1514,7 @@ const translations = {
         insurance_provider: "Сақтандыру провайдері",
         policy_number: "Полис нөмірі",
         coverage_details: "Қамту мәліметтері",
-        patient_notes: "Емделуші жазбалары",
+        patient_notes: "Науқас жазбалары",
         add_note: "Жазба қосу",
         upload_documents: "Құжаттарды жүктеу",
         download_report: "Есепті жүктеу",
@@ -1306,13 +1526,14 @@ const translations = {
         sort_by_name: "Аты бойынша сұрыптау",
         sort_by_date: "Күні бойынша сұрыптау",
         sort_by_id: "ID бойынша сұрыптау",
-        inactive_patients: "Белсенді емес емделушілер",
+        inactive_patients: "Белсенді емес науқастар",
+        patients_count: "Науқастар саны",
 
         // Appointments
         add_new_appointment: "Жаңа қабылдау қосу",
         edit_appointment: "Қабылдауды өңдеу",
         confirm_delete_appointment: "Бұл қабылдауды шынымен жойғыңыз келе ме?",
-        patient: "Емделуші",
+        patient: "Науқас",
         date: "Күн",
         time: "Уақыт",
         notes: "Ескертпелер",
@@ -1320,7 +1541,7 @@ const translations = {
         confirmed: "Расталған",
         completed: "Аяқталған",
         cancelled: "Болдырылмаған",
-        select_patient: "Емделушіні таңдаңыз",
+        select_patient: "Науқасты таңдаңыз",
         select_doctor: "Дәрігерді таңдаңыз",
         appointment_details: "Қабылдау мәліметтері",
         appointment_history: "Қабылдау тарихы",
@@ -1445,11 +1666,10 @@ const translations = {
         workingHours: "Жұмыс сағаттары",
         workingDays: "Жұмыс күндері",
         website: "Веб-сайт",
-        guest: "Қонақ",
 
         // Reports
         financialReports: "Қаржылық есептер",
-        patientReports: "Емделуші есептері",
+        patientReports: "Науқас есептері",
         staffReports: "Қызметкер есептері",
         inventoryReports: "Инвентарь есептері",
         appointmentReports: "Қабылдау есептері",
@@ -1482,10 +1702,83 @@ const translations = {
         expenseReport: "Шығыс есебі",
         profitReport: "Пайда есебі",
         taxReport: "Салық есебі",
-        patientVisitReport: "Емделуші келу есебі",
+        patientVisitReport: "Науқас келу есебі",
         staffPerformanceReport: "Қызметкер өнімділігі есебі",
         inventoryUsageReport: "Инвентарь пайдалану есебі",
         appointmentCompletionReport: "Қабылдау аяқталу есебі",
+
+        // Director Reports
+        financial: "Қаржылық",
+        income: "Кіріс",
+        expense: "Шығыс",
+        net_profit: "Таза пайда",
+        profitability: "Рентабельділік",
+        financial_indicators: "Қаржылық көрсеткіштер",
+        financial_report_details: "Қаржылық есеп мәліметтері",
+        total_income: "Жалпы кіріс",
+        total_expenses: "Жалпы шығыс",
+        patient_dynamics: "Науқастар динамикасы",
+        patient_report_details: "Науқастар есебінің мәліметтері",
+        average_weekly: "Апта сайынғы орташа",
+        average_monthly: "Ай сайынғы орташа",
+        average_quarterly: "Тоқсан сайынғы орташа",
+        average_weekly_patients: "Апта сайынғы орташа науқастар:",
+        average_monthly_patients: "Ай сайынғы орташа науқастар:",
+        average_quarterly_patients: "Тоқсан сайынғы орташа науқастар:",
+        growth: "Өсу",
+        doctor_efficiency: "Дәрігерлер тиімділігі",
+        top_performing_doctor: "Ең тиімді дәрігер",
+        average_patients_per_doctor: "Дәрігер басына орташа науқас",
+        staff_performance_report: "Қызметкерлер өнімділігі есебі",
+        period: "Кезең",
+        month: "Ай",
+        quarter: "Тоқсан",
+        year: "Жыл",
+        week1: "1-апта",
+        week2: "2-апта",
+        week3: "3-апта",
+        week4: "4-апта",
+        january: "Қаңтар",
+        february: "Ақпан",
+        march: "Наурыз",
+        quarter1: "1-тоқсан",
+        quarter2: "2-тоқсан",
+        quarter3: "3-тоқсан",
+        quarter4: "4-тоқсан",
+        history: "Тарих",
+        withdraw_cash: "Кассадан ақша алу",
+        download_report_function: "Есепті жүктеу функциясы",
+        withdrawal_success: "Кассадан ақша алу сәтті аяқталды",
+        expense_history: "Шығыстар тарихы",
+        category: "Категория",
+        amount: "Сома",
+        description: "Сипаттама",
+        enter_amount: "Соманы енгізіңіз",
+        select_reason: "Себепті таңдаңыз",
+        enter_additional_description: "Қосымша сипаттама енгізіңіз",
+        confirm: "Растау",
+
+        // Withdrawal reasons
+        salary: "Дәрігерлерге жалақы",
+        salary_increase: "Дәрігерлерге қосымша жалақы",
+        utilities: "Коммуналдық төлемдер",
+        rent: "Жалдау төлемі",
+        supplies: "Медициналық жабдықтар сатып алу",
+        medicine: "Дәрі-дәрмектер сатып алу",
+        repairs: "Жөндеу жұмыстары",
+        marketing: "Маркетинг шығындары",
+        taxes: "Салықтар",
+        other_expenses: "Басқа шығындар",
+        other: "Басқа",
+
+        // Withdrawal descriptions
+        salary_payment_description: "Дәрігерлерге айлық жалақы төлемі",
+        utilities_payment_description: "Электр және су төлемдері",
+        supplies_payment_description: "Жаңа медициналық жабдықтар сатып алу",
+        medicine_payment_description: "Дәрі-дәрмектер сатып алу",
+        salary_increase_description: "Др. Азиз Каримовқа қосымша жалақы",
+        rent_payment_description: "Айлық жалдау төлемі",
+        all_branches: "Барлық филиалдар",
     },
     zh: {
         // Auth
@@ -1568,7 +1861,7 @@ const translations = {
         low: "低",
         priority: "优先级",
         settingsSaved: "设置已保存",
-        guest: "客人",
+        guest: "访客",
 
         // Staff
         add_new_staff: "添加新员工",
@@ -1676,6 +1969,7 @@ const translations = {
         sort_by_date: "按日期排序",
         sort_by_id: "按ID排序",
         inactive_patients: "不活跃患者",
+        patients_count: "患者数量",
 
         // Appointments
         add_new_appointment: "添加新预约",
@@ -1814,7 +2108,6 @@ const translations = {
         workingHours: "工作时间",
         workingDays: "工作日",
         website: "网站",
-        guest: "客人",
 
         // Reports
         financialReports: "财务报告",
@@ -1855,24 +2148,116 @@ const translations = {
         staffPerformanceReport: "员工绩效报告",
         inventoryUsageReport: "库存使用报告",
         appointmentCompletionReport: "预约完成报告",
+
+        // Director Reports
+        financial: "财务",
+        income: "收入",
+        expense: "支出",
+        net_profit: "净利润",
+        profitability: "盈利能力",
+        financial_indicators: "财务指标",
+        financial_report_details: "财务报告详情",
+        total_income: "总收入",
+        total_expenses: "总支出",
+        patient_dynamics: "患者动态",
+        patient_report_details: "患者报告详情",
+        average_weekly: "每周平均",
+        average_monthly: "每月平均",
+        average_quarterly: "每季度平均",
+        average_weekly_patients: "每周平均患者数:",
+        average_monthly_patients: "每月平均患者数:",
+        average_quarterly_patients: "每季度平均患者数:",
+        growth: "增长",
+        doctor_efficiency: "医生效率",
+        top_performing_doctor: "表现最佳医生",
+        average_patients_per_doctor: "每位医生平均患者数",
+        staff_performance_report: "员工绩效报告",
+        period: "周期",
+        month: "月",
+        quarter: "季度",
+        year: "年",
+        week1: "第1周",
+        week2: "第2周",
+        week3: "第3周",
+        week4: "第4周",
+        january: "一月",
+        february: "二月",
+        march: "三月",
+        quarter1: "第1季度",
+        quarter2: "第2季度",
+        quarter3: "第3季度",
+        quarter4: "第4季度",
+        history: "历史",
+        withdraw_cash: "提取现金",
+        download_report_function: "下载报告功能",
+        withdrawal_success: "现金提取成功",
+        expense_history: "支出历史",
+        category: "类别",
+        amount: "金额",
+        description: "描述",
+        enter_amount: "输入金额",
+        select_reason: "选择原因",
+        enter_additional_description: "输入额外描述",
+        confirm: "确认",
+
+        // Withdrawal reasons
+        salary: "医生薪资",
+        salary_increase: "医生额外薪资",
+        utilities: "水电费",
+        rent: "租金",
+        supplies: "医疗用品采购",
+        medicine: "药品采购",
+        repairs: "维修工作",
+        marketing: "市场营销费用",
+        taxes: "税费",
+        other_expenses: "其他费用",
+        other: "其他",
+
+        // Withdrawal descriptions
+        salary_payment_description: "医生月薪支付",
+        utilities_payment_description: "电费和水费支付",
+        supplies_payment_description: "新医疗设备采购",
+        medicine_payment_description: "药品采购",
+        salary_increase_description: "Aziz Karimov医生的额外薪资",
+        rent_payment_description: "月租支付",
+        all_branches: "所有分支",
     },
 }
 
-// Create context
+// Create language context
 const LanguageContext = createContext()
 
-// Provider component
+// Language provider component
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState(() => {
-        // Try to get the language from localStorage
-        const savedLanguage = localStorage.getItem("language")
-        return savedLanguage || "uz" // Default to Uzbek if not found
-    })
+    // Get browser language or use default
+    const getBrowserLanguage = () => {
+        if (typeof window !== "undefined") {
+            const savedLanguage = localStorage.getItem("language")
+            if (savedLanguage && languages[savedLanguage]) {
+                return savedLanguage
+            }
 
-    // Update localStorage when language changes
+            const browserLang = navigator.language.split("-")[0]
+            return languages[browserLang] ? browserLang : "en"
+        }
+        return "en"
+    }
+
+    const [language, setLanguage] = useState("en")
+
     useEffect(() => {
-        localStorage.setItem("language", language)
-    }, [language])
+        setLanguage(getBrowserLanguage())
+    }, [])
+
+    // Change language function
+    const changeLanguage = (lang) => {
+        if (languages[lang]) {
+            setLanguage(lang)
+            if (typeof window !== "undefined") {
+                localStorage.setItem("language", lang)
+            }
+        }
+    }
 
     // Translate function
     const t = (key) => {
@@ -1880,19 +2265,12 @@ export const LanguageProvider = ({ children }) => {
         return translations[language][key] || key
     }
 
-    // Change language function
-    const changeLanguage = (lang) => {
-        if (languages[lang]) {
-            setLanguage(lang)
-        }
-    }
-
     return (
         <LanguageContext.Provider value={{ language, languages, changeLanguage, t }}>{children}</LanguageContext.Provider>
     )
 }
 
-// Custom hook to use the language context
+// Custom hook to use language context
 export const useLanguage = () => {
     const context = useContext(LanguageContext)
     if (!context) {
@@ -1901,3 +2279,4 @@ export const useLanguage = () => {
     return context
 }
 
+export default LanguageContext;
