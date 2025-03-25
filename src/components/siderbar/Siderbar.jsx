@@ -16,6 +16,7 @@ import {
     FaUserCog,
     FaChartBar,
     FaBell,
+    FaBed,
 } from "react-icons/fa"
 
 export default function Sidebar() {
@@ -92,6 +93,11 @@ export default function Sidebar() {
                                 <li>
                                     <NavLink to="/dashboard/director/cabinets" className={({ isActive }) => (isActive ? "active" : "")}>
                                         <FaDoorOpen /> <span>{t("cabinets")}</span>
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink to="/dashboard/director/rooms" className={({ isActive }) => (isActive ? "active" : "")}>
+                                        <FaBed /> <span>{t("inpatient_rooms")}</span>
                                     </NavLink>
                                 </li>
                                 <li>

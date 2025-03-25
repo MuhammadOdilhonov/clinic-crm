@@ -5,15 +5,16 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import Sidebar from "../../components/siderbar/Siderbar"
 import Header from "../../components/header/Header"
 import DirectorDashboard from "../../components/derector/overview/Overview"
-import AdminDashboard from "../../components/admin/ADashboard"
-import DoctorDashboard from "../../components/doctor/DocDoshboard"
+import AdminDashboard from "../../components/admin/ADashboard/ADashboard"
+import DoctorDashboard from "../../components/doctor/DocDoshboard/DocDoshboard"
 import DirectorStaff from "../../components/derector/staff/Staff"
 import DirectorCabinets from "../../components/derector/cabinets/Cabinets"
 import DirectorPatients from "../../components/derector/clients/Clients"
 import DirectorAppointments from "../../components/derector/appointments/Appointments"
 import DirectorReports from "../../components/derector/reports/Reports"
 import DirectorSettings from "../../components/derector/settings/Settings"
-// import AdminPatients from "./admin/AdminPatients"
+import Rooms from "../../components/derector/Rooms/Rooms"
+import AdminPatients from "../../components/admin/APatients/APatients"
 // import AdminSchedule from "./admin/AdminSchedule"
 // import AdminCabinets from "./admin/AdminCabinets"
 // import DoctorSchedule from "./doctor/DoctorSchedule"
@@ -21,11 +22,11 @@ import DirectorSettings from "../../components/derector/settings/Settings"
 // import DoctorAvailability from "./doctor/DoctorAvailability"
 import Profile from "../../components/profile/Profile"
 import Notifications from "../../components/notifications/Notifications"
-import { FaBell, FaBuilding  , FaCheckDouble  } from "react-icons/fa"
+import { FaBell, FaBuilding, FaCheckDouble } from "react-icons/fa"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch } = useAuth()
-    const location = useLocation()
+    const { t } = useLanguage()
     const [notifications, setNotifications] = useState([
         {
             id: 1,
@@ -47,20 +48,38 @@ export default function Dashboard() {
         },
     ])
     const [showNotifications, setShowNotifications] = useState(false)
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
+
+    // Moved useEffect to the top level, before any conditionals
+    useEffect(() => {
+        setIsMounted(true)
+
+        const handleClickOutside = (event) => {
+            if (showNotifications) {
+                if (!event.target.closest(".notification-container")) {
+                    setShowNotifications(false)
+                }
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [showNotifications, isMounted])
+
+    // Early return after hooks
+    if (!user) {
+        return <div className="loading-container">{t("loading")}...</div>
+    }
 
     // Branches data
     const branches = [
-        { id: "all", name: "Barcha filiallar" },
-        { id: "branch1", name: "1-Filial" },
-        { id: "branch2", name: "2-Filial" },
-        { id: "branch3", name: "3-Filial" },
+        { id: "all", name: t("allBranches") },
+        { id: "branch1", name: t("branch1") },
+        { id: "branch2", name: t("branch2") },
+        { id: "branch3", name: t("branch3") },
     ]
-
-    // Close mobile menu on route change
-    useEffect(() => {
-        setIsMobileMenuOpen(false)
-    }, [location.pathname])
 
     // Redirect to role-specific dashboard
     const getDashboardRoute = () => {
@@ -89,22 +108,6 @@ export default function Dashboard() {
     }
 
     const unreadCount = notifications.filter((notification) => !notification.read).length
-
-    // Close notifications dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (showNotifications) {
-                if (!event.target.closest(".notification-container") && !event.target.closest(".notification-button")) {
-                    setShowNotifications(false)
-                }
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside)
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside)
-        }
-    }, [showNotifications])
 
     return (
         <div className="dashboard-container">
@@ -136,10 +139,10 @@ export default function Dashboard() {
                         {showNotifications && (
                             <div className="notification-dropdown">
                                 <div className="notification-header">
-                                    <h3>Bildirishnomalar</h3>
+                                    <h3>{t("notifications")}</h3>
                                     {unreadCount > 0 && (
                                         <button className="mark-read-button" onClick={markAllAsRead}>
-                                            o`qidim <FaCheckDouble />
+                                            {t("markAllAsRead")}
                                         </button>
                                     )}
                                 </div>
@@ -153,7 +156,7 @@ export default function Dashboard() {
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="no-notifications">Bildirishnomalar yo'q</p>
+                                        <p className="no-notifications">{t("noNotifications")}</p>
                                     )}
                                 </div>
                             </div>
@@ -173,11 +176,12 @@ export default function Dashboard() {
                         <Route path="/director/appointments" element={<DirectorAppointments />} />
                         <Route path="/director/reports" element={<DirectorReports />} />
                         <Route path="/director/settings" element={<DirectorSettings />} />
+                        <Route path="/director/rooms" element={<Rooms />} />
 
                         {/* Admin Routes */}
                         <Route path="/admin" element={<AdminDashboard />} />
-                        {/* <Route path="/admin/patients" element={<AdminPatients />} />
-                        <Route path="/admin/schedule" element={<AdminSchedule />} />
+                        <Route path="/admin/patients" element={<AdminPatients />} />
+                        {/* <Route path="/admin/schedule" element={<AdminSchedule />} />
                         <Route path="/admin/cabinets" element={<AdminCabinets />} /> */}
 
                         {/* Doctor Routes */}
@@ -187,8 +191,8 @@ export default function Dashboard() {
                         <Route path="/doctor/availability" element={<DoctorAvailability />} /> */}
 
                         {/* Common Routes */}
-                        <Route path="/profile" element={<Profile />} />
                         <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/profile" element={<Profile />} />
 
                         {/* Fallback */}
                         <Route path="*" element={<Navigate to={getDashboardRoute()} />} />
