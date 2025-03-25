@@ -43,6 +43,8 @@ export default function Login() {
                     role = "admin"
                 } else if (email.includes("doctor")) {
                     role = "doctor"
+                } else if (email.includes("nurse")) {
+                    role = "nurse"
                 }
 
                 // Login the user
@@ -171,10 +173,10 @@ export default function Login() {
                                 <div className="form-options">
                                     <label className="remember-me">
                                         <input type="checkbox" />
-                                        <span>{t("rememberMe")}</span>
+                                        <span>{t("remember_me")}</span>
                                     </label>
                                     <a href="#" className="forgot-password">
-                                        {t("forgotPassword")}
+                                        {t("forgot_password")}
                                     </a>
                                 </div>
 
@@ -185,9 +187,10 @@ export default function Login() {
                                 <div className="demo-credentials">
                                     <p>Demo uchun:</p>
                                     <ul>
-                                        <li>Director: director / director123</li>
-                                        <li>Admin: admin / admin123</li>
-                                        <li>Doctor: doctor / doctor123</li>
+                                        <li>Director: director@clinic.com / director123</li>
+                                        <li>Admin: admin@clinic.com / admin123</li>
+                                        <li>Doctor: doctor@clinic.com / doctor123</li>
+                                        <li>Nurse: nurse@clinic.com / nurse123</li>
                                     </ul>
                                 </div>
 
@@ -196,7 +199,7 @@ export default function Login() {
                                 </div>
 
                                 <button type="button" className="request-access-button" onClick={handleRequestAccess}>
-                                    {t("requestAccess")}
+                                    {t("request_access")}
                                 </button>
 
                                 <div className="signup-link">

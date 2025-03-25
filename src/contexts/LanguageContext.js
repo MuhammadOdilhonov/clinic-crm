@@ -43,6 +43,7 @@ const translations = {
         admin: "Administrator",
         doctor: "Shifokor",
         user: "Foydalanuvchi",
+        nurse: "Hamshira",
 
         // Dashboard
         dashboard: "Dashboard",
@@ -56,6 +57,37 @@ const translations = {
         profile: "Profil",
         loading: "Yuklanmoqda",
         allBranches: "Barcha filiallar",
+
+        // Main Menu
+        main_menu: "Asosiy menyu",
+        home: "Bosh sahifa",
+        account: "Hisob",
+        help: "Yordam",
+        help_center: "Yordam markazi",
+
+        // Patient Care
+        patient_care: "Bemor parvarishi",
+        vital_signs: "Hayotiy ko'rsatkichlar",
+        medications: "Dori-darmonlar",
+
+        // Additional terms
+        finance: "Moliya",
+        all_staff: "Barcha xodimlar",
+        doctors: "Shifokorlar",
+        nurses: "Hamshiralar",
+        all_rights_reserved: "Barcha huquqlar himoyalangan",
+        privacy_policy: "Maxfiylik siyosati",
+        terms_of_service: "Xizmat ko'rsatish shartlari",
+        minutesAgo: "daqiqa oldin",
+        hoursAgo: "soat oldin",
+        new_patient_added: "Yangi bemor qo'shildi",
+        appointment_reminder: "Qabul eslatmasi",
+        system_updated: "Tizim yangilandi",
+        room_maintenance_completed: "Xona ta'mirlash ishlari tugadi",
+        patients_today: "Bugungi bemorlar",
+        appointments_today: "Bugungi qabullar",
+        error_occurred: "Xatolik yuz berdi",
+        try_again: "Qayta urinib ko'rish",
 
         // Common
         search: "Qidirish...",
@@ -546,6 +578,7 @@ const translations = {
         admin: "Администратор",
         doctor: "Врач",
         user: "Пользователь",
+        nurse: "Медсестра",
 
         // Dashboard
         dashboard: "Панель управления",
@@ -559,6 +592,37 @@ const translations = {
         profile: "Профиль",
         loading: "Загрузка",
         allBranches: "Все филиалы",
+
+        // Main Menu
+        main_menu: "Главное меню",
+        home: "Главная",
+        account: "Аккаунт",
+        help: "Помощь",
+        help_center: "Центр помощи",
+
+        // Patient Care
+        patient_care: "Уход за пациентами",
+        vital_signs: "Жизненные показатели",
+        medications: "Лекарства",
+
+        // Additional terms
+        finance: "Финансы",
+        all_staff: "Весь персонал",
+        doctors: "Врачи",
+        nurses: "Медсестры",
+        all_rights_reserved: "Все права защищены",
+        privacy_policy: "Политика конфиденциальности",
+        terms_of_service: "Условия обслуживания",
+        minutesAgo: "минут назад",
+        hoursAgo: "часов назад",
+        new_patient_added: "Добавлен новый пациент",
+        appointment_reminder: "Напоминание о приеме",
+        system_updated: "Система обновлена",
+        room_maintenance_completed: "Обслуживание палаты завершено",
+        patients_today: "Пациенты сегодня",
+        appointments_today: "Приемы сегодня",
+        error_occurred: "Произошла ошибка",
+        try_again: "Попробуйте снова",
 
         // Common
         search: "Поиск...",
@@ -655,7 +719,7 @@ const translations = {
         add_new_patient: "Добавить нового пациента",
         edit_patient: "Редактировать пациента",
         confirm_delete_patient: "Вы действительно хотите удалить этого пациента?",
-        age: "Возра��т",
+        age: "Возраст",
         gender: "Пол",
         male: "Мужской",
         female: "Женский",
@@ -949,7 +1013,7 @@ const translations = {
         other: "Другое",
 
         // Withdrawal descriptions
-        salary_payment_description: "Выплата ежемесяч��ой зарплаты врачам",
+        salary_payment_description: "Выплата ежемесячной зарплаты врачам",
         utilities_payment_description: "Оплата электричества и воды",
         supplies_payment_description: "Покупка нового медицинского оборудования",
         medicine_payment_description: "Покупка лекарств",
@@ -1049,6 +1113,7 @@ const translations = {
         admin: "Administrator",
         doctor: "Doctor",
         user: "User",
+        nurse: "Nurse",
 
         // Dashboard
         dashboard: "Dashboard",
@@ -1062,6 +1127,37 @@ const translations = {
         profile: "Profile",
         loading: "Loading",
         allBranches: "All Branches",
+
+        // Main Menu
+        main_menu: "Main Menu",
+        home: "Home",
+        account: "Account",
+        help: "Help",
+        help_center: "Help Center",
+
+        // Patient Care
+        patient_care: "Patient Care",
+        vital_signs: "Vital Signs",
+        medications: "Medications",
+
+        // Additional terms
+        finance: "Finance",
+        all_staff: "All Staff",
+        doctors: "Doctors",
+        nurses: "Nurses",
+        all_rights_reserved: "All rights reserved",
+        privacy_policy: "Privacy Policy",
+        terms_of_service: "Terms of Service",
+        minutesAgo: "minutes ago",
+        hoursAgo: "hours ago",
+        new_patient_added: "New patient added",
+        appointment_reminder: "Appointment reminder",
+        system_updated: "System updated",
+        room_maintenance_completed: "Room maintenance completed",
+        patients_today: "Patients today",
+        appointments_today: "Appointments today",
+        error_occurred: "An error occurred",
+        try_again: "Try again",
 
         // Common
         search: "Search...",
@@ -1552,6 +1648,7 @@ const translations = {
         admin: "Әкімші",
         doctor: "Дәрігер",
         user: "Пайдаланушы",
+        nurse: "Мейірбике",
 
         // Dashboard
         dashboard: "Басқару тақтасы",
@@ -1565,6 +1662,37 @@ const translations = {
         profile: "Профиль",
         loading: "Жүктелуде",
         allBranches: "Барлық филиалдар",
+
+        // Main Menu
+        main_menu: "Басты мәзір",
+        home: "Басты бет",
+        account: "Тіркелгі",
+        help: "Көмек",
+        help_center: "Көмек орталығы",
+
+        // Patient Care
+        patient_care: "Науқас күтімі",
+        vital_signs: "Өмірлік көрсеткіштер",
+        medications: "Дәрі-дәрмектер",
+
+        // Additional terms
+        finance: "Қаржы",
+        all_staff: "Барлық қызметкерлер",
+        doctors: "Дәрігерлер",
+        nurses: "Мейірбикелер",
+        all_rights_reserved: "Барлық құқықтар қорғалған",
+        privacy_policy: "Құпиялық саясаты",
+        terms_of_service: "Қызмет көрсету шарттары",
+        minutesAgo: "минут бұрын",
+        hoursAgo: "сағат бұрын",
+        new_patient_added: "Жаңа науқас қосылды",
+        appointment_reminder: "Қабылдау туралы еске салу",
+        system_updated: "Жүйе жаңартылды",
+        room_maintenance_completed: "Бөлме жөндеу жұмыстары аяқталды",
+        patients_today: "Бүгінгі науқастар",
+        appointments_today: "Бүгінгі қабылдаулар",
+        error_occurred: "Қате орын алды",
+        try_again: "Қайта көріңіз",
 
         // Common
         search: "Іздеу...",
@@ -1719,7 +1847,7 @@ const translations = {
         patient: "Науқас",
         date: "Күн",
         time: "Уақыт",
-        notes: "Ескертпелер",
+        notes: "Еск��ртпелер",
         pending: "Күтілуде",
         confirmed: "Расталған",
         completed: "Аяқталған",
@@ -2055,6 +2183,7 @@ const translations = {
         admin: "管理员",
         doctor: "医生",
         user: "用户",
+        nurse: "护士",
 
         // Dashboard
         dashboard: "仪表板",
@@ -2068,6 +2197,37 @@ const translations = {
         profile: "个人资料",
         loading: "加载中",
         allBranches: "所有分支",
+
+        // Main Menu
+        main_menu: "主菜单",
+        home: "首页",
+        account: "账户",
+        help: "帮助",
+        help_center: "帮助中心",
+
+        // Patient Care
+        patient_care: "患者护理",
+        vital_signs: "生命体征",
+        medications: "药物",
+
+        // Additional terms
+        finance: "财务",
+        all_staff: "所有员工",
+        doctors: "医生",
+        nurses: "护士",
+        all_rights_reserved: "保留所有权利",
+        privacy_policy: "隐私政策",
+        terms_of_service: "服务条款",
+        minutesAgo: "分钟前",
+        hoursAgo: "小时前",
+        new_patient_added: "新增患者",
+        appointment_reminder: "预约提醒",
+        system_updated: "系统已更新",
+        room_maintenance_completed: "病房维护已完成",
+        patients_today: "今日患者",
+        appointments_today: "今日预约",
+        error_occurred: "发生错误",
+        try_again: "重试",
 
         // Common
         search: "搜索...",
@@ -2460,10 +2620,10 @@ const translations = {
         // Withdrawal descriptions
         salary_payment_description: "医生月薪支付",
         utilities_payment_description: "电费和水费支付",
-        supplies_payment_description: "新医疗设备采购",
-        medicine_payment_description: "药品采购",
-        salary_increase_description: "Aziz Karimov医生的额外薪资",
-        rent_payment_description: "月租支付",
+        supplies_payment_description: "购买新医疗设备",
+        medicine_payment_description: "购买药品",
+        salary_increase_description: "给阿齐兹·卡里莫夫医生的额外薪资",
+        rent_payment_description: "月租金支付",
         all_branches: "所有分支",
 
         // Inpatient Rooms
@@ -2472,7 +2632,7 @@ const translations = {
         room_history: "病房历史",
         add_new_room: "添加新病房",
         edit_room: "编辑病房",
-        confirm_delete_room: "您确定要删除这个病房吗？",
+        confirm_delete_room: "您确定要删除此病房吗？",
         room_number: "病房号",
         room_type: "病房类型",
         standard_room: "标准病房",
@@ -2491,15 +2651,15 @@ const translations = {
         assign_patient: "分配患者",
         assign_patient_to_room: "将患者分配到病房",
         admission_date: "入院日期",
-        expected_discharge_date: "预计出院日���",
+        expected_discharge_date: "预计出院日期",
         expected_discharge: "预计出院",
         remaining_days: "剩余天数",
         discharge: "出院",
-        confirm_discharge_patient: "您确定要让这位患者出院吗？",
+        confirm_discharge_patient: "您确定要让此患者出院吗？",
         add_payment: "添加付款",
         add_payment_for: "为以下添加付款",
-        payment_method: "付款方式",
-        payment_date: "付款日期",
+        payment_method: "支付方式",
+        payment_date: "支付日期",
         total_payment: "总付款",
         room_occupancy_history: "病房占用历史",
         discharge_date: "出院日期",
@@ -2510,7 +2670,7 @@ const translations = {
         total_rooms: "总病房数",
         available_rooms: "可用病房",
         occupied_rooms: "已占用病房",
-        maintenance_rooms: "维护中病房",
+        maintenance_rooms: "维护中的病房",
         total_inpatients: "总住院患者",
         average_stay_duration: "平均住院时间",
         occupancy_rate: "占用率",
@@ -2534,40 +2694,39 @@ const LanguageContext = createContext()
 
 // Language provider component
 export const LanguageProvider = ({ children }) => {
-    // Get browser language or use default
-    const getBrowserLanguage = () => {
-        if (typeof window !== "undefined") {
-            const savedLanguage = localStorage.getItem("language")
-            if (savedLanguage && languages[savedLanguage]) {
-                return savedLanguage
-            }
+    const [language, setLanguage] = useState("uz")
 
-            const browserLang = navigator.language.split("-")[0]
-            return languages[browserLang] ? browserLang : "en"
-        }
-        return "en"
-    }
-
-    const [language, setLanguage] = useState("en")
-
+    // Load saved language preference from localStorage on component mount
     useEffect(() => {
-        setLanguage(getBrowserLanguage())
+        const savedLanguage = localStorage.getItem("language")
+        if (savedLanguage && languages[savedLanguage]) {
+            setLanguage(savedLanguage)
+        }
     }, [])
 
-    // Change language function
+    // Save language preference to localStorage when it changes
+    useEffect(() => {
+        localStorage.setItem("language", language)
+    }, [language])
+
+    // Function to change language
     const changeLanguage = (lang) => {
         if (languages[lang]) {
             setLanguage(lang)
-            if (typeof window !== "undefined") {
-                localStorage.setItem("language", lang)
-            }
         }
     }
 
-    // Translate function
+    // Get translation for a key
     const t = (key) => {
-        if (!translations[language]) return key
-        return translations[language][key] || key
+        if (translations[language] && translations[language][key]) {
+            return translations[language][key]
+        }
+        // Fallback to English if translation not found
+        if (translations.en && translations.en[key]) {
+            return translations.en[key]
+        }
+        // Return the key itself if no translation found
+        return key
     }
 
     return (
@@ -2584,4 +2743,5 @@ export const useLanguage = () => {
     return context
 }
 
-export default LanguageContext;
+export default LanguageContext
+
