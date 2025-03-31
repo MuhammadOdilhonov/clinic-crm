@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import Sidebar from "../../components/siderbar/Siderbar"
@@ -8,13 +8,15 @@ import DirectorDashboard from "../../components/derector/overview/Overview"
 import AdminDashboard from "../../components/admin/ADashboard/ADashboard"
 import DoctorDashboard from "../../components/doctor/DocDoshboard/DocDoshboard"
 import DirectorStaff from "../../components/derector/staff/Staff"
+import StaffDoctors from "../../components/derector/staffDoctors/StaffDoctors"
 import DirectorCabinets from "../../components/derector/cabinets/Cabinets"
 import DirectorPatients from "../../components/derector/clients/Clients"
 import DirectorAppointments from "../../components/derector/appointments/Appointments"
 import DirectorReports from "../../components/derector/reports/Reports"
 import DirectorSettings from "../../components/derector/settings/Settings"
+import DirectorTasks from "../../components/derector/tasks/Tasks"
 import DirectorRooms from "../../components/derector/Rooms/Rooms"
-import AdminPatients from "../../components/admin/APatients/APatients"
+import APatients from "../../components/admin/APatients/APatients"
 // import AdminSchedule from "./admin/AdminSchedule"
 // import AdminCabinets from "./admin/AdminCabinets"
 // import DoctorSchedule from "./doctor/DoctorSchedule"
@@ -26,6 +28,10 @@ import { FaBuilding, FaCalendarDay, FaChartLine, FaExclamationTriangle } from "r
 import NurseDashboard from "../../components/nurse/nurseDashboard/NurseDashboard"
 import NurseRooms from "../../components/nurse/nurseRooms/NurseRooms"
 import ARooms from "../../components/admin/ARooms/ARooms"
+import StaffNurses from "../../components/derector/staffNurses/StaffNurses"
+import ATasks from "../../components/admin/ATasks/ATasks"
+import DocTasks from "../../components/doctor/DocTasks/DocTasks"
+import NurseTasks from "../../components/nurse/nurseTasks/NurseTasks"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch } = useAuth()
@@ -42,8 +48,8 @@ export default function Dashboard() {
         totalIncome: 0,
     })
     const [weatherData, setWeatherData] = useState(null)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-    // Branches data
     const branches = [
         { id: "all", name: t("allBranches") },
         { id: "branch1", name: t("branch1") },
@@ -147,7 +153,6 @@ export default function Dashboard() {
         fetchData()
     }, [selectedBranch, t])
 
-    // Redirect to role-specific dashboard
     const getDashboardRoute = () => {
         if (!user) return "/dashboard"
         if (user.role === "director") return "/dashboard/director"
@@ -157,46 +162,18 @@ export default function Dashboard() {
         return "/dashboard"
     }
 
-    const toggleNotifications = () => {
-        setShowNotifications(!showNotifications)
+    // Toggle sidebar
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen)
     }
 
     const toggleBranchSelector = () => {
         setShowBranchSelector(!showBranchSelector)
     }
-
-    const markAllAsRead = () => {
-        setNotifications(
-            notifications.map((notification) => ({
-                ...notification,
-                read: true,
-            })),
-        )
-    }
-
     const handleBranchChange = (branchId) => {
         changeBranch(branchId)
         setShowBranchSelector(false)
     }
-
-    const unreadCount = notifications.filter((notification) => !notification.read).length
-
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (showNotifications && !event.target.closest(".notification-container")) {
-                setShowNotifications(false)
-            }
-            if (showBranchSelector && !event.target.closest(".branch-selector-container")) {
-                setShowBranchSelector(false)
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside)
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside)
-        }
-    }, [showNotifications, showBranchSelector])
 
     // Loading state
     if (loading && !user) {
@@ -229,19 +206,26 @@ export default function Dashboard() {
 
     return (
         <div className="dashboard-container">
-            <Sidebar />
+            <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
             <div className="dashboard-content">
                 <Header
                     user={user}
                     notifications={notifications}
-                    unreadCount={unreadCount}
-                    toggleNotifications={toggleNotifications}
+                    unreadCount={notifications.filter((notification) => !notification.read).length}
+                    toggleNotifications={() => setShowNotifications(!showNotifications)}
                     showNotifications={showNotifications}
-                    markAllAsRead={markAllAsRead}
+                    markAllAsRead={() => {
+                        setNotifications(
+                            notifications.map((notification) => ({
+                                ...notification,
+                                read: true,
+                            })),
+                        )
+                    }}
                     weatherData={weatherData}
+                    toggleSidebar={toggleSidebar}
                 />
-
                 <div className="dashboard-controls">
                     {/* Quick Stats */}
                     <div className="quick-stats">
@@ -294,44 +278,67 @@ export default function Dashboard() {
                 <main className="main-content">
                     <Routes>
                         <Route path="/" element={<Navigate to={getDashboardRoute()} />} />
-
                         {/* Director Routes */}
                         <Route path="/director" element={<DirectorDashboard />} />
                         <Route path="/director/staff" element={<DirectorStaff />} />
+                        <Route path="/director/staff/doctors" element={<StaffDoctors />} />
+                        <Route path="/director/staff/nurses" element={<StaffNurses />} />
                         <Route path="/director/cabinets" element={<DirectorCabinets />} />
                         <Route path="/director/patients" element={<DirectorPatients />} />
                         <Route path="/director/appointments" element={<DirectorAppointments />} />
                         <Route path="/director/reports" element={<DirectorReports />} />
                         <Route path="/director/settings" element={<DirectorSettings />} />
                         <Route path="/director/rooms" element={<DirectorRooms />} />
+                        <Route path="/director/tasks" element={<DirectorTasks />} />
 
                         {/* Admin Routes */}
                         <Route path="/admin" element={<AdminDashboard />} />
-                        <Route path="/admin/patients" element={<AdminPatients />} />
-                        {/* <Route path="/admin/schedule" element={<AdminSchedule />} />
-                        <Route path="/admin/cabinets" element={<AdminCabinets />} /> */}
+                        <Route path="/admin/patients" element={<APatients />} />
+                        {/* <Route path="/admin/schedule" element={<AdminSchedule />} /> */}
+                        {/* <Route path="/admin/cabinets" element={<AdminCabinets />} /> */}
                         <Route path="/admin/rooms" element={<ARooms />} />
+                        <Route path="/admin/tasks" element={<ATasks />} />
 
                         {/* Doctor Routes */}
                         <Route path="/doctor" element={<DoctorDashboard />} />
-                        {/* <Route path="/doctor/schedule" element={<DoctorSchedule />} />
-                        <Route path="/doctor/patients" element={<DoctorPatients />} />
+                        {/* <Route path="/doctor/schedule" element={<DoctorSchedule />} /> */}
+                        {/* <Route path="/doctor/patients" element={<DoctorPatients />} />
                         <Route path="/doctor/availability" element={<DoctorAvailability />} /> */}
+                        <Route path="/doctor/tasks" element={<DocTasks />} />
 
                         {/* Nurse Routes */}
                         <Route path="/nurse" element={<NurseDashboard />} />
                         <Route path="/nurse/rooms" element={<NurseRooms />} />
-                        {/* <Route path="/nurse/patients" element={<NursePatients />} />
-                        <Route path="/nurse/vitals" element={<NurseVitals />} />
-                        <Route path="/nurse/medications" element={<NurseMedications />} />
-                        <Route path="/nurse/schedule" element={<NurseSchedule />} /> */}
+                        {/* <Route path="/nurse/patients" element={<NursePatients />} /> */}
+                        {/* <Route path="/nurse/vitals" element={<NurseVitals />} /> */}
+                        {/* <Route path="/nurse/medications" element={<NurseMedications />} /> */}
+                        {/* <Route path="/nurse/schedule" element={<NurseSchedule />} /> */}
+                        <Route path="/nurse/tasks" element={<NurseTasks />} />
 
                         {/* Common Routes */}
                         <Route path="/notifications" element={<Notifications />} />
                         <Route path="/profile" element={<Profile />} />
 
+                        {/* Redirect to role-specific dashboard */}
+                        <Route
+                            path="/"
+                            element={
+                                user.role === "director" ? (
+                                    <Navigate to="/director" />
+                                ) : user.role === "admin" ? (
+                                    <Navigate to="/admin" />
+                                ) : user.role === "doctor" ? (
+                                    <Navigate to="/doctor" />
+                                ) : user.role === "nurse" ? (
+                                    <Navigate to="/nurse" />
+                                ) : (
+                                    <Navigate to="/login" />
+                                )
+                            }
+                        />
+
                         {/* Fallback */}
-                        <Route path="*" element={<Navigate to={getDashboardRoute()} />} />
+                        <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </main>
 

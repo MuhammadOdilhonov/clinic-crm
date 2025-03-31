@@ -1,4 +1,6 @@
-import React , { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -26,6 +28,7 @@ import {
     FaPills,
     FaMoneyBillWave,
     FaLanguage,
+    FaTasks,
 } from "react-icons/fa"
 
 export default function Sidebar() {
@@ -184,6 +187,12 @@ export default function Sidebar() {
                                     </li>
 
                                     <li>
+                                        <NavLink to="/dashboard/director/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaTasks /> <span>{t("tasks")}</span>
+                                        </NavLink>
+                                    </li>
+
+                                    <li>
                                         <NavLink to="/dashboard/director/cabinets" className={({ isActive }) => (isActive ? "active" : "")}>
                                             <FaDoorOpen /> <span>{t("cabinets")}</span>
                                         </NavLink>
@@ -234,6 +243,12 @@ export default function Sidebar() {
                                     </li>
 
                                     <li>
+                                        <NavLink to="/dashboard/admin/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaTasks /> <span>{t("tasks")}</span>
+                                        </NavLink>
+                                    </li>
+
+                                    <li>
                                         <NavLink to="/dashboard/admin/patients" className={({ isActive }) => (isActive ? "active" : "")}>
                                             <FaUsers /> <span>{t("patients")}</span>
                                         </NavLink>
@@ -269,6 +284,12 @@ export default function Sidebar() {
                                     </li>
 
                                     <li>
+                                        <NavLink to="/dashboard/doctor/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaTasks /> <span>{t("tasks")}</span>
+                                        </NavLink>
+                                    </li>
+
+                                    <li>
                                         <NavLink to="/dashboard/doctor/schedule" className={({ isActive }) => (isActive ? "active" : "")}>
                                             <FaCalendarAlt /> <span>{t("schedule")}</span>
                                         </NavLink>
@@ -297,6 +318,12 @@ export default function Sidebar() {
                                     <li>
                                         <NavLink to="/dashboard/nurse" className={({ isActive }) => (isActive ? "active" : "")} end>
                                             <FaChartLine /> <span>{t("dashboard")}</span>
+                                        </NavLink>
+                                    </li>
+
+                                    <li>
+                                        <NavLink to="/dashboard/nurse/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaTasks /> <span>{t("tasks")}</span>
                                         </NavLink>
                                     </li>
 
@@ -385,4 +412,5 @@ export default function Sidebar() {
             {isMobileOpen && <div className="sidebar-backdrop" onClick={() => setIsMobileOpen(false)}></div>}
         </>
     )
-};
+}
+

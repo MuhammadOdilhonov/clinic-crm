@@ -1,4 +1,6 @@
-import React , { useState } from "react"
+"use client"
+
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -9,7 +11,7 @@ export default function Login() {
     const navigate = useNavigate()
     const { login } = useAuth()
     const { t, language, changeLanguage } = useLanguage()
-    const [username, setUsername] = useState("")
+    const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
     const [showRequestAccess, setShowRequestAccess] = useState(false)
@@ -21,39 +23,29 @@ export default function Login() {
     })
     const [submitted, setSubmitted] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [email, setEmail] = useState("")
+    const [loginAttempted, setLoginAttempted] = useState(false) // Login urinishi holati
 
     const handleLogin = async (e) => {
         e.preventDefault()
+
+        // Agar login jarayoni ketayotgan bo'lsa yoki allaqachon urinilgan bo'lsa, qayta chaqirmaslik
+        if (loading || loginAttempted) {
+            console.log("Login already in progress or attempted, ignoring duplicate submit")
+            return
+        }
+
         setError("")
         setLoading(true)
+        setLoginAttempted(true) // Login urinishi boshlandi
 
         try {
-            // In a real app, you would validate credentials with an API
-            // For demo, we'll simulate a successful login
             if (email && password) {
-                // Simulate API call delay
-                await new Promise((resolve) => setTimeout(resolve, 1000))
+                console.log("Login form submitted with:", email)
 
-                // Get user role based on email (for demo purposes)
-                let role = "user"
-                if (email.includes("director")) {
-                    role = "director"
-                } else if (email.includes("admin")) {
-                    role = "admin"
-                } else if (email.includes("doctor")) {
-                    role = "doctor"
-                } else if (email.includes("nurse")) {
-                    role = "nurse"
-                }
-
-                // Login the user
+                // AuthContext orqali login qilish
                 const userData = {
-                    id: "123",
-                    name: email.split("@")[0],
                     email,
-                    role,
-                    avatar: "/placeholder.svg?height=200&width=200",
+                    password,
                 }
 
                 await login(userData)
@@ -62,10 +54,14 @@ export default function Login() {
                 setError(t("emailPasswordRequired"))
             }
         } catch (error) {
-            console.error("Login error:", error)
-            setError(t("loginFailed"))
+            console.error("Login error in component:", error)
+            setError(error.response?.data?.message || t("loginFailed"))
         } finally {
             setLoading(false)
+            // Login tugagandan so'ng, qisqa vaqtdan keyin loginAttempted ni false qilish
+            setTimeout(() => {
+                setLoginAttempted(false)
+            }, 1000)
         }
     }
 
@@ -154,6 +150,7 @@ export default function Login() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
+                                        disabled={loading}
                                     />
                                 </div>
 
@@ -167,12 +164,13 @@ export default function Login() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
+                                        disabled={loading}
                                     />
                                 </div>
 
                                 <div className="form-options">
                                     <label className="remember-me">
-                                        <input type="checkbox" />
+                                        <input type="checkbox" disabled={loading} />
                                         <span>{t("remember_me")}</span>
                                     </label>
                                     <a href="#" className="forgot-password">
@@ -180,7 +178,7 @@ export default function Login() {
                                     </a>
                                 </div>
 
-                                <button type="submit" className="login-button" disabled={loading}>
+                                <button type="submit" className="login-button" disabled={loading || loginAttempted}>
                                     {loading ? t("loggingIn") : t("login")}
                                 </button>
 
@@ -198,14 +196,19 @@ export default function Login() {
                                     <span>{t("or")}</span>
                                 </div>
 
-                                <button type="button" className="request-access-button" onClick={handleRequestAccess}>
+                                <button
+                                    type="button"
+                                    className="request-access-button"
+                                    onClick={handleRequestAccess}
+                                    disabled={loading}
+                                >
                                     {t("request_access")}
                                 </button>
 
                                 <div className="signup-link">
                                     <p>
                                         {t("noAccount")}{" "}
-                                        <button type="button" onClick={navigateToSignUp}>
+                                        <button type="button" onClick={navigateToSignUp} disabled={loading}>
                                             {t("signUp")}
                                         </button>
                                     </p>
@@ -313,4 +316,5 @@ export default function Login() {
             </div>
         </div>
     )
-};
+}
+

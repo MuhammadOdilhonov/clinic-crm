@@ -1,19 +1,22 @@
-import React, { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { FaUser, FaLock, FaEnvelope, FaPhone, FaClinicMedical, FaIdCard } from "react-icons/fa"
+import React , { useState } from "react"
+import {  useNavigate } from "react-router-dom"
+import { FaEnvelope, FaPhone, FaClinicMedical, FaIdCard } from "react-icons/fa"
 import { MdOutlineHealthAndSafety } from "react-icons/md"
+import ApiSignUp from "../../api/apiSignUp"
+
 
 export default function SignUp() {
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
-        fullName: "",
         email: "",
         phone: "",
         clinicName: "",
-        position: "",
+        license: "",
     })
     const [errors, setErrors] = useState({})
     const [submitted, setSubmitted] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [apiError, setApiError] = useState("")
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -29,14 +32,15 @@ export default function SignUp() {
                 [name]: "",
             })
         }
+
+        // Clear API error when user makes changes
+        if (apiError) {
+            setApiError("")
+        }
     }
 
     const validateForm = () => {
         const newErrors = {}
-
-        if (!formData.fullName.trim()) {
-            newErrors.fullName = "To'liq ism kiritilishi shart"
-        }
 
         if (!formData.email.trim()) {
             newErrors.email = "Email kiritilishi shart"
@@ -52,10 +56,14 @@ export default function SignUp() {
             newErrors.clinicName = "Klinika nomi kiritilishi shart"
         }
 
+        if (!formData.license.trim()) {
+            newErrors.license = "Litsenziya raqami kiritilishi shart"
+        }
+
         return newErrors
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         const formErrors = validateForm()
@@ -64,9 +72,27 @@ export default function SignUp() {
             return
         }
 
-        // Handle signup logic here
-        console.log("Form submitted:", formData)
-        setSubmitted(true)
+        setIsLoading(true)
+        setApiError("")
+
+        try {
+            // Call the API to register the user
+            const response = await ApiSignUp.registerUser(formData)
+            console.log("Registration successful:", response)
+            setSubmitted(true)
+
+            // 3 soniyadan keyin login sahifasiga o'tkazish
+            setTimeout(() => {
+                navigate("/login")
+            }, 3000)
+        } catch (error) {
+            console.error("Registration error:", error)
+            setApiError(
+                error.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
+            )
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const navigateToLogin = () => {
@@ -101,20 +127,6 @@ export default function SignUp() {
                             <div className="form-row">
                                 <div className="form-group">
                                     <div className="input-icon">
-                                        <FaUser />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="fullName"
-                                        placeholder="To'liq ismingiz"
-                                        value={formData.fullName}
-                                        onChange={handleChange}
-                                    />
-                                    {errors.fullName && <span className="error">{errors.fullName}</span>}
-                                </div>
-
-                                <div className="form-group">
-                                    <div className="input-icon">
                                         <FaEnvelope />
                                     </div>
                                     <input
@@ -123,12 +135,11 @@ export default function SignUp() {
                                         placeholder="Elektron pochta"
                                         value={formData.email}
                                         onChange={handleChange}
+                                        disabled={isLoading}
                                     />
                                     {errors.email && <span className="error">{errors.email}</span>}
                                 </div>
-                            </div>
 
-                            <div className="form-row">
                                 <div className="form-group">
                                     <div className="input-icon">
                                         <FaPhone />
@@ -139,10 +150,13 @@ export default function SignUp() {
                                         placeholder="Telefon raqami"
                                         value={formData.phone}
                                         onChange={handleChange}
+                                        disabled={isLoading}
                                     />
                                     {errors.phone && <span className="error">{errors.phone}</span>}
                                 </div>
+                            </div>
 
+                            <div className="form-row">
                                 <div className="form-group">
                                     <div className="input-icon">
                                         <FaClinicMedical />
@@ -153,40 +167,45 @@ export default function SignUp() {
                                         placeholder="Klinika nomi"
                                         value={formData.clinicName}
                                         onChange={handleChange}
+                                        disabled={isLoading}
                                     />
                                     {errors.clinicName && <span className="error">{errors.clinicName}</span>}
                                 </div>
+
+                                <div className="form-group">
+                                    <div className="input-icon">
+                                        <FaIdCard />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        name="license"
+                                        placeholder="Litsenziya raqami"
+                                        value={formData.license}
+                                        onChange={handleChange}
+                                        disabled={isLoading}
+                                    />
+                                    {errors.license && <span className="error">{errors.license}</span>}
+                                </div>
                             </div>
 
-                            <div className="form-group">
-                                <div className="input-icon">
-                                    <FaIdCard />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="position"
-                                    placeholder="Lavozimingiz (ixtiyoriy)"
-                                    value={formData.position}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                            {apiError && <div className="api-error">{apiError}</div>}
 
                             <div className="terms-checkbox">
-                                <input type="checkbox" id="terms" required />
+                                <input type="checkbox" id="terms" required disabled={isLoading} />
                                 <label htmlFor="terms">
                                     Men <a href="#">foydalanish shartlari</a> va <a href="#">maxfiylik siyosati</a> bilan tanishdim va
                                     roziman
                                 </label>
                             </div>
 
-                            <button type="submit" className="signup-button">
-                                Ro'yxatdan o'tish
+                            <button type="submit" className="signup-button" disabled={isLoading}>
+                                {isLoading ? "Ro'yxatdan o'tilmoqda..." : "Ro'yxatdan o'tish"}
                             </button>
 
                             <div className="login-link">
                                 <p>
                                     Hisobingiz bormi?{" "}
-                                    <button type="button" onClick={navigateToLogin}>
+                                    <button type="button" onClick={navigateToLogin} disabled={isLoading}>
                                         Tizimga kirish
                                     </button>
                                 </p>
@@ -201,9 +220,7 @@ export default function SignUp() {
                             <strong>{formData.email}</strong> elektron pochtangizga tasdiqlash xabari yuborildi. Iltimos, hisobingizni
                             faollashtirish uchun xabarni tekshiring.
                         </p>
-                        <button type="button" className="login-redirect-button" onClick={navigateToLogin}>
-                            Tizimga kirish
-                        </button>
+                        <p className="redirect-message">Tizimga kirish sahifasiga yo'naltirilmoqda...</p>
                     </div>
                 )}
             </div>

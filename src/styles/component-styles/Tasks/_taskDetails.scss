@@ -1,0 +1,173 @@
+// Variables
+$primary-color: #1a73e8;
+$primary-light: #e8f0fe;
+$secondary-color: #5f6368;
+$border-color: #dadce0;
+$background-color: #ffffff;
+$hover-color: #f1f3f4;
+$active-color: #e8f0fe;
+$text-color: #3c4043;
+$text-secondary: #5f6368;
+$success-color: #34a853;
+$warning-color: #fbbc04;
+$error-color: #ea4335;
+$info-color: #4285f4;
+$shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+$border-radius: 8px;
+$font-family: 'Google Sans', Roboto, Arial, sans-serif;
+
+// Task Details Modal
+.task-details-modal {
+    font-family: $font-family;
+    color: $text-color;
+
+    .task-details-content {
+
+        // Details header
+        .details-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid $border-color;
+
+            .task-title-section {
+                h2 {
+                    font-size: 20px;
+                    font-weight: 500;
+                    margin: 0 0 8px 0;
+                }
+
+                .status-badge {
+                    display: inline-block;
+                    font-size: 12px;
+                    font-weight: 500;
+                    padding: 4px 8px;
+                    border-radius: 12px;
+
+                    &.completed {
+                        background-color: rgba($success-color, 0.1);
+                        color: $success-color;
+                    }
+
+                    &.in-progress {
+                        background-color: rgba($info-color, 0.1);
+                        color: $info-color;
+                    }
+
+                    &.pending {
+                        background-color: rgba($warning-color, 0.1);
+                        color: $warning-color;
+                    }
+                }
+            }
+
+            .close-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: $secondary-color;
+                font-size: 18px;
+                padding: 4px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                &:hover {
+                    background-color: $hover-color;
+                }
+            }
+        }
+
+        // Details content
+        .details-content {
+            padding: 16px;
+
+            .detail-section {
+                margin-bottom: 24px;
+
+                h3 {
+                    font-size: 16px;
+                    font-weight: 500;
+                    margin: 0 0 12px 0;
+                    color: $text-color;
+                }
+
+                .description-text {
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: $text-color;
+                    margin: 0;
+                }
+
+                .detail-row {
+                    display: flex;
+                    margin-bottom: 8px;
+                    font-size: 14px;
+
+                    .detail-label {
+                        width: 120px;
+                        color: $text-secondary;
+                        font-weight: 500;
+                    }
+
+                    .detail-value {
+                        flex: 1;
+                        color: $text-color;
+                    }
+                }
+            }
+        }
+
+        // Details actions
+        .details-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px;
+            border-top: 1px solid $border-color;
+
+            button {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+
+                &.btn-primary {
+                    background-color: $primary-color;
+                    color: white;
+                    border: none;
+
+                    &:hover {
+                        background-color: darken($primary-color, 5%);
+                    }
+                }
+
+                &.btn-success {
+                    background-color: $success-color;
+                    color: white;
+                    border: none;
+
+                    &:hover {
+                        background-color: darken($success-color, 5%);
+                    }
+                }
+
+                &.btn-danger {
+                    background-color: $background-color;
+                    color: $error-color;
+                    border: 1px solid $border-color;
+
+                    &:hover {
+                        background-color: rgba($error-color, 0.1);
+                    }
+                }
+            }
+        }
+    }
+}

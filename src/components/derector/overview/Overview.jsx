@@ -10,6 +10,7 @@ import {
     FaChartPie,
     FaMoneyBillWave,
     FaArrowUp,
+    FaTasks,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import {
@@ -29,7 +30,7 @@ import { Pie, Bar, Line } from "react-chartjs-2"
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement)
 
-export default function Dashboard() {
+export default function DirectorDashboard() {
     const { selectedBranch } = useAuth()
     const [stats, setStats] = useState({
         totalStaff: 24,
@@ -44,6 +45,9 @@ export default function Dashboard() {
         expenseChange: 5.2,
         patientChange: 12.3,
         appointmentChange: 7.8,
+        totalTasks: 18,
+        completedTasks: 7,
+        pendingTasks: 11,
     })
 
     // Update stats based on selected branch
@@ -62,6 +66,9 @@ export default function Dashboard() {
                 expenseChange: 4.8,
                 patientChange: 14.5,
                 appointmentChange: 8.3,
+                totalTasks: 8,
+                completedTasks: 3,
+                pendingTasks: 5,
             })
         } else if (selectedBranch === "branch2") {
             setStats({
@@ -77,6 +84,9 @@ export default function Dashboard() {
                 expenseChange: 5.5,
                 patientChange: 10.2,
                 appointmentChange: 6.7,
+                totalTasks: 6,
+                completedTasks: 2,
+                pendingTasks: 4,
             })
         } else if (selectedBranch === "branch3") {
             setStats({
@@ -92,6 +102,9 @@ export default function Dashboard() {
                 expenseChange: 4.2,
                 patientChange: 9.8,
                 appointmentChange: 5.4,
+                totalTasks: 4,
+                completedTasks: 2,
+                pendingTasks: 2,
             })
         } else {
             // All branches
@@ -108,6 +121,9 @@ export default function Dashboard() {
                 expenseChange: 5.2,
                 patientChange: 12.3,
                 appointmentChange: 7.8,
+                totalTasks: 18,
+                completedTasks: 7,
+                pendingTasks: 11,
             })
         }
     }, [selectedBranch])
@@ -158,6 +174,34 @@ export default function Dashboard() {
             doctor: "Dr. Nilufar Rahimova",
             department: "Pediatriya",
             status: "pending",
+        },
+    ]
+
+    // Recent tasks
+    const recentTasks = [
+        {
+            id: 1,
+            title: "Yangi tibbiy jihozlarni tekshirish",
+            assignee: "Dr. Aziz Karimov",
+            dueDate: "2023-05-18",
+            status: "pending",
+            priority: "high",
+        },
+        {
+            id: 2,
+            title: "Xodimlar yig'ilishi",
+            assignee: "Malika Umarova",
+            dueDate: "2023-05-19",
+            status: "pending",
+            priority: "medium",
+        },
+        {
+            id: 3,
+            title: "Yangi hamshiralar bilan suhbat",
+            assignee: "Nilufar Rahimova",
+            dueDate: "2023-05-20",
+            status: "completed",
+            priority: "medium",
         },
     ]
 
@@ -294,6 +338,20 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
+                <div className="stat-card">
+                    <div className="stat-icon-wrapper">
+                        <FaTasks className="stat-icon director" />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-value">{stats.totalTasks}</div>
+                        <div className="stat-label">Jami vazifalar</div>
+                        <div className="stat-details">
+                            <span className="completed">{stats.completedTasks} bajarilgan</span> /
+                            <span className="pending">{stats.pendingTasks} kutilmoqda</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="stats-grid">
@@ -385,6 +443,53 @@ export default function Dashboard() {
                     </div>
                 </div>
 
+                <div className="dashboard-card">
+                    <div className="card-header">
+                        <h2>Joriy vazifalar</h2>
+                        <button className="btn btn-text" onClick={() => (window.location.href = "/dashboard/director/tasks")}>
+                            Barchasini ko'rish
+                        </button>
+                    </div>
+                    <div className="table-responsive">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Vazifa</th>
+                                    <th>Mas'ul</th>
+                                    <th>Muddat</th>
+                                    <th>Muhimlik</th>
+                                    <th>Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentTasks.map((task) => (
+                                    <tr key={task.id}>
+                                        <td>{task.title}</td>
+                                        <td>{task.assignee}</td>
+                                        <td>{task.dueDate}</td>
+                                        <td>
+                                            <div className={`priority-badge ${task.priority}-priority`}>
+                                                {task.priority === "high" && "Yuqori"}
+                                                {task.priority === "medium" && "O'rta"}
+                                                {task.priority === "low" && "Past"}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className={`status-badge ${task.status}`}>
+                                                {task.status === "completed" && "Bajarilgan"}
+                                                {task.status === "in-progress" && "Jarayonda"}
+                                                {task.status === "pending" && "Kutilmoqda"}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div className="dashboard-row">
                 <div className="dashboard-card">
                     <div className="card-header">
                         <h2>Yangi qo'shilgan xodimlar</h2>
@@ -550,4 +655,5 @@ export default function Dashboard() {
             </div>
         </div>
     )
-};
+}
+
