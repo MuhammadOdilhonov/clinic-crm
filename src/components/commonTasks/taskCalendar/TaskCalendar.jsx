@@ -28,10 +28,13 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
         const lastDay = new Date(year, month + 1, 0)
 
         // Get the day of the week for the first day (0 = Sunday, 1 = Monday, etc.)
-        const firstDayOfWeek = firstDay.getDay()
+        let firstDayOfWeek = firstDay.getDay()
 
-        // Calculate days from previous month to show
-        const daysFromPrevMonth = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+        // Convert Sunday from 0 to 7 for easier calculation (Monday is 1, Sunday is 7)
+        if (firstDayOfWeek === 0) firstDayOfWeek = 7
+
+        // Calculate days from previous month to show (adjust for Monday as first day of week)
+        const daysFromPrevMonth = firstDayOfWeek - 1
 
         // Calculate total days to show (including days from previous and next months)
         const totalDays = 42 // Always show 6 weeks (6 * 7 = 42 days)
@@ -40,35 +43,41 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
         const days = []
 
         // Add days from previous month
-        const prevMonth = new Date(year, month - 1, 0)
-        const prevMonthLastDay = prevMonth.getDate()
+        if (daysFromPrevMonth > 0) {
+            // Create a new date for the last day of the previous month
+            const prevMonthLastDate = new Date(year, month, 0)
+            const prevMonthLastDay = prevMonthLastDate.getDate()
 
-        for (let i = 0; i < daysFromPrevMonth; i++) {
-            const day = prevMonthLastDay - daysFromPrevMonth + i + 1
-            days.push({
-                date: new Date(year, month - 1, day),
-                isCurrentMonth: false,
-                tasks: getTasksForDay(new Date(year, month - 1, day)),
-            })
+            for (let i = 0; i < daysFromPrevMonth; i++) {
+                const day = prevMonthLastDay - daysFromPrevMonth + i + 1
+                const exactDate = new Date(year, month - 1, day)
+                days.push({
+                    date: exactDate,
+                    isCurrentMonth: false,
+                    tasks: getTasksForDay(exactDate),
+                })
+            }
         }
 
         // Add days from current month
         for (let i = 1; i <= lastDay.getDate(); i++) {
+            const exactDate = new Date(year, month, i)
             days.push({
-                date: new Date(year, month, i),
+                date: exactDate,
                 isCurrentMonth: true,
-                isToday: isToday(new Date(year, month, i)),
-                tasks: getTasksForDay(new Date(year, month, i)),
+                isToday: isToday(exactDate),
+                tasks: getTasksForDay(exactDate),
             })
         }
 
         // Add days from next month
         const remainingDays = totalDays - days.length
         for (let i = 1; i <= remainingDays; i++) {
+            const exactDate = new Date(year, month + 1, i)
             days.push({
-                date: new Date(year, month + 1, i),
+                date: exactDate,
                 isCurrentMonth: false,
-                tasks: getTasksForDay(new Date(year, month + 1, i)),
+                tasks: getTasksForDay(exactDate),
             })
         }
 
@@ -80,21 +89,28 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
         const days = []
         const startOfWeek = new Date(currentDate)
 
-        // Adjust to start from Monday
-        const dayOfWeek = currentDate.getDay()
-        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+        // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
+        let dayOfWeek = currentDate.getDay()
+
+        // Convert Sunday from 0 to 7 for easier calculation
+        if (dayOfWeek === 0) dayOfWeek = 7
+
+        // Calculate the difference to get to Monday (first day of week)
+        const diff = 1 - dayOfWeek
+
+        // Set the date to Monday
         startOfWeek.setDate(currentDate.getDate() + diff)
 
         // Generate 7 days starting from Monday
         for (let i = 0; i < 7; i++) {
-            const day = new Date(startOfWeek)
-            day.setDate(startOfWeek.getDate() + i)
+            const exactDate = new Date(startOfWeek)
+            exactDate.setDate(startOfWeek.getDate() + i)
 
             days.push({
-                date: day,
-                isCurrentMonth: day.getMonth() === currentDate.getMonth(),
-                isToday: isToday(day),
-                tasks: getTasksForDay(day),
+                date: exactDate,
+                isCurrentMonth: exactDate.getMonth() === currentDate.getMonth(),
+                isToday: isToday(exactDate),
+                tasks: getTasksForDay(exactDate),
             })
         }
 
@@ -103,12 +119,14 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
 
     // Generate calendar for day view
     const generateDayCalendar = () => {
+        const exactDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+
         const days = [
             {
-                date: new Date(currentDate),
+                date: exactDate,
                 isCurrentMonth: true,
-                isToday: isToday(currentDate),
-                tasks: getTasksForDay(currentDate),
+                isToday: isToday(exactDate),
+                tasks: getTasksForDay(exactDate),
             },
         ]
 
@@ -122,15 +140,15 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
 
         // Generate first day of each month
         for (let month = 0; month < 12; month++) {
-            const date = new Date(year, month, 1)
+            const exactDate = new Date(year, month, 1)
             const monthTasks = getTasksForMonth(year, month)
 
             days.push({
-                date,
+                date: exactDate,
                 isCurrentMonth: month === new Date().getMonth() && year === new Date().getFullYear(),
                 isToday: false,
                 tasks: monthTasks,
-                monthName: date.toLocaleString("default", { month: "long" }),
+                monthName: exactDate.toLocaleString("default", { month: "long" }),
             })
         }
 
@@ -197,14 +215,26 @@ export default function TaskCalendar({ tasks, currentDate, view, onTaskClick, on
     // Handle day click safely
     const handleDayClick = (day) => {
         if (day && onDayClick) {
-            onDayClick(day)
+            // Create a deep copy of the day object to avoid reference issues
+            const dayClone = {
+                ...day,
+                date: new Date(day.date),
+                tasks: day.tasks ? [...day.tasks] : [],
+            }
+            onDayClick(dayClone)
         }
     }
 
     // Handle month click safely
     const handleMonthClick = (month) => {
         if (month && onMonthClick) {
-            onMonthClick(month)
+            // Create a deep copy of the month object to avoid reference issues
+            const monthClone = {
+                ...month,
+                date: new Date(month.date),
+                tasks: month.tasks ? [...month.tasks] : [],
+            }
+            onMonthClick(monthClone)
         }
     }
 

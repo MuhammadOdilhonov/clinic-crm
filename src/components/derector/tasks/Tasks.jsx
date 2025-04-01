@@ -211,7 +211,7 @@ export default function Tasks() {
                 },
             ]
 
-            // Mock staff data
+            // Mock staff data - Direktor barcha xodimlarni ko'ra oladi
             const mockStaff = [
                 {
                     id: 101,
@@ -242,6 +242,18 @@ export default function Tasks() {
                     name: "Dilshod Karimov",
                     role: "doctor",
                     department: "Nevrologiya",
+                },
+                {
+                    id: 106,
+                    name: "Zarina Aliyeva",
+                    role: "nurse",
+                    department: "Kardiologiya",
+                },
+                {
+                    id: 107,
+                    name: "Gulnora Karimova",
+                    role: "nurse",
+                    department: "Kardiologiya",
                 },
             ]
 
@@ -316,8 +328,9 @@ export default function Tasks() {
             return new Intl.DateTimeFormat(navigator.language, options).format(currentDate)
         } else if (view === "week") {
             const startOfWeek = new Date(currentDate)
-            const dayOfWeek = currentDate.getDay()
-            const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+            let dayOfWeek = currentDate.getDay()
+            if (dayOfWeek === 0) dayOfWeek = 7
+            const diff = 1 - dayOfWeek
             startOfWeek.setDate(currentDate.getDate() + diff)
 
             const endOfWeek = new Date(startOfWeek)
@@ -336,13 +349,13 @@ export default function Tasks() {
     // Open task form for creating a new task
     const handleAddTask = (date = null) => {
         setSelectedTask(null)
-        setNewTaskDate(date)
+        setNewTaskDate(date ? new Date(date) : null)
         setShowTaskForm(true)
     }
 
     // Open task form for editing an existing task
     const handleEditTask = (task) => {
-        setSelectedTask(task)
+        setSelectedTask({ ...task })
         setNewTaskDate(null)
         setShowTaskForm(true)
         setShowTaskDetails(false)
@@ -352,7 +365,7 @@ export default function Tasks() {
     const handleViewTask = (task) => {
         if (!task) return
 
-        setSelectedTask(task)
+        setSelectedTask({ ...task })
         setShowTaskDetails(true)
         setShowDayTasks(false)
     }
@@ -361,25 +374,34 @@ export default function Tasks() {
     const handleMonthClick = (month) => {
         if (!month || !month.date) return
 
+        // Create a new date object to avoid reference issues
+        const monthDate = new Date(month.date)
+
+        // Set the current date
+        setCurrentDate(monthDate)
+
         // Oyning vazifalarini olish
         const monthTasks = tasks.filter((task) => {
             if (!task || !task.startDate) return false
 
             const taskDate = new Date(task.startDate)
-            return taskDate.getMonth() === month.date.getMonth() && taskDate.getFullYear() === month.date.getFullYear()
+            return taskDate.getMonth() === monthDate.getMonth() && taskDate.getFullYear() === monthDate.getFullYear()
         })
 
         // Oy ma'lumotlarini saqlash
         setSelectedDay({
-            date: month.date,
+            date: monthDate,
             isMonth: true,
-            monthName: month.date.toLocaleString("default", { month: "long" }),
-            year: month.date.getFullYear(),
+            monthName: monthDate.toLocaleString("default", { month: "long" }),
+            year: monthDate.getFullYear(),
         })
 
         setSelectedMonthTasks(monthTasks)
         setIsMonthView(true)
         setShowDayTasks(true)
+
+        // Oyni tanlagandan so'ng, ko'rinishni oylik ko'rinishga o'zgartirish
+        setView("month")
     }
 
     // Handle day click in calendar
@@ -392,19 +414,28 @@ export default function Tasks() {
             return
         }
 
+        // Create a new date object to avoid reference issues
+        const dayDate = new Date(day.date)
+
         // Oddiy kun uchun vazifalarni olish
         const dayTasks = tasks.filter((task) => {
             if (!task || !task.startDate) return false
 
             const taskDate = new Date(task.startDate)
             return (
-                taskDate.getDate() === day.date.getDate() &&
-                taskDate.getMonth() === day.date.getMonth() &&
-                taskDate.getFullYear() === day.date.getFullYear()
+                taskDate.getDate() === dayDate.getDate() &&
+                taskDate.getMonth() === dayDate.getMonth() &&
+                taskDate.getFullYear() === dayDate.getFullYear()
             )
         })
 
-        setSelectedDay(day)
+        setSelectedDay({
+            date: dayDate,
+            isCurrentMonth: day.isCurrentMonth,
+            isToday: day.isToday,
+            tasks: dayTasks,
+        })
+
         setSelectedMonthTasks([])
         setIsMonthView(false)
         setShowDayTasks(true)
@@ -622,6 +653,7 @@ export default function Tasks() {
                                 setShowTaskForm(false)
                                 setNewTaskDate(null)
                             }}
+                            canAssignToAll={true} // Direktor ham barcha xodimlarga vazifalarni belgilashi mumkin
                         />
                     </div>
                 </div>

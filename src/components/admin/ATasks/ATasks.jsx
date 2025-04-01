@@ -34,6 +34,9 @@ export default function ATasks() {
     const [assigneeFilter, setAssigneeFilter] = useState("all")
     const [tasks, setTasks] = useState([])
     const [staff, setStaff] = useState([])
+    const [newTaskDate, setNewTaskDate] = useState(null)
+    const [showDayTasks, setShowDayTasks] = useState(false)
+    const [selectedDay, setSelectedDay] = useState(null)
 
     useEffect(() => {
         setLoading(true)
@@ -124,7 +127,7 @@ export default function ATasks() {
                 },
             ]
 
-            // Mock staff data
+            // Mock staff data - Admin barcha xodimlarni ko'ra oladi
             const mockStaff = [
                 {
                     id: 101,
@@ -149,6 +152,24 @@ export default function ATasks() {
                     name: "Jasur Toshmatov",
                     role: "admin",
                     department: "Moliya bo'limi",
+                },
+                {
+                    id: 105,
+                    name: "Dilshod Karimov",
+                    role: "doctor",
+                    department: "Nevrologiya",
+                },
+                {
+                    id: 106,
+                    name: "Zarina Aliyeva",
+                    role: "nurse",
+                    department: "Kardiologiya",
+                },
+                {
+                    id: 107,
+                    name: "Gulnora Karimova",
+                    role: "nurse",
+                    department: "Kardiologiya",
                 },
             ]
 
@@ -205,7 +226,10 @@ export default function ATasks() {
             return new Intl.DateTimeFormat(navigator.language, { month: "long", year: "numeric" }).format(currentDate)
         } else {
             const startOfWeek = new Date(currentDate)
-            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay())
+            let dayOfWeek = currentDate.getDay()
+            if (dayOfWeek === 0) dayOfWeek = 7
+            const diff = 1 - dayOfWeek
+            startOfWeek.setDate(currentDate.getDate() + diff)
 
             const endOfWeek = new Date(startOfWeek)
             endOfWeek.setDate(startOfWeek.getDate() + 6)
@@ -214,23 +238,60 @@ export default function ATasks() {
         }
     }
 
+    // Go to today
+    const goToToday = () => {
+        setCurrentDate(new Date())
+    }
+
     // Open task form for creating a new task
-    const handleAddTask = () => {
+    const handleAddTask = (date = null) => {
         setSelectedTask(null)
+        setNewTaskDate(date ? new Date(date) : null)
         setShowTaskForm(true)
     }
 
     // Open task form for editing an existing task
     const handleEditTask = (task) => {
-        setSelectedTask(task)
+        setSelectedTask({ ...task })
         setShowTaskForm(true)
         setShowTaskDetails(false)
     }
 
     // Open task details modal
     const handleViewTask = (task) => {
-        setSelectedTask(task)
+        if (!task) return
+        setSelectedTask({ ...task })
         setShowTaskDetails(true)
+    }
+
+    // Handle day click in calendar
+    const handleDayClick = (day) => {
+        if (!day) return
+
+        // Create a new date object to avoid reference issues
+        const dayDate = new Date(day.date)
+
+        // Get tasks for the selected day
+        const dayTasks = tasks.filter((task) => {
+            if (!task || !task.startDate) return false
+
+            const taskDate = new Date(task.startDate)
+            return (
+                taskDate.getDate() === dayDate.getDate() &&
+                taskDate.getMonth() === dayDate.getMonth() &&
+                taskDate.getFullYear() === dayDate.getFullYear()
+            )
+        })
+
+        setSelectedDay({
+            date: dayDate,
+            isCurrentMonth: day.isCurrentMonth,
+            isToday: day.isToday,
+            tasks: dayTasks,
+        })
+
+        // Open add task form with selected date
+        handleAddTask(dayDate)
     }
 
     // Handle task form submission
@@ -253,6 +314,7 @@ export default function ATasks() {
             setTasks([...tasks, newTask])
         }
         setShowTaskForm(false)
+        setNewTaskDate(null)
     }
 
     // Handle task deletion
@@ -305,10 +367,13 @@ export default function ATasks() {
                         <button className="btn-icon" onClick={handleNext}>
                             <FaChevronRight />
                         </button>
+                        <button className="today-btn btn-sm" onClick={goToToday}>
+                            {t("today")}
+                        </button>
                     </div>
 
                     <div className="task-actions">
-                        <button className="btn-primary" onClick={handleAddTask}>
+                        <button className="btn-primary" onClick={() => handleAddTask()}>
                             <FaPlus /> {t("add_task")}
                         </button>
                     </div>
@@ -366,7 +431,13 @@ export default function ATasks() {
 
                 {view === "calendar" ? (
                     <div className="calendar-container">
-                        <TaskCalendar tasks={filteredTasks} currentDate={currentDate} onTaskClick={handleViewTask} />
+                        <TaskCalendar
+                            tasks={filteredTasks}
+                            currentDate={currentDate}
+                            view="month"
+                            onTaskClick={handleViewTask}
+                            onDayClick={handleDayClick}
+                        />
                     </div>
                 ) : (
                     <div className="tasks-list-container">
@@ -416,8 +487,13 @@ export default function ATasks() {
                         <TaskForm
                             task={selectedTask}
                             staff={staff}
+                            initialDate={newTaskDate}
                             onSubmit={handleTaskSubmit}
-                            onCancel={() => setShowTaskForm(false)}
+                            onCancel={() => {
+                                setShowTaskForm(false)
+                                setNewTaskDate(null)
+                            }}
+                            canAssignToAll={true} // Admin can assign tasks to anyone
                         />
                     </div>
                 </div>

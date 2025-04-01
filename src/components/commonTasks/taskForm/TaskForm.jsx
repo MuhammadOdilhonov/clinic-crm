@@ -3,9 +3,20 @@
 import { useState, useEffect } from "react"
 import { FaTimes } from "react-icons/fa"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import { useAuth } from "../../../contexts/AuthContext"
 
-export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel }) {
+export default function TaskForm({
+    task,
+    staff,
+    initialDate,
+    onSubmit,
+    onCancel,
+    canAssignToAll = false,
+    canAssignToNurses = false,
+    canAssignToSelf = false,
+}) {
     const { t } = useLanguage()
+    const { user } = useAuth()
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -16,6 +27,18 @@ export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel 
         status: "pending",
         priority: "medium",
         assigneeId: "",
+    })
+
+    // Filter staff based on permissions
+    const filteredStaff = staff.filter((person) => {
+        if (canAssignToAll) {
+            return true // Admin can assign to anyone
+        } else if (canAssignToNurses) {
+            return person.role === "nurse" || person.id.toString() === user.id.toString() // Doctor can assign to nurses and self
+        } else if (canAssignToSelf) {
+            return person.id.toString() === user.id.toString() // Nurse can only assign to self
+        }
+        return true
     })
 
     useEffect(() => {
@@ -47,15 +70,23 @@ export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel 
             // Set default end time to 10:00 AM
             const endTime = "10:00"
 
+            // Default assignee based on permissions
+            let defaultAssigneeId = ""
+            if (canAssignToSelf && filteredStaff.length > 0) {
+                // Set current user as assignee for nurses
+                defaultAssigneeId = user.id.toString()
+            }
+
             setFormData({
                 ...formData,
                 startDate,
                 startTime,
                 endDate: startDate,
                 endTime,
+                assigneeId: defaultAssigneeId,
             })
         }
-    }, [task, initialDate])
+    }, [task, initialDate, canAssignToSelf, user.id, filteredStaff])
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -180,8 +211,8 @@ export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel 
                 <label htmlFor="assigneeId">{t("assignee")}*</label>
                 <select id="assigneeId" name="assigneeId" value={formData.assigneeId} onChange={handleChange} required>
                     <option value="">{t("select_assignee")}</option>
-                    {staff &&
-                        staff.map((person) => (
+                    {filteredStaff &&
+                        filteredStaff.map((person) => (
                             <option key={person.id} value={person.id.toString()}>
                                 {person.name} ({t(person.role)})
                             </option>
@@ -200,3 +231,4 @@ export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel 
         </form>
     )
 }
+
