@@ -99,7 +99,7 @@ export default function Sidebar() {
                 <div className="sidebar-header">
                     <div className="logo">
                         <FaUserMd className="logo-icon" />
-                        <h1>Klinika CRM</h1>
+                        <h1>Klinika CRMM</h1>
                     </div>
                     <button className="sidebar-close" onClick={() => setIsMobileOpen(false)}>
                         <FaTimes />

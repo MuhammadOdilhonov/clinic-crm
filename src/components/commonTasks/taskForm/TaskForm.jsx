@@ -5,16 +5,7 @@ import { FaTimes } from "react-icons/fa"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import { useAuth } from "../../../contexts/AuthContext"
 
-export default function TaskForm({
-    task,
-    staff,
-    initialDate,
-    onSubmit,
-    onCancel,
-    canAssignToAll = false,
-    canAssignToNurses = false,
-    canAssignToSelf = false,
-}) {
+export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel }) {
     const { t } = useLanguage()
     const { user } = useAuth()
     const [formData, setFormData] = useState({
@@ -27,18 +18,6 @@ export default function TaskForm({
         status: "pending",
         priority: "medium",
         assigneeId: "",
-    })
-
-    // Filter staff based on permissions
-    const filteredStaff = staff.filter((person) => {
-        if (canAssignToAll) {
-            return true // Admin can assign to anyone
-        } else if (canAssignToNurses) {
-            return person.role === "nurse" || person.id.toString() === user.id.toString() // Doctor can assign to nurses and self
-        } else if (canAssignToSelf) {
-            return person.id.toString() === user.id.toString() // Nurse can only assign to self
-        }
-        return true
     })
 
     useEffect(() => {
@@ -70,23 +49,24 @@ export default function TaskForm({
             // Set default end time to 10:00 AM
             const endTime = "10:00"
 
-            // Default assignee based on permissions
-            let defaultAssigneeId = ""
-            if (canAssignToSelf && filteredStaff.length > 0) {
-                // Set current user as assignee for nurses
-                defaultAssigneeId = user.id.toString()
-            }
-
             setFormData({
                 ...formData,
                 startDate,
                 startTime,
                 endDate: startDate,
                 endTime,
-                assigneeId: defaultAssigneeId,
             })
         }
-    }, [task, initialDate, canAssignToSelf, user.id, filteredStaff])
+
+        // Agar hamshira o'ziga vazifa yaratayotgan bo'lsa va staff ro'yxatida faqat bitta kishi bo'lsa
+        // (ya'ni hamshiraning o'zi), assigneeId ni avtomatik ravishda o'rnatish
+        if (staff.length === 1 && user.role === "nurse" && !task) {
+            setFormData((prev) => ({
+                ...prev,
+                assigneeId: staff[0].id.toString(),
+            }))
+        }
+    }, [task, initialDate, staff, user])
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -129,6 +109,10 @@ export default function TaskForm({
 
         onSubmit(taskData)
     }
+
+    // Hamshira o'ziga vazifa yaratayotganda va staff ro'yxatida faqat bitta kishi bo'lsa (ya'ni hamshiraning o'zi),
+    // assignee tanlash qismini ko'rsatmaslik
+    const showAssigneeSelect = !(staff.length === 1 && user.role === "nurse")
 
     return (
         <form className="task-form" onSubmit={handleSubmit}>
@@ -207,18 +191,22 @@ export default function TaskForm({
                 </div>
             </div>
 
-            <div className="form-group">
-                <label htmlFor="assigneeId">{t("assignee")}*</label>
-                <select id="assigneeId" name="assigneeId" value={formData.assigneeId} onChange={handleChange} required>
-                    <option value="">{t("select_assignee")}</option>
-                    {filteredStaff &&
-                        filteredStaff.map((person) => (
-                            <option key={person.id} value={person.id.toString()}>
-                                {person.name} ({t(person.role)})
-                            </option>
-                        ))}
-                </select>
-            </div>
+            {showAssigneeSelect ? (
+                <div className="form-group">
+                    <label htmlFor="assigneeId">{t("assignee")}*</label>
+                    <select id="assigneeId" name="assigneeId" value={formData.assigneeId} onChange={handleChange} required>
+                        <option value="">{t("select_assignee")}</option>
+                        {staff &&
+                            staff.map((person) => (
+                                <option key={person.id} value={person.id.toString()}>
+                                    {person.name} ({t(person.role)})
+                                </option>
+                            ))}
+                    </select>
+                </div>
+            ) : (
+                <input type="hidden" name="assigneeId" value={formData.assigneeId} />
+            )}
 
             <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={onCancel}>

@@ -18,23 +18,28 @@ import { useLanguage } from "../../../contexts/LanguageContext"
 import TaskCalendar from "../../commonTasks/taskCalendar/TaskCalendar"
 import TaskForm from "../../commonTasks/taskForm/TaskForm"
 import TaskDetails from "../../commonTasks/taskDetails/TaskDetails"
+import DayTasksList from "../../commonTasks/DayTasksList/DayTasksList"
 
 export default function NurseTasks() {
     const { user, selectedBranch } = useAuth()
     const { t } = useLanguage()
     const [loading, setLoading] = useState(true)
-    const [view, setView] = useState("calendar") // calendar, list
+    const [view, setView] = useState("month") // month, week, day, year, list
     const [currentDate, setCurrentDate] = useState(new Date())
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showTaskDetails, setShowTaskDetails] = useState(false)
+    const [showDayTasks, setShowDayTasks] = useState(false)
+    const [selectedDay, setSelectedDay] = useState(null)
     const [selectedTask, setSelectedTask] = useState(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [priorityFilter, setPriorityFilter] = useState("all")
     const [tasks, setTasks] = useState([])
     const [staff, setStaff] = useState([])
+    const [showFilters, setShowFilters] = useState(false)
     const [newTaskDate, setNewTaskDate] = useState(null)
-    const [selectedDay, setSelectedDay] = useState(null)
+    const [selectedMonthTasks, setSelectedMonthTasks] = useState([])
+    const [isMonthView, setIsMonthView] = useState(false)
 
     useEffect(() => {
         setLoading(true)
@@ -145,7 +150,7 @@ export default function NurseTasks() {
                 },
             ]
 
-            // Mock staff data - Hamshira faqat o'zini ko'radi
+            // Mock staff data - Hamshira faqat o'ziga vazifa yaratishi mumkin
             const mockStaff = [
                 {
                     id: 103,
@@ -180,8 +185,14 @@ export default function NurseTasks() {
     // Navigate to previous month/week/day
     const handlePrevious = () => {
         const newDate = new Date(currentDate)
-        if (view === "calendar") {
+        if (view === "month") {
             newDate.setMonth(newDate.getMonth() - 1)
+        } else if (view === "week") {
+            newDate.setDate(newDate.getDate() - 7)
+        } else if (view === "day") {
+            newDate.setDate(newDate.getDate() - 1)
+        } else if (view === "year") {
+            newDate.setFullYear(newDate.getFullYear() - 1)
         } else {
             newDate.setDate(newDate.getDate() - 7)
         }
@@ -191,19 +202,31 @@ export default function NurseTasks() {
     // Navigate to next month/week/day
     const handleNext = () => {
         const newDate = new Date(currentDate)
-        if (view === "calendar") {
+        if (view === "month") {
             newDate.setMonth(newDate.getMonth() + 1)
+        } else if (view === "week") {
+            newDate.setDate(newDate.getDate() + 7)
+        } else if (view === "day") {
+            newDate.setDate(newDate.getDate() + 1)
+        } else if (view === "year") {
+            newDate.setFullYear(newDate.getFullYear() + 1)
         } else {
             newDate.setDate(newDate.getDate() + 7)
         }
         setCurrentDate(newDate)
     }
 
+    // Go to today
+    const goToToday = () => {
+        setCurrentDate(new Date())
+    }
+
     // Format date for display
     const formatDateRange = () => {
-        if (view === "calendar") {
-            return new Intl.DateTimeFormat(navigator.language, { month: "long", year: "numeric" }).format(currentDate)
-        } else {
+        if (view === "month") {
+            const options = { month: "long", year: "numeric" }
+            return new Intl.DateTimeFormat(navigator.language, options).format(currentDate)
+        } else if (view === "week") {
             const startOfWeek = new Date(currentDate)
             let dayOfWeek = currentDate.getDay()
             if (dayOfWeek === 0) dayOfWeek = 7
@@ -214,43 +237,63 @@ export default function NurseTasks() {
             endOfWeek.setDate(startOfWeek.getDate() + 6)
 
             return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`
+        } else if (view === "day") {
+            return currentDate.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })
+        } else if (view === "year") {
+            return currentDate.getFullYear().toString()
+        } else {
+            return t("tasks_list")
         }
     }
 
-    // Go to today
-    const goToToday = () => {
-        setCurrentDate(new Date())
-    }
+    // Handle month click in year view
+    const handleMonthClick = (month) => {
+        if (!month || !month.date) return
 
-    // Open task form for creating a new task
-    const handleAddTask = (date = null) => {
-        setSelectedTask(null)
-        setNewTaskDate(date ? new Date(date) : null)
-        setShowTaskForm(true)
-    }
+        // Create a new date object to avoid reference issues
+        const monthDate = new Date(month.date)
 
-    // Open task form for editing an existing task
-    const handleEditTask = (task) => {
-        setSelectedTask({ ...task })
-        setShowTaskForm(true)
-        setShowTaskDetails(false)
-    }
+        // Set the current date
+        setCurrentDate(monthDate)
 
-    // Open task details modal
-    const handleViewTask = (task) => {
-        if (!task) return
-        setSelectedTask({ ...task })
-        setShowTaskDetails(true)
+        // Oyning vazifalarini olish
+        const monthTasks = tasks.filter((task) => {
+            if (!task || !task.startDate) return false
+
+            const taskDate = new Date(task.startDate)
+            return taskDate.getMonth() === monthDate.getMonth() && taskDate.getFullYear() === monthDate.getFullYear()
+        })
+
+        // Oy ma'lumotlarini saqlash
+        setSelectedDay({
+            date: monthDate,
+            isMonth: true,
+            monthName: monthDate.toLocaleString("default", { month: "long" }),
+            year: monthDate.getFullYear(),
+        })
+
+        setSelectedMonthTasks(monthTasks)
+        setIsMonthView(true)
+        setShowDayTasks(true)
+
+        // Oyni tanlagandan so'ng, ko'rinishni oylik ko'rinishga o'zgartirish
+        setView("month")
     }
 
     // Handle day click in calendar
     const handleDayClick = (day) => {
         if (!day) return
 
+        // Agar yillik ko'rinishda oy bosilgan bo'lsa
+        if (view === "year") {
+            handleMonthClick(day)
+            return
+        }
+
         // Create a new date object to avoid reference issues
         const dayDate = new Date(day.date)
 
-        // Get tasks for the selected day
+        // Oddiy kun uchun vazifalarni olish
         const dayTasks = tasks.filter((task) => {
             if (!task || !task.startDate) return false
 
@@ -269,13 +312,38 @@ export default function NurseTasks() {
             tasks: dayTasks,
         })
 
-        // Open add task form with selected date
-        handleAddTask(dayDate)
+        setSelectedMonthTasks([])
+        setIsMonthView(false)
+        setShowDayTasks(true)
+    }
+
+    // Open task form for creating a new task
+    const handleAddTask = (date = null) => {
+        setSelectedTask(null)
+        setNewTaskDate(date ? new Date(date) : null)
+        setShowTaskForm(true)
+    }
+
+    // Open task form for editing an existing task
+    const handleEditTask = (task) => {
+        setSelectedTask({ ...task })
+        setNewTaskDate(null)
+        setShowTaskForm(true)
+        setShowTaskDetails(false)
+    }
+
+    // Open task details modal
+    const handleViewTask = (task) => {
+        if (!task) return
+
+        setSelectedTask({ ...task })
+        setShowTaskDetails(true)
+        setShowDayTasks(false)
     }
 
     // Handle task form submission
     const handleTaskSubmit = (taskData) => {
-        if (selectedTask) {
+        if (selectedTask && selectedTask.id) {
             // Update existing task
             setTasks(tasks.map((task) => (task.id === selectedTask.id ? { ...task, ...taskData } : task)))
         } else {
@@ -308,6 +376,11 @@ export default function NurseTasks() {
         setShowTaskDetails(false)
     }
 
+    // Toggle filters visibility
+    const toggleFilters = () => {
+        setShowFilters(!showFilters)
+    }
+
     if (loading) {
         return (
             <div className="loading-container">
@@ -323,85 +396,97 @@ export default function NurseTasks() {
 
             <div className="tasks-container">
                 <div className="tasks-header">
-                    <div className="view-controls">
-                        <button
-                            className={`btn ${view === "calendar" ? "btn-primary" : "btn-outline"}`}
-                            onClick={() => setView("calendar")}
-                        >
-                            <FaCalendarAlt /> {t("calendar_view")}
-                        </button>
-                        <button
-                            className={`btn ${view === "list" ? "btn-primary" : "btn-outline"}`}
-                            onClick={() => setView("list")}
-                        >
-                            <FaListUl /> {t("list_view")}
-                        </button>
-                    </div>
-
-                    <div className="date-navigation">
-                        <button className="btn-icon" onClick={handlePrevious}>
-                            <FaChevronLeft />
-                        </button>
-                        <div className="current-date">{formatDateRange()}</div>
-                        <button className="btn-icon" onClick={handleNext}>
-                            <FaChevronRight />
-                        </button>
-                        <button className="today-btn btn-sm" onClick={goToToday}>
+                    <div className="header-left">
+                        <button className="today-btn" onClick={goToToday}>
                             {t("today")}
                         </button>
+                        <div className="navigation-buttons">
+                            <button className="nav-btn" onClick={handlePrevious}>
+                                <FaChevronLeft />
+                            </button>
+                            <button className="nav-btn" onClick={handleNext}>
+                                <FaChevronRight />
+                            </button>
+                        </div>
+                        <h2 className="current-date-title">{formatDateRange()}</h2>
                     </div>
 
-                    <div className="task-actions">
-                        <button className="btn-primary" onClick={() => handleAddTask()}>
-                            <FaPlus /> {t("add_task")}
+                    <div className="header-right">
+                        <div className="search-box">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder={t("search_tasks")}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <button className="filter-btn" onClick={toggleFilters}>
+                            <FaFilter />
                         </button>
+
+                        <div className="view-buttons">
+                            <button className={`view-btn ${view === "day" ? "active" : ""}`} onClick={() => setView("day")}>
+                                {t("day")}
+                            </button>
+                            <button className={`view-btn ${view === "week" ? "active" : ""}`} onClick={() => setView("week")}>
+                                {t("week")}
+                            </button>
+                            <button className={`view-btn ${view === "month" ? "active" : ""}`} onClick={() => setView("month")}>
+                                {t("month")}
+                            </button>
+                            <button className={`view-btn ${view === "year" ? "active" : ""}`} onClick={() => setView("year")}>
+                                {t("year")}
+                            </button>
+                        </div>
+
+                        <button className={`list-view-btn ${view === "list" ? "active" : ""}`} onClick={() => setView("list")}>
+                            <FaListUl />
+                            {t("list_view")}
+                        </button>
+
+                        <div className="header-actions">
+                            <button className="create-btn" onClick={() => handleAddTask()}>
+                                <FaPlus />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="tasks-filters">
-                    <div className="search-box">
-                        <FaSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder={t("search_tasks")}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="filter-group">
-                        <div className="filter-label">
-                            <FaFilter /> {t("status")}:
+                {showFilters && (
+                    <div className="filters-panel">
+                        <div className="filter-group">
+                            <label>{t("status")}:</label>
+                            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                                <option value="all">{t("all")}</option>
+                                <option value="pending">{t("pending")}</option>
+                                <option value="in-progress">{t("in_progress")}</option>
+                                <option value="completed">{t("completed")}</option>
+                            </select>
                         </div>
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                            <option value="all">{t("all")}</option>
-                            <option value="pending">{t("pending")}</option>
-                            <option value="in-progress">{t("in_progress")}</option>
-                            <option value="completed">{t("completed")}</option>
-                        </select>
-                    </div>
 
-                    <div className="filter-group">
-                        <div className="filter-label">
-                            <FaFlag /> {t("priority")}:
+                        <div className="filter-group">
+                            <label>{t("priority")}:</label>
+                            <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+                                <option value="all">{t("all")}</option>
+                                <option value="high">{t("high")}</option>
+                                <option value="medium">{t("medium")}</option>
+                                <option value="low">{t("low")}</option>
+                            </select>
                         </div>
-                        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-                            <option value="all">{t("all")}</option>
-                            <option value="high">{t("high")}</option>
-                            <option value="medium">{t("medium")}</option>
-                            <option value="low">{t("low")}</option>
-                        </select>
                     </div>
-                </div>
+                )}
 
-                {view === "calendar" ? (
+                {view !== "list" ? (
                     <div className="calendar-container">
                         <TaskCalendar
                             tasks={filteredTasks}
                             currentDate={currentDate}
-                            view="month"
+                            view={view}
                             onTaskClick={handleViewTask}
                             onDayClick={handleDayClick}
+                            onMonthClick={handleMonthClick}
                         />
                     </div>
                 ) : (
@@ -458,7 +543,6 @@ export default function NurseTasks() {
                                 setShowTaskForm(false)
                                 setNewTaskDate(null)
                             }}
-                            canAssignToSelf={true} // Hamshira faqat o'ziga vazifa beradi
                         />
                     </div>
                 </div>
@@ -473,6 +557,41 @@ export default function NurseTasks() {
                             onEdit={() => handleEditTask(selectedTask)}
                             onDelete={() => handleDeleteTask(selectedTask.id)}
                             onStatusChange={(newStatus) => handleStatusChange(selectedTask.id, newStatus)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {showDayTasks && selectedDay && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <DayTasksList
+                            day={selectedDay}
+                            tasks={
+                                isMonthView
+                                    ? selectedMonthTasks
+                                    : tasks.filter((task) => {
+                                        if (!task || !task.startDate) return false
+
+                                        const taskDate = new Date(task.startDate)
+                                        return (
+                                            taskDate.getDate() === selectedDay.date.getDate() &&
+                                            taskDate.getMonth() === selectedDay.date.getMonth() &&
+                                            taskDate.getFullYear() === selectedDay.date.getFullYear()
+                                        )
+                                    })
+                            }
+                            isMonthView={isMonthView}
+                            onClose={() => {
+                                setShowDayTasks(false)
+                                setIsMonthView(false)
+                            }}
+                            onTaskClick={handleViewTask}
+                            onAddTask={() => {
+                                setShowDayTasks(false)
+                                setIsMonthView(false)
+                                handleAddTask(selectedDay.date)
+                            }}
                         />
                     </div>
                 </div>
