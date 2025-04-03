@@ -31,7 +31,7 @@ import {
     FaTasks,
 } from "react-icons/fa"
 
-export default function Sidebar() {
+export default function Sidebar(isOpen, toggleSidebar) {
     const { user, logout, hasRole } = useAuth()
     const { t, language, languages, changeLanguage } = useLanguage()
     const navigate = useNavigate()
@@ -39,6 +39,8 @@ export default function Sidebar() {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
     const [expandedMenus, setExpandedMenus] = useState({})
     const [showLanguageSelector, setShowLanguageSelector] = useState(false)
+    const [showPartnershipInfo, setShowPartnershipInfo] = useState(false)
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
 
     // Close sidebar on route change in mobile view
     useEffect(() => {
@@ -89,6 +91,14 @@ export default function Sidebar() {
         return location.pathname.startsWith(path)
     }
 
+    // Hamkorlik ma'lumotlari
+    const partnershipInfo = {
+        ourCompany: "Clinic Crm",
+        partnerCompany: "Dental Academy",
+        description: "Rasmiy hamkorlik shartnomasi asosida biz bilan ish yuritmoqda",
+        year: "2023-2026",
+    }
+
     return (
         <>
             <button className="mobile-toggle" onClick={toggleMobileSidebar} aria-label="Toggle menu">
@@ -97,13 +107,42 @@ export default function Sidebar() {
 
             <aside className={`sidebar ${isMobileOpen ? "mobile-open" : ""}`}>
                 <div className="sidebar-header">
-                    <div className="logo">
-                        <FaUserMd className="logo-icon" />
-                        <h1>Klinika CRMM</h1>
+                    <div
+                        className="logo"
+                        onMouseEnter={() => setShowPartnershipInfo(true)}
+                        onMouseLeave={() => setShowPartnershipInfo(false)}
+                    >
+                        <div className="partnership-logos">
+                            <div className="company-logo our-company">
+                                <img className="logo-icon" src="/images/clinic-logo.jpg" alt="clinic-logo" />
+                            </div>
+                            <div className="partnership-animation">
+                                {/* Bu joyga GIF qo'yiladi */}
+                                <div className="handshake-placeholder">
+                                    <img style={{marginLeft:"10px"}} src="/images/contract-icon.gif" alt="clinic-logo" />
+                                </div>
+                            </div>
+                            <div className="company-logo partner-company">
+                                <img className="logo-icon" src="/images/dental-logo.jpg" alt="your-logo" />
+                            </div>
+                        </div>
+
+                        {/* Hamkorlik haqida ma'lumot (hover bo'lganda ko'rinadi) */}
+                        {showPartnershipInfo && (
+                            <div className="partnership-info">
+                                <p className="partnership-title">
+                                    {partnershipInfo.ourCompany} va {partnershipInfo.partnerCompany}
+                                </p>
+                                <p className="partnership-description">{partnershipInfo.description}</p>
+                                <p className="partnership-year">{partnershipInfo.year}</p>
+                            </div>
+                        )}
                     </div>
-                    <button className="sidebar-close" onClick={() => setIsMobileOpen(false)}>
-                        <FaTimes />
-                    </button>
+                    {isMobile && (
+                        <button className="sidebar-close" onClick={toggleSidebar}>
+                            <FaTimes />
+                        </button>
+                    )}
                 </div>
 
                 <div className="user-info">
@@ -243,6 +282,12 @@ export default function Sidebar() {
                                     </li>
 
                                     <li>
+                                        <NavLink to="/dashboard/admin/schedule" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaCalendarAlt /> <span>{t("schedule")}</span>
+                                        </NavLink>
+                                    </li>
+
+                                    <li>
                                         <NavLink to="/dashboard/admin/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
                                             <FaTasks /> <span>{t("tasks")}</span>
                                         </NavLink>
@@ -251,12 +296,6 @@ export default function Sidebar() {
                                     <li>
                                         <NavLink to="/dashboard/admin/patients" className={({ isActive }) => (isActive ? "active" : "")}>
                                             <FaUsers /> <span>{t("patients")}</span>
-                                        </NavLink>
-                                    </li>
-
-                                    <li>
-                                        <NavLink to="/dashboard/admin/schedule" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaCalendarAlt /> <span>{t("schedule")}</span>
                                         </NavLink>
                                     </li>
 
@@ -378,7 +417,7 @@ export default function Sidebar() {
                             </li>
 
                             <li>
-                                <NavLink to="/dashboard/settings" className={({ isActive }) => (isActive ? "active" : "")}>
+                                <NavLink to="/dashboard/director/settings" className={({ isActive }) => (isActive ? "active" : "")}>
                                     <FaCog /> <span>{t("settings")}</span>
                                 </NavLink>
                             </li>

@@ -1,13 +1,5 @@
-import React , { useState, useEffect } from "react"
-import {
-    FaUsers,
-    FaCalendarAlt,
-    FaClipboardList,
-    FaUserClock,
-    FaBed,
-    FaMoneyBillWave,
-    FaChartLine,
-} from "react-icons/fa"
+import { useState, useEffect } from "react"
+import { FaUsers, FaCalendarAlt, FaClipboardList, FaUserClock, FaBed, FaChartLine } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 
@@ -21,7 +13,6 @@ export default function ADashboard() {
         completedAppointments: 30,
         occupiedRooms: 8,
         availableRooms: 4,
-        totalIncome: 15600000,
     })
     const [loading, setLoading] = useState(true)
 
@@ -39,7 +30,6 @@ export default function ADashboard() {
                     completedAppointments: 13,
                     occupiedRooms: 4,
                     availableRooms: 2,
-                    totalIncome: 7800000,
                 })
             } else if (selectedBranch === "branch2") {
                 setStats({
@@ -49,7 +39,6 @@ export default function ADashboard() {
                     completedAppointments: 10,
                     occupiedRooms: 3,
                     availableRooms: 1,
-                    totalIncome: 5200000,
                 })
             } else if (selectedBranch === "branch3") {
                 setStats({
@@ -59,7 +48,6 @@ export default function ADashboard() {
                     completedAppointments: 7,
                     occupiedRooms: 1,
                     availableRooms: 1,
-                    totalIncome: 2600000,
                 })
             } else {
                 // All branches
@@ -70,7 +58,6 @@ export default function ADashboard() {
                     completedAppointments: 30,
                     occupiedRooms: 8,
                     availableRooms: 4,
-                    totalIncome: 15600000,
                 })
             }
             setLoading(false)
@@ -149,7 +136,7 @@ export default function ADashboard() {
         },
     ]
 
-    // Inpatient rooms status
+    // Inpatient rooms status with prices
     const roomsStatus = [
         {
             id: 1,
@@ -158,6 +145,7 @@ export default function ADashboard() {
             status: "occupied",
             patient: "Alisher Karimov",
             admissionDate: "2023-05-15",
+            pricePerDay: 500000,
         },
         {
             id: 2,
@@ -166,6 +154,7 @@ export default function ADashboard() {
             status: "occupied",
             patient: "Nilufar Rahimova",
             admissionDate: "2023-05-14",
+            pricePerDay: 800000,
         },
         {
             id: 3,
@@ -174,6 +163,7 @@ export default function ADashboard() {
             status: "available",
             patient: null,
             admissionDate: null,
+            pricePerDay: 500000,
         },
         {
             id: 4,
@@ -182,6 +172,35 @@ export default function ADashboard() {
             status: "occupied",
             patient: "Sardor Aliyev",
             admissionDate: "2023-05-13",
+            pricePerDay: 1200000,
+        },
+    ]
+
+    // Appointment prices
+    const appointmentPrices = [
+        {
+            id: 1,
+            department: "Kardiologiya",
+            initialPrice: 200000,
+            followUpPrice: 150000,
+        },
+        {
+            id: 2,
+            department: "Nevrologiya",
+            initialPrice: 250000,
+            followUpPrice: 180000,
+        },
+        {
+            id: 3,
+            department: "Pediatriya",
+            initialPrice: 180000,
+            followUpPrice: 120000,
+        },
+        {
+            id: 4,
+            department: "Ortopediya",
+            initialPrice: 220000,
+            followUpPrice: 160000,
         },
     ]
 
@@ -235,12 +254,6 @@ export default function ADashboard() {
                     </div>
                     <div className="stat-label">{t("occupied_rooms")}</div>
                 </div>
-
-                <div className="stat-card">
-                    <FaMoneyBillWave className="stat-icon admin" />
-                    <div className="stat-value">{formatCurrency(stats.totalIncome).replace("UZS", "so'm")}</div>
-                    <div className="stat-label">{t("total_income")}</div>
-                </div>
             </div>
 
             <div className="dashboard-row">
@@ -291,7 +304,7 @@ export default function ADashboard() {
                                 <th>{t("type")}</th>
                                 <th>{t("status")}</th>
                                 <th>{t("patient")}</th>
-                                <th>{t("admission_date")}</th>
+                                <th>{t("price_per_day")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -303,7 +316,7 @@ export default function ADashboard() {
                                         <div className={`status-badge ${room.status}`}>{t(room.status)}</div>
                                     </td>
                                     <td>{room.patient || "-"}</td>
-                                    <td>{room.admissionDate || "-"}</td>
+                                    <td>{formatCurrency(room.pricePerDay).replace("UZS", "so'm")}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -327,9 +340,6 @@ export default function ADashboard() {
                             <FaBed /> {t("assign_room")}
                         </button>
                         <button className="btn btn-primary btn-icon">
-                            <FaMoneyBillWave /> {t("record_payment")}
-                        </button>
-                        <button className="btn btn-primary btn-icon">
                             <FaChartLine /> {t("generate_report")}
                         </button>
                     </div>
@@ -337,27 +347,23 @@ export default function ADashboard() {
 
                 <div className="dashboard-card">
                     <div className="card-header">
-                        <h2>{t("recent_patients")}</h2>
+                        <h2>{t("appointment_prices")}</h2>
                         <button className="btn btn-sm btn-outline">{t("view_all")}</button>
                     </div>
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>{t("name")}</th>
-                                <th>{t("age")}</th>
-                                <th>{t("phone")}</th>
-                                <th>{t("last_visit")}</th>
-                                <th>{t("diagnosis")}</th>
+                                <th>{t("department")}</th>
+                                <th>{t("initial_consultation")}</th>
+                                <th>{t("follow_up_visit")}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {recentPatients.map((patient) => (
-                                <tr key={patient.id}>
-                                    <td>{patient.name}</td>
-                                    <td>{patient.age}</td>
-                                    <td>{patient.phone}</td>
-                                    <td>{patient.lastVisit}</td>
-                                    <td>{patient.diagnosis}</td>
+                            {appointmentPrices.map((price) => (
+                                <tr key={price.id}>
+                                    <td>{price.department}</td>
+                                    <td>{formatCurrency(price.initialPrice).replace("UZS", "so'm")}</td>
+                                    <td>{formatCurrency(price.followUpPrice).replace("UZS", "so'm")}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -366,4 +372,5 @@ export default function ADashboard() {
             </div>
         </div>
     )
-};
+}
+

@@ -17,9 +17,11 @@ import {
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import { useNavigate } from "react-router-dom"
 
 export default function Patients() {
     const { selectedBranch } = useAuth()
+    const navigate = useNavigate()
     const { t } = useLanguage()
 
     // Mock data for patients
@@ -344,6 +346,10 @@ export default function Patients() {
         setShowEditSidebar(true)
     }
 
+    const handleViewPatientDetails = (patientId) => {
+        navigate(`/dashboard/director/patients/${patientId}`)
+    }
+
     // Close edit sidebar
     const closeEditSidebar = () => {
         setShowEditSidebar(false)
@@ -561,7 +567,7 @@ export default function Patients() {
                             <tbody>
                                 {patients.length > 0 ? (
                                     patients.map((patient) => (
-                                        <tr key={patient.id}>
+                                        <tr key={patient.id} onClick={() => handleViewPatientDetails(patient.id)} >
                                             <td>{patient.name}</td>
                                             <td>{patient.age}</td>
                                             <td>{patient.gender === "male" ? t("male") : t("female")}</td>

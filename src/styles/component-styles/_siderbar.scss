@@ -62,41 +62,165 @@ $user-color: #616161;
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid $section-border;
+  border-bottom: 1px solid #e9ecef;
 }
 
-// Logo
 .logo {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Hamkorlik logolari uchun stillar */
+.partnership-logos {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  height: 40px;
+  width: 160px;
+}
+
+.company-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+
+  &.our-company {
+    background-color: #0866ff; // Facebook blue
+    color: white;
+
+    .logo-icon {
+      font-size: 1.8rem;
+    }
+  }
+
+  &.partner-company {
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); // Instagram gradient
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+.partnership-animation {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .handshake-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.partnership-info {
+  width: 250px;
+  position: absolute;
+  top: 100%;
+  left: -20px;
+  right: 0;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 40;
+  animation: fadeIn 0.3s ease;
+  margin-top: 5px;
+
+  p {
+    margin: 0;
+
+    &.partnership-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+
+    &.partnership-description {
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-bottom: 0.25rem;
+    }
+
+    &.partnership-year {
+      font-size: 0.75rem;
+      color: #adb5bd;
+      text-align: right;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .logo-icon {
   font-size: 1.5rem;
-  color: $primary-color;
+  color: #4a6fa1;
 }
 
 .logo h1 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: $text-primary;
+  color: #333;
 }
 
-// Close button (mobile only)
 .sidebar-close {
   display: none;
   background: none;
   border: none;
-  color: $text-secondary;
+  color: #6c757d;
   cursor: pointer;
   font-size: 1.2rem;
   padding: 0.25rem;
   transition: color 0.2s ease;
-  
+
   &:hover {
-    color: $text-primary;
+    color: #333;
   }
 }
 

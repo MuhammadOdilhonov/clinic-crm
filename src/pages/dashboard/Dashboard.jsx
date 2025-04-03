@@ -32,6 +32,10 @@ import StaffNurses from "../../components/derector/staffNurses/StaffNurses"
 import ATasks from "../../components/admin/ATasks/ATasks"
 import DocTasks from "../../components/doctor/DocTasks/DocTasks"
 import NurseTasks from "../../components/nurse/nurseTasks/NurseTasks"
+import PatientDetails from "../../components/patientDetails/PatientDetails"
+import ASchedule from "../../components/admin/ASchedule/ASchedule"
+import ACabinets from "../../components/admin/ACabinet/ACabinets"
+import DocSchedule from "../../components/doctor/DocSchedule/DocSchedule"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch } = useAuth()
@@ -285,6 +289,7 @@ export default function Dashboard() {
                         <Route path="/director/staff/nurses" element={<StaffNurses />} />
                         <Route path="/director/cabinets" element={<DirectorCabinets />} />
                         <Route path="/director/patients" element={<DirectorPatients />} />
+                        <Route path="/director/patients/:id" element={<PatientDetails />} />
                         <Route path="/director/appointments" element={<DirectorAppointments />} />
                         <Route path="/director/reports" element={<DirectorReports />} />
                         <Route path="/director/settings" element={<DirectorSettings />} />
@@ -294,14 +299,15 @@ export default function Dashboard() {
                         {/* Admin Routes */}
                         <Route path="/admin" element={<AdminDashboard />} />
                         <Route path="/admin/patients" element={<APatients />} />
-                        {/* <Route path="/admin/schedule" element={<AdminSchedule />} /> */}
-                        {/* <Route path="/admin/cabinets" element={<AdminCabinets />} /> */}
+                        <Route path="/admin/patients/:id" element={<PatientDetails />} />
+                        <Route path="/admin/schedule" element={<ASchedule />} />
+                        <Route path="/admin/cabinets" element={<ACabinets />} />
                         <Route path="/admin/rooms" element={<ARooms />} />
                         <Route path="/admin/tasks" element={<ATasks />} />
 
                         {/* Doctor Routes */}
                         <Route path="/doctor" element={<DoctorDashboard />} />
-                        {/* <Route path="/doctor/schedule" element={<DoctorSchedule />} /> */}
+                        <Route path="/doctor/schedule" element={<DocSchedule />} />
                         {/* <Route path="/doctor/patients" element={<DoctorPatients />} />
                         <Route path="/doctor/availability" element={<DoctorAvailability />} /> */}
                         <Route path="/doctor/tasks" element={<DocTasks />} />

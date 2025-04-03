@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import { useNavigate } from "react-router-dom" 
 import {
     FaSearch,
     FaFilter,
@@ -18,6 +19,7 @@ import {
 export default function APatients() {
     const { selectedBranch } = useAuth()
     const { t } = useLanguage()
+    const navigate = useNavigate()
     const [patients, setPatients] = useState([])
     const [filteredPatients, setFilteredPatients] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
@@ -268,6 +270,9 @@ export default function APatients() {
         })
     }
 
+    const handleViewPatientDetails = (patientId) => {
+        navigate(`/dashboard/admin/patients/${patientId}`)
+    }
     // Handle add patient form submission
     const handleAddPatient = (e) => {
         e.preventDefault()
@@ -409,7 +414,7 @@ export default function APatients() {
                     <tbody>
                         {filteredPatients.length > 0 ? (
                             filteredPatients.map((patient) => (
-                                <tr key={patient.id}>
+                                <tr key={patient.id} onClick={() => handleViewPatientDetails(patient.id)}>
                                     <td>{patient.name}</td>
                                     <td>{patient.age}</td>
                                     <td>{t(patient.gender)}</td>
