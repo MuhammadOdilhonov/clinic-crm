@@ -1,642 +1,970 @@
-
 import { useState, useEffect } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
-import { Calendar, momentLocalizer } from "react-big-calendar"
-import moment from "moment"
-import "react-big-calendar/lib/css/react-big-calendar.css"
-import { Modal, Button, Badge } from "react-bootstrap"
-import { FaCalendarAlt, FaList, FaCheckCircle, FaTimesCircle } from "react-icons/fa"
+import {
+    FaCalendarAlt,
+    FaDoorOpen,
+    FaClock,
+    FaClipboardList,
+    FaSearch,
+    FaFilter,
+    FaCalendarDay,
+    FaCalendarWeek,
+    FaTable,
+    FaChevronLeft,
+    FaChevronRight,
+    FaRegCalendarAlt,
+    FaStethoscope,
+    FaCheckCircle,
+    FaTimesCircle,
+    FaSpinner,
+    FaExclamationTriangle,
+    FaRegClock,
+    FaRegHospital,
+    FaRegUser,
+    FaRegClipboard,
+    FaRegCalendarCheck,
+} from "react-icons/fa"
 
-// Local ma'lumotlar (API o'rniga)
-const mockAppointments = [
-    {
-        id: 1,
-        patientId: 101,
-        patientName: "Aziz Karimov",
-        doctorId: 201,
-        doctorName: "Dr. Alisher Zokirov",
-        date: new Date(2023, 5, 15, 10, 0),
-        endTime: new Date(2023, 5, 15, 11, 0),
-        status: "confirmed",
-        notes: "Regular check-up",
-        roomId: 3,
-        roomName: "Room 303",
-        branchId: 1,
-        diagnosis: "Healthy, regular check-up",
-        symptoms: "None",
-        treatment: "No treatment required",
-        phone: "+998901234567",
-    },
-    {
-        id: 2,
-        patientId: 102,
-        patientName: "Malika Umarova",
-        doctorId: 201,
-        doctorName: "Dr. Alisher Zokirov",
-        date: new Date(2023, 5, 15, 14, 0),
-        endTime: new Date(2023, 5, 15, 15, 0),
-        status: "pending",
-        notes: "First consultation",
-        roomId: 3,
-        roomName: "Room 303",
-        branchId: 1,
-        diagnosis: "",
-        symptoms: "Headache, fever",
-        treatment: "",
-        phone: "+998901234568",
-    },
-    {
-        id: 3,
-        patientId: 103,
-        patientName: "Jasur Toshmatov",
-        doctorId: 201,
-        doctorName: "Dr. Alisher Zokirov",
-        date: new Date(2023, 5, 16, 9, 0),
-        endTime: new Date(2023, 5, 16, 10, 0),
-        status: "completed",
-        notes: "Follow-up after treatment",
-        roomId: 4,
-        roomName: "Room 304",
-        branchId: 1,
-        diagnosis: "Recovering from flu",
-        symptoms: "Mild cough",
-        treatment: "Continue medication for 3 more days",
-        phone: "+998901234569",
-    },
-    {
-        id: 4,
-        patientId: 104,
-        patientName: "Nilufar Rahimova",
-        doctorId: 201,
-        doctorName: "Dr. Alisher Zokirov",
-        date: new Date(2023, 5, 17, 11, 0),
-        endTime: new Date(2023, 5, 17, 12, 0),
-        status: "cancelled",
-        notes: "Annual check-up",
-        roomId: 3,
-        roomName: "Room 303",
-        branchId: 1,
-        diagnosis: "",
-        symptoms: "",
-        treatment: "",
-        phone: "+998901234570",
-    },
-    {
-        id: 5,
-        patientId: 105,
-        patientName: "Bobur Aliyev",
-        doctorId: 201,
-        doctorName: "Dr. Alisher Zokirov",
-        date: new Date(2023, 5, 18, 15, 0),
-        endTime: new Date(2023, 5, 18, 16, 0),
-        status: "confirmed",
-        notes: "Consultation for chronic condition",
-        roomId: 5,
-        roomName: "Room 305",
-        branchId: 1,
-        diagnosis: "Hypertension",
-        symptoms: "Occasional dizziness",
-        treatment: "Prescribed medication and lifestyle changes",
-        phone: "+998901234571",
-    },
-]
-
-// Joriy sana uchun qabullarni qo'shish
-const today = new Date()
-const todayStr = today.toISOString().split("T")[0]
-const tomorrow = new Date(today)
-tomorrow.setDate(tomorrow.getDate() + 1)
-const tomorrowStr = tomorrow.toISOString().split("T")[0]
-
-// Bugungi va ertangi qabullar
-for (let i = 9; i < 18; i += 2) {
-    if (i !== 13) {
-        // Tushlik vaqti
-        mockAppointments.push({
-            id: 100 + mockAppointments.length,
-            patientId: 120 + i,
-            patientName: `Patient ${i}`,
-            doctorId: 201,
-            doctorName: "Dr. Alisher Zokirov",
-            date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), i, 0),
-            endTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), i + 1, 0),
-            status: i < 12 ? "completed" : i < 15 ? "confirmed" : "pending",
-            notes: `Appointment at ${i}:00`,
-            roomId: 3,
-            roomName: "Room 303",
-            branchId: 1,
-            diagnosis: i < 12 ? "Diagnosis for patient" : "",
-            symptoms: "Various symptoms",
-            treatment: i < 12 ? "Prescribed treatment" : "",
-            phone: `+99890${1000000 + i}`,
-        })
-
-        mockAppointments.push({
-            id: 200 + mockAppointments.length,
-            patientId: 150 + i,
-            patientName: `Patient T${i}`,
-            doctorId: 201,
-            doctorName: "Dr. Alisher Zokirov",
-            date: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), i, 0),
-            endTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), i + 1, 0),
-            status: "pending",
-            notes: `Tomorrow's appointment at ${i}:00`,
-            roomId: 4,
-            roomName: "Room 304",
-            branchId: 1,
-            diagnosis: "",
-            symptoms: "Various symptoms",
-            treatment: "",
-            phone: `+99890${2000000 + i}`,
-        })
-    }
-}
-
-// Local funksiyalar (API o'rniga)
-const getDoctorSchedule = async (doctorId, startDate, endDate) => {
-    // Filter appointments by doctor and date range
-    return mockAppointments.filter((appointment) => {
-        const appointmentDate = new Date(appointment.date)
-        return (
-            appointment.doctorId === doctorId &&
-            appointmentDate >= new Date(startDate) &&
-            appointmentDate <= new Date(endDate)
-        )
-    })
-}
-
-const getAppointmentById = async (appointmentId) => {
-    return mockAppointments.find((appointment) => appointment.id === appointmentId)
-}
-
-const changeAppointmentStatus = async (appointmentId, newStatus) => {
-    const appointmentIndex = mockAppointments.findIndex((appointment) => appointment.id === appointmentId)
-    if (appointmentIndex !== -1) {
-        mockAppointments[appointmentIndex].status = newStatus
-        return { success: true, appointment: mockAppointments[appointmentIndex] }
-    }
-    return { success: false, error: "Appointment not found" }
-}
-
-const localizer = momentLocalizer(moment)
-
-const DocSchedule = () => {
+export default function DocSchedule() {
     const { user } = useAuth()
     const { t } = useLanguage()
-    const [appointments, setAppointments] = useState([])
-    const [selectedAppointment, setSelectedAppointment] = useState(null)
-    const [showModal, setShowModal] = useState(false)
-    const [view, setView] = useState("month")
-    const [date, setDate] = useState(new Date())
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [activeTab, setActiveTab] = useState("calendar")
-    const [statusFilter, setStatusFilter] = useState("all")
-    const [dateFilter, setDateFilter] = useState("all")
 
+    // Data states
+    const [branches, setBranches] = useState([])
+    const [patients, setPatients] = useState([])
+    const [doctors, setDoctors] = useState([])
+    const [rooms, setRooms] = useState([])
+    const [appointments, setAppointments] = useState([])
+    const [bookedTimeSlots, setBookedTimeSlots] = useState({})
+
+    // Selection states
+    const [selectedBranchId, setSelectedBranchId] = useState("")
+    const [selectedPatientId, setSelectedPatientId] = useState("")
+    const [selectedRoomId, setSelectedRoomId] = useState("")
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
+    const [diagnosis, setDiagnosis] = useState("")
+
+    // UI states
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [currentAppointment, setCurrentAppointment] = useState(null)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterStatus, setFilterStatus] = useState("all")
+    const [viewMode, setViewMode] = useState("table") // table, day, week
+    const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStartDate(new Date()))
+    const [isUpdating, setIsUpdating] = useState(false)
+
+    // Fetch data
     useEffect(() => {
-        fetchAppointments()
-    }, [date, view])
+        const fetchData = async () => {
+            try {
+                setLoading(true)
 
-    const fetchAppointments = async () => {
-        try {
-            setLoading(true)
+                // In a real app, these would be API calls
+                // Simulating API calls with setTimeout
+                setTimeout(() => {
+                    // Mock branches data
+                    const mockBranches = [
+                        { id: 1, name: "Main Branch", address: "Tashkent, Chilanzar district" },
+                        { id: 2, name: "Secondary Branch", address: "Tashkent, Yunusabad district" },
+                        { id: 3, name: "Tertiary Branch", address: "Tashkent, Mirzo Ulugbek district" },
+                    ]
 
-            // Calculate date range based on current view
-            let startDate, endDate
+                    // Mock patients data
+                    const mockPatients = [
+                        { id: 101, name: "Alisher Karimov", age: 45, gender: "male", phone: "+998901234567" },
+                        { id: 102, name: "Dilnoza Saidova", age: 32, gender: "female", phone: "+998901234568" },
+                        { id: 103, name: "Rustam Khasanov", age: 58, gender: "male", phone: "+998901234569" },
+                        { id: 104, name: "Nodira Azimova", age: 27, gender: "female", phone: "+998901234570" },
+                        { id: 105, name: "Jahongir Tursunov", age: 42, gender: "male", phone: "+998901234571" },
+                    ]
 
-            if (view === "day") {
-                startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-                endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59)
-            } else if (view === "week") {
-                const start = new Date(date)
-                start.setDate(date.getDate() - date.getDay())
-                startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                    // Mock doctors data
+                    const mockDoctors = [
+                        { id: 1, name: "Dr. Sardor Alimov", specialization: "General Practitioner", branchId: 1 },
+                        { id: 2, name: "Dr. Kamil Rakhimov", specialization: "Cardiologist", branchId: 1 },
+                        { id: 3, name: "Dr. Aziz Yusupov", specialization: "Pulmonologist", branchId: 2 },
+                        { id: 4, name: "Dr. Malika Umarova", specialization: "Surgeon", branchId: 3 },
+                    ]
 
-                const end = new Date(start)
-                end.setDate(start.getDate() + 6)
-                endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59)
-            } else {
-                startDate = new Date(date.getFullYear(), date.getMonth(), 1)
-                endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59)
+                    // Mock rooms data
+                    const mockRooms = [
+                        { id: 1, roomNumber: "101", roomType: "examination", branchId: 1 },
+                        { id: 2, roomNumber: "102", roomType: "procedure", branchId: 1 },
+                        { id: 3, roomNumber: "201", roomType: "examination", branchId: 2 },
+                        { id: 4, roomNumber: "202", roomType: "procedure", branchId: 2 },
+                        { id: 5, roomNumber: "301", roomType: "examination", branchId: 3 },
+                        { id: 6, roomNumber: "302", roomType: "procedure", branchId: 3 },
+                    ]
+
+                    // Mock appointments data - assuming current doctor ID is 1
+                    const currentDoctorId = 1
+                    const mockAppointments = [
+                        {
+                            id: 1001,
+                            patientId: 101,
+                            patientName: "Alisher Karimov",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 1,
+                            roomNumber: "101",
+                            branchId: 1,
+                            branchName: "Main Branch",
+                            date: "2023-05-20",
+                            timeSlot: "09:00",
+                            duration: 60, // minutes
+                            status: "confirmed",
+                            diagnosis: "Regular check-up",
+                            createdAt: "2023-05-15T10:30:00Z",
+                        },
+                        {
+                            id: 1002,
+                            patientId: 102,
+                            patientName: "Dilnoza Saidova",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 2,
+                            roomNumber: "102",
+                            branchId: 1,
+                            branchName: "Main Branch",
+                            date: "2023-05-20",
+                            timeSlot: "10:00",
+                            duration: 60,
+                            status: "waiting",
+                            diagnosis: "Heart examination",
+                            createdAt: "2023-05-16T09:15:00Z",
+                        },
+                        {
+                            id: 1003,
+                            patientId: 103,
+                            patientName: "Rustam Khasanov",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 3,
+                            roomNumber: "201",
+                            branchId: 2,
+                            branchName: "Secondary Branch",
+                            date: "2023-05-21",
+                            timeSlot: "11:00",
+                            duration: 60,
+                            status: "in_progress",
+                            diagnosis: "Respiratory issues",
+                            createdAt: "2023-05-17T14:20:00Z",
+                        },
+                        {
+                            id: 1004,
+                            patientId: 104,
+                            patientName: "Nodira Azimova",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 4,
+                            roomNumber: "202",
+                            branchId: 2,
+                            branchName: "Secondary Branch",
+                            date: "2023-05-22",
+                            timeSlot: "14:00",
+                            duration: 60,
+                            status: "completed",
+                            diagnosis: "Annual checkup",
+                            createdAt: "2023-05-18T11:30:00Z",
+                        },
+                        {
+                            id: 1005,
+                            patientId: 105,
+                            patientName: "Jahongir Tursunov",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 5,
+                            roomNumber: "301",
+                            branchId: 3,
+                            branchName: "Tertiary Branch",
+                            date: "2023-05-23",
+                            timeSlot: "15:00",
+                            duration: 60,
+                            status: "cancelled",
+                            diagnosis: "Follow-up consultation",
+                            createdAt: "2023-05-19T09:45:00Z",
+                        },
+                    ]
+
+                    // Add today's appointments
+                    const today = new Date().toISOString().split("T")[0]
+                    mockAppointments.push(
+                        {
+                            id: 1006,
+                            patientId: 101,
+                            patientName: "Alisher Karimov",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 1,
+                            roomNumber: "101",
+                            branchId: 1,
+                            branchName: "Main Branch",
+                            date: today,
+                            timeSlot: "09:00",
+                            duration: 60,
+                            status: "waiting",
+                            diagnosis: "Follow-up check",
+                            createdAt: "2023-05-19T09:45:00Z",
+                        },
+                        {
+                            id: 1007,
+                            patientId: 102,
+                            patientName: "Dilnoza Saidova",
+                            doctorId: currentDoctorId,
+                            doctorName: "Dr. Sardor Alimov",
+                            roomId: 2,
+                            roomNumber: "102",
+                            branchId: 1,
+                            branchName: "Main Branch",
+                            date: today,
+                            timeSlot: "11:00",
+                            duration: 60,
+                            status: "in_progress",
+                            diagnosis: "Blood pressure check",
+                            createdAt: "2023-05-19T09:45:00Z",
+                        },
+                    )
+
+                    // Calculate booked time slots
+                    const bookedSlots = {}
+                    mockAppointments.forEach((appointment) => {
+                        const key = `${appointment.date}-${appointment.roomId}`
+                        if (!bookedSlots[key]) {
+                            bookedSlots[key] = []
+                        }
+                        bookedSlots[key].push(appointment.timeSlot)
+                    })
+
+                    setBranches(mockBranches)
+                    setPatients(mockPatients)
+                    setDoctors(mockDoctors)
+                    setRooms(mockRooms)
+                    setAppointments(mockAppointments)
+                    setBookedTimeSlots(bookedSlots)
+                    setLoading(false)
+                }, 800)
+            } catch (err) {
+                setError(err.message || "An error occurred")
+                setLoading(false)
             }
-
-            // Fetch appointments using the mock function
-            const doctorId = user?.id || 201 // Default to 201 if user ID is not available
-            const result = await getDoctorSchedule(doctorId, startDate, endDate)
-
-            // Transform appointments for the calendar
-            const formattedAppointments = result.map((appointment) => ({
-                ...appointment,
-                title: `${appointment.patientName} - ${getStatusText(appointment.status)}`,
-                start: new Date(appointment.date),
-                end: new Date(appointment.endTime),
-                resource: appointment,
-            }))
-
-            setAppointments(formattedAppointments)
-            setError(null)
-        } catch (err) {
-            console.error("Error fetching appointments:", err)
-            setError("Failed to load appointments. Please try again.")
-        } finally {
-            setLoading(false)
         }
+
+        fetchData()
+    }, [])
+
+    // Helper function to get the start date of the week
+    function getWeekStartDate(date) {
+        const newDate = new Date(date)
+        const day = newDate.getDay()
+        const diff = newDate.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Sunday
+        return new Date(newDate.setDate(diff))
     }
 
-    const handleSelectEvent = (event) => {
-        setSelectedAppointment(event.resource)
-        setShowModal(true)
-    }
-
-    const handleCloseModal = () => {
-        setShowModal(false)
-        setSelectedAppointment(null)
-    }
-
-    const handleViewChange = (newView) => {
-        setView(newView)
-    }
-
-    const handleNavigate = (newDate) => {
-        setDate(newDate)
-    }
-
-    const handleStatusChange = async (newStatus) => {
-        if (!selectedAppointment) return
-
-        try {
-            const result = await changeAppointmentStatus(selectedAppointment.id, newStatus)
-
-            if (result.success) {
-                // Update the appointment in the local state
-                setAppointments((prevAppointments) =>
-                    prevAppointments.map((appointment) =>
-                        appointment.id === selectedAppointment.id
-                            ? {
-                                ...appointment,
-                                status: newStatus,
-                                title: `${appointment.resource.patientName} - ${getStatusText(newStatus)}`,
-                                resource: {
-                                    ...appointment.resource,
-                                    status: newStatus,
-                                },
-                            }
-                            : appointment,
-                    ),
-                )
-
-                // Update the selected appointment
-                setSelectedAppointment({
-                    ...selectedAppointment,
-                    status: newStatus,
-                })
-
-                // Show success message (you can implement a toast notification here)
-                console.log(`Appointment status changed to ${newStatus}`)
-            } else {
-                console.error("Failed to change appointment status:", result.error)
-            }
-        } catch (err) {
-            console.error("Error changing appointment status:", err)
+    // Generate time slots from 9:00 to 17:00
+    const generateTimeSlots = () => {
+        const slots = []
+        for (let hour = 9; hour < 18; hour++) {
+            slots.push(`${hour.toString().padStart(2, "0")}:00`)
         }
+        return slots
     }
 
-    const getStatusText = (status) => {
-        switch (status) {
-            case "confirmed":
-                return t("confirmed")
-            case "pending":
-                return t("pending")
-            case "completed":
-                return t("completed")
-            case "cancelled":
-                return t("cancelled")
-            default:
-                return status
-        }
+    const timeSlots = generateTimeSlots()
+
+    // Check if a time slot is booked
+    const isTimeSlotBooked = (date, roomId, timeSlot) => {
+        const key = `${date}-${roomId}`
+        return bookedTimeSlots[key] && bookedTimeSlots[key].includes(timeSlot)
     }
 
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case "confirmed":
-                return <Badge bg="primary">{t("confirmed")}</Badge>
-            case "pending":
-                return <Badge bg="warning">{t("pending")}</Badge>
-            case "completed":
-                return <Badge bg="success">{t("completed")}</Badge>
-            case "cancelled":
-                return <Badge bg="danger">{t("cancelled")}</Badge>
-            default:
-                return <Badge bg="secondary">{status}</Badge>
-        }
-    }
-
-    const getEventStyle = (event) => {
-        const status = event.resource.status
-        switch (status) {
-            case "confirmed":
-                return { backgroundColor: "#0d6efd" }
-            case "pending":
-                return { backgroundColor: "#ffc107", color: "#212529" }
-            case "completed":
-                return { backgroundColor: "#198754" }
-            case "cancelled":
-                return { backgroundColor: "#dc3545" }
-            default:
-                return { backgroundColor: "#6c757d" }
-        }
-    }
-
+    // Filter appointments based on search and filter
     const filteredAppointments = appointments.filter((appointment) => {
-        // Filter by status
-        if (statusFilter !== "all" && appointment.resource.status !== statusFilter) {
-            return false
-        }
+        const matchesSearch =
+            appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            appointment.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            appointment.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
 
-        // Filter by date
-        if (dateFilter === "today") {
-            const today = new Date()
-            const appointmentDate = new Date(appointment.start)
-            return (
-                appointmentDate.getDate() === today.getDate() &&
-                appointmentDate.getMonth() === today.getMonth() &&
-                appointmentDate.getFullYear() === today.getFullYear()
-            )
-        } else if (dateFilter === "tomorrow") {
-            const tomorrow = new Date()
-            tomorrow.setDate(tomorrow.getDate() + 1)
-            const appointmentDate = new Date(appointment.start)
-            return (
-                appointmentDate.getDate() === tomorrow.getDate() &&
-                appointmentDate.getMonth() === tomorrow.getMonth() &&
-                appointmentDate.getFullYear() === tomorrow.getFullYear()
-            )
-        } else if (dateFilter === "week") {
-            const today = new Date()
-            const nextWeek = new Date()
-            nextWeek.setDate(today.getDate() + 7)
-            const appointmentDate = new Date(appointment.start)
-            return appointmentDate >= today && appointmentDate <= nextWeek
-        }
+        const matchesFilter = filterStatus === "all" || appointment.status === filterStatus
 
-        return true
+        return matchesSearch && matchesFilter
     })
 
-    const sortedAppointments = [...filteredAppointments].sort((a, b) => {
-        return new Date(a.start) - new Date(b.start)
-    })
+    // Handle branch selection
+    const handleBranchChange = (e) => {
+        const branchId = e.target.value
+        setSelectedBranchId(branchId)
+        setSelectedPatientId("")
+        setSelectedRoomId("")
+        setSelectedTimeSlot("")
+    }
 
-    const renderAppointmentsList = () => {
-        if (sortedAppointments.length === 0) {
-            return (
-                <div className="no-appointments">
-                    <FaCalendarAlt className="icon" />
-                    <p>{t("no_appointments_found")}</p>
-                </div>
+    // Handle patient selection
+    const handlePatientChange = (e) => {
+        setSelectedPatientId(e.target.value)
+        setSelectedRoomId("")
+        setSelectedTimeSlot("")
+    }
+
+    // Handle room selection
+    const handleRoomChange = (e) => {
+        setSelectedRoomId(e.target.value)
+        setSelectedTimeSlot("")
+    }
+
+    // Handle date selection
+    const handleDateChange = (e) => {
+        setSelectedDate(e.target.value)
+        setSelectedTimeSlot("")
+    }
+
+    // Handle time slot selection
+    const handleTimeSlotChange = (timeSlot) => {
+        setSelectedTimeSlot(timeSlot)
+    }
+
+    // Handle diagnosis input
+    const handleDiagnosisChange = (e) => {
+        setDiagnosis(e.target.value)
+    }
+
+    // Open edit appointment modal
+    const openEditModal = (appointment) => {
+        setCurrentAppointment(appointment)
+        setSelectedBranchId(appointment.branchId.toString())
+        setSelectedPatientId(appointment.patientId.toString())
+        setSelectedRoomId(appointment.roomId.toString())
+        setSelectedDate(appointment.date)
+        setSelectedTimeSlot(appointment.timeSlot)
+        setDiagnosis(appointment.diagnosis)
+        setShowEditModal(true)
+    }
+
+    // Handle edit appointment
+    const handleEditAppointment = () => {
+        setIsUpdating(true)
+
+        // Simulate API call with timeout
+        setTimeout(() => {
+            // Update appointment status based on current status
+            let newStatus = currentAppointment.status
+
+            if (currentAppointment.status === "waiting") {
+                newStatus = "in_progress"
+            } else if (currentAppointment.status === "in_progress") {
+                newStatus = "completed"
+            }
+
+            const updatedAppointment = {
+                ...currentAppointment,
+                status: newStatus,
+                diagnosis: diagnosis,
+            }
+
+            const updatedAppointments = appointments.map((appointment) =>
+                appointment.id === currentAppointment.id ? updatedAppointment : appointment,
             )
+
+            setAppointments(updatedAppointments)
+            setIsUpdating(false)
+
+            // Reset form
+            setCurrentAppointment(null)
+            setSelectedBranchId("")
+            setSelectedPatientId("")
+            setSelectedRoomId("")
+            setSelectedTimeSlot("")
+            setDiagnosis("")
+            setShowEditModal(false)
+        }, 800)
+    }
+
+    // Handle view mode change
+    const handleViewModeChange = (mode) => {
+        setViewMode(mode)
+    }
+
+    // Navigate to today
+    const goToToday = () => {
+        setSelectedDate(new Date().toISOString().split("T")[0])
+        setCurrentWeekStart(getWeekStartDate(new Date()))
+    }
+
+    // Navigate to previous week
+    const goToPreviousWeek = () => {
+        const prevWeek = new Date(currentWeekStart)
+        prevWeek.setDate(prevWeek.getDate() - 7)
+        setCurrentWeekStart(prevWeek)
+    }
+
+    // Navigate to next week
+    const goToNextWeek = () => {
+        const nextWeek = new Date(currentWeekStart)
+        nextWeek.setDate(nextWeek.getDate() + 7)
+        setCurrentWeekStart(nextWeek)
+    }
+
+    // Generate week days
+    const generateWeekDays = () => {
+        const days = []
+        const startDate = new Date(currentWeekStart)
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startDate)
+            date.setDate(date.getDate() + i)
+            days.push({
+                date: date.toISOString().split("T")[0],
+                dayName: date.toLocaleDateString("en-US", { weekday: "short" }),
+                dayNumber: date.getDate(),
+            })
         }
 
+        return days
+    }
+
+    const weekDays = generateWeekDays()
+
+    // Get appointments for a specific day
+    const getAppointmentsForDay = (date) => {
+        return appointments.filter((appointment) => appointment.date === date)
+    }
+
+    // Format time
+    const formatTime = (timeSlot) => {
+        const [hours, minutes] = timeSlot.split(":")
+        return `${hours}:${minutes}`
+    }
+
+    // Get status badge class
+    const getStatusBadgeClass = (status) => {
+        switch (status) {
+            case "waiting":
+                return "status-waiting"
+            case "confirmed":
+                return "status-confirmed"
+            case "in_progress":
+                return "status-in-progress"
+            case "completed":
+                return "status-completed"
+            case "cancelled":
+                return "status-cancelled"
+            default:
+                return ""
+        }
+    }
+
+    // Check if status can be changed
+    const canChangeStatus = (status) => {
+        return status === "waiting" || status === "in_progress"
+    }
+
+    // Get next status label
+    const getNextStatusLabel = (status) => {
+        if (status === "waiting") {
+            return t("start_appointment")
+        } else if (status === "in_progress") {
+            return t("complete_appointment")
+        }
+        return ""
+    }
+
+    // Get status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "waiting":
+                return <FaRegClock className="status-icon" />
+            case "confirmed":
+                return <FaCheckCircle className="status-icon" />
+            case "in_progress":
+                return <FaStethoscope className="status-icon" />
+            case "completed":
+                return <FaRegCalendarCheck className="status-icon" />
+            case "cancelled":
+                return <FaTimesCircle className="status-icon" />
+            default:
+                return null
+        }
+    }
+
+    // Loading state
+    if (loading) {
         return (
-            <div className="appointments-list">
-                {sortedAppointments.map((appointment) => (
-                    <div
-                        key={appointment.resource.id}
-                        className={`appointment-item ${appointment.resource.status}`}
-                        onClick={() => handleSelectEvent(appointment)}
-                    >
-                        <div className="appointment-time">
-                            {moment(appointment.start).format("HH:mm")} - {moment(appointment.end).format("HH:mm")}
-                        </div>
-                        <div className="appointment-date">{moment(appointment.start).format("DD.MM.YYYY")}</div>
-                        <div className="appointment-details">
-                            <div className="patient-name">{appointment.resource.patientName}</div>
-                            <div className="appointment-room">{appointment.resource.roomName}</div>
-                            <div className="appointment-status">{getStatusBadge(appointment.resource.status)}</div>
-                        </div>
-                    </div>
-                ))}
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>{t("loading")}...</p>
+            </div>
+        )
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="error-container">
+                <FaExclamationTriangle className="error-icon" />
+                <h2>{t("error_occurred")}</h2>
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                    {t("try_again")}
+                </button>
             </div>
         )
     }
 
     return (
         <div className="doctor-schedule">
-            <div className="schedule-header">
-                <h2>{t("appointments")}</h2>
-                <div className="view-toggle">
-                    <Button
-                        variant={activeTab === "calendar" ? "primary" : "outline-primary"}
-                        onClick={() => setActiveTab("calendar")}
-                    >
-                        <FaCalendarAlt /> {t("calendar_view")}
-                    </Button>
-                    <Button variant={activeTab === "list" ? "primary" : "outline-primary"} onClick={() => setActiveTab("list")}>
-                        <FaList /> {t("list_view")}
-                    </Button>
+            <div className="page-header">
+                <div className="header-title">
+                    <FaCalendarAlt className="header-icon" />
+                    <h1>{t("appointment_schedule")}</h1>
                 </div>
-            </div>
+                <div className="header-actions">
+                    <div className="view-toggle">
+                        <button
+                            className={`btn ${viewMode === "table" ? "btn-primary" : "btn-outline"}`}
+                            onClick={() => handleViewModeChange("table")}
+                        >
+                            <FaTable /> {t("table_view")}
+                        </button>
+                        <button
+                            className={`btn ${viewMode === "day" ? "btn-primary" : "btn-outline"}`}
+                            onClick={() => handleViewModeChange("day")}
+                        >
+                            <FaCalendarDay /> {t("day_view")}
+                        </button>
+                        <button
+                            className={`btn ${viewMode === "week" ? "btn-primary" : "btn-outline"}`}
+                            onClick={() => handleViewModeChange("week")}
+                        >
+                            <FaCalendarWeek /> {t("week_view")}
+                        </button>
+                    </div>
 
-            {error && (
-                <div className="alert alert-danger">
-                    <FaTimesCircle /> {error}
-                </div>
-            )}
+                    <button className="btn btn-today" onClick={goToToday}>
+                        <FaRegCalendarAlt /> {t("today")}
+                    </button>
 
-            {activeTab === "list" && (
-                <div className="filters-container">
-                    <div className="filter-group">
-                        <label>{t("status")}:</label>
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="form-select">
-                            <option value="all">{t("all")}</option>
-                            <option value="pending">{t("pending")}</option>
+                    <div className="search-box">
+                        <FaSearch className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder={t("search_appointments")}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="filter-dropdown">
+                        <FaFilter className="filter-icon" />
+                        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <option value="all">{t("all_statuses")}</option>
+                            <option value="waiting">{t("waiting")}</option>
                             <option value="confirmed">{t("confirmed")}</option>
+                            <option value="in_progress">{t("in_progress")}</option>
                             <option value="completed">{t("completed")}</option>
                             <option value="cancelled">{t("cancelled")}</option>
                         </select>
                     </div>
-                    <div className="filter-group">
-                        <label>{t("date")}:</label>
-                        <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="form-select">
-                            <option value="all">{t("all")}</option>
-                            <option value="today">{t("today")}</option>
-                            <option value="tomorrow">{t("tomorrow")}</option>
-                            <option value="week">{t("next_7_days")}</option>
-                        </select>
+                </div>
+            </div>
+
+            {/* Table View */}
+            {viewMode === "table" && (
+                <div className="appointments-table-container">
+                    <table className="appointments-table">
+                        <thead>
+                            <tr>
+                                <th>{t("date")}</th>
+                                <th>{t("time")}</th>
+                                <th>{t("branch")}</th>
+                                <th>{t("patient")}</th>
+                                <th>{t("room")}</th>
+                                <th>{t("diagnosis")}</th>
+                                <th>{t("status")}</th>
+                                <th>{t("actions")}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredAppointments.length > 0 ? (
+                                filteredAppointments.map((appointment) => (
+                                    <tr key={appointment.id} className={`appointment-row ${getStatusBadgeClass(appointment.status)}`}>
+                                        <td>{appointment.date}</td>
+                                        <td>{formatTime(appointment.timeSlot)}</td>
+                                        <td>
+                                            <div className="cell-with-icon">
+                                                <FaRegHospital className="cell-icon" />
+                                                {appointment.branchName}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="cell-with-icon">
+                                                <FaRegUser className="cell-icon" />
+                                                {appointment.patientName}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="cell-with-icon">
+                                                <FaDoorOpen className="cell-icon" />
+                                                {appointment.roomNumber}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="cell-with-icon">
+                                                <FaRegClipboard className="cell-icon" />
+                                                {appointment.diagnosis}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="status-badge-container">
+                                                {getStatusIcon(appointment.status)}
+                                                <span className={`status-badge ${getStatusBadgeClass(appointment.status)}`}>
+                                                    {t(appointment.status)}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                {canChangeStatus(appointment.status) && (
+                                                    <button
+                                                        className="btn btn-action"
+                                                        onClick={() => openEditModal(appointment)}
+                                                        title={getNextStatusLabel(appointment.status)}
+                                                    >
+                                                        {appointment.status === "waiting" ? (
+                                                            <FaStethoscope className="action-icon" />
+                                                        ) : (
+                                                            <FaCheckCircle className="action-icon" />
+                                                        )}
+                                                        <span className="action-text">{getNextStatusLabel(appointment.status)}</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="8" className="no-data">
+                                        <div className="no-data-content">
+                                            <FaCalendarAlt className="no-data-icon" />
+                                            <p>{t("no_appointments_found")}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* Day View */}
+            {viewMode === "day" && (
+                <div className="day-view">
+                    <div className="day-header">
+                        <div className="date-navigation">
+                            <button
+                                className="btn btn-icon"
+                                onClick={() => {
+                                    const prevDay = new Date(selectedDate)
+                                    prevDay.setDate(prevDay.getDate() - 1)
+                                    setSelectedDate(prevDay.toISOString().split("T")[0])
+                                }}
+                            >
+                                <FaChevronLeft />
+                            </button>
+                            <h3>
+                                {new Date(selectedDate).toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                })}
+                            </h3>
+                            <button
+                                className="btn btn-icon"
+                                onClick={() => {
+                                    const nextDay = new Date(selectedDate)
+                                    nextDay.setDate(nextDay.getDate() + 1)
+                                    setSelectedDate(nextDay.toISOString().split("T")[0])
+                                }}
+                            >
+                                <FaChevronRight />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="time-slots-container">
+                        {timeSlots.map((timeSlot) => {
+                            const appointmentsAtTime = appointments.filter(
+                                (appointment) => appointment.date === selectedDate && appointment.timeSlot === timeSlot,
+                            )
+
+                            return (
+                                <div key={timeSlot} className="time-slot-row">
+                                    <div className="time-label">
+                                        <FaClock className="time-icon" />
+                                        <span>{formatTime(timeSlot)}</span>
+                                    </div>
+                                    <div className="appointments-at-time">
+                                        {appointmentsAtTime.length > 0 ? (
+                                            appointmentsAtTime.map((appointment) => (
+                                                <div
+                                                    key={appointment.id}
+                                                    className={`appointment-card ${getStatusBadgeClass(appointment.status)}`}
+                                                    onClick={() => canChangeStatus(appointment.status) && openEditModal(appointment)}
+                                                >
+                                                    <div className="appointment-header">
+                                                        <div className="appointment-time">
+                                                            <FaClock className="appointment-icon" />
+                                                            {formatTime(appointment.timeSlot)}
+                                                        </div>
+                                                        <div className={`appointment-status ${getStatusBadgeClass(appointment.status)}`}>
+                                                            {getStatusIcon(appointment.status)}
+                                                            <span>{t(appointment.status)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="appointment-details">
+                                                        <div className="appointment-patient">
+                                                            <FaRegUser className="appointment-icon" />
+                                                            {appointment.patientName}
+                                                        </div>
+                                                        <div className="appointment-room">
+                                                            <FaDoorOpen className="appointment-icon" />
+                                                            {t("room")}: {appointment.roomNumber}
+                                                        </div>
+                                                        <div className="appointment-branch">
+                                                            <FaRegHospital className="appointment-icon" />
+                                                            {appointment.branchName}
+                                                        </div>
+                                                        <div className="appointment-diagnosis">
+                                                            <FaRegClipboard className="appointment-icon" />
+                                                            {appointment.diagnosis || t("no_diagnosis")}
+                                                        </div>
+                                                    </div>
+                                                    {canChangeStatus(appointment.status) && (
+                                                        <div className="appointment-actions">
+                                                            <button className="btn btn-action-card">
+                                                                {appointment.status === "waiting" ? (
+                                                                    <FaStethoscope className="action-icon" />
+                                                                ) : (
+                                                                    <FaCheckCircle className="action-icon" />
+                                                                )}
+                                                                <span>{getNextStatusLabel(appointment.status)}</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="empty-slot">
+                                                <span className="no-appointment">{t("no_appointments")}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             )}
 
-            <div className="schedule-content">
-                {loading ? (
-                    <div className="loading-spinner">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">{t("loading")}</span>
+            {/* Week View */}
+            {viewMode === "week" && (
+                <div className="week-view">
+                    <div className="week-header">
+                        <div className="date-navigation">
+                            <button className="btn btn-icon" onClick={goToPreviousWeek}>
+                                <FaChevronLeft />
+                            </button>
+                            <h3>
+                                {currentWeekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} -
+                                {new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                })}
+                            </h3>
+                            <button className="btn btn-icon" onClick={goToNextWeek}>
+                                <FaChevronRight />
+                            </button>
                         </div>
-                        <p>{t("loading")}</p>
                     </div>
-                ) : (
-                    <>
-                        {activeTab === "calendar" ? (
-                            <div className="calendar-container">
-                                <div className="calendar-toolbar">
-                                    <div className="view-buttons">
-                                        <Button
-                                            variant={view === "month" ? "primary" : "outline-primary"}
-                                            onClick={() => handleViewChange("month")}
-                                        >
-                                            {t("month")}
-                                        </Button>
-                                        <Button
-                                            variant={view === "week" ? "primary" : "outline-primary"}
-                                            onClick={() => handleViewChange("week")}
-                                        >
-                                            {t("week")}
-                                        </Button>
-                                        <Button
-                                            variant={view === "day" ? "primary" : "outline-primary"}
-                                            onClick={() => handleViewChange("day")}
-                                        >
-                                            {t("day")}
-                                        </Button>
-                                    </div>
+
+                    <div className="week-grid">
+                        <div className="time-labels">
+                            <div className="day-label"></div>
+                            {timeSlots.map((timeSlot) => (
+                                <div key={timeSlot} className="time-label">
+                                    <FaClock className="time-icon" />
+                                    <span>{formatTime(timeSlot)}</span>
                                 </div>
-                                <Calendar
-                                    localizer={localizer}
-                                    events={appointments}
-                                    startAccessor="start"
-                                    endAccessor="end"
-                                    style={{ height: 600 }}
-                                    onSelectEvent={handleSelectEvent}
-                                    onNavigate={handleNavigate}
-                                    view={view}
-                                    onView={handleViewChange}
-                                    date={date}
-                                    eventPropGetter={getEventStyle}
-                                    formats={{
-                                        timeGutterFormat: (date, culture, localizer) => localizer.format(date, "HH:mm", culture),
-                                        dayFormat: (date, culture, localizer) => localizer.format(date, "ddd DD", culture),
-                                    }}
-                                    messages={{
-                                        month: t("month"),
-                                        week: t("week"),
-                                        day: t("day"),
-                                        today: t("today"),
-                                        previous: t("previous"),
-                                        next: t("next"),
-                                        agenda: t("agenda"),
-                                        noEventsInRange: t("no_appointments_in_range"),
-                                    }}
-                                />
+                            ))}
+                        </div>
+
+                        {weekDays.map((day) => (
+                            <div key={day.date} className="day-column">
+                                <div className={`day-label ${day.date === new Date().toISOString().split("T")[0] ? "today" : ""}`}>
+                                    <div className="day-name">{day.dayName}</div>
+                                    <div className="day-number">{day.dayNumber}</div>
+                                </div>
+
+                                {timeSlots.map((timeSlot) => {
+                                    const appointmentsAtTime = appointments.filter(
+                                        (appointment) => appointment.date === day.date && appointment.timeSlot === timeSlot,
+                                    )
+
+                                    return (
+                                        <div
+                                            key={`${day.date}-${timeSlot}`}
+                                            className={`time-cell ${appointmentsAtTime.length > 0 ? "has-appointments" : ""} ${day.date === new Date().toISOString().split("T")[0] ? "today-cell" : ""}`}
+                                        >
+                                            {appointmentsAtTime.length > 0 && (
+                                                <div className="appointment-indicators">
+                                                    {appointmentsAtTime.map((appointment) => (
+                                                        <div
+                                                            key={appointment.id}
+                                                            className={`appointment-indicator ${getStatusBadgeClass(appointment.status)}`}
+                                                            onClick={() => canChangeStatus(appointment.status) && openEditModal(appointment)}
+                                                            title={`${appointment.patientName} - ${appointment.roomNumber}`}
+                                                        >
+                                                            <div className="indicator-content">
+                                                                {getStatusIcon(appointment.status)}
+                                                                <span className="patient-name">{appointment.patientName}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
                             </div>
-                        ) : (
-                            <div className="list-container">{renderAppointmentsList()}</div>
-                        )}
-                    </>
-                )}
-            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {/* Appointment Details Modal */}
-            <Modal show={showModal} onHide={handleCloseModal} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>{t("appointment_details")}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedAppointment && (
-                        <div className="appointment-details-modal">
-                            <div className="row">
-                                <div className="col-md-6">
-                                    <h4>{t("patient_information")}</h4>
-                                    <div className="detail-item">
-                                        <strong>{t("name")}:</strong> {selectedAppointment.patientName}
+            {/* Edit Appointment Modal */}
+            {showEditModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3>{t("update_appointment_status")}</h3>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="appointment-form">
+                                <div className="appointment-details">
+                                    <div className="detail-section">
+                                        <h4 className="section-title">
+                                            <FaRegUser className="section-icon" />
+                                            {t("patient_information")}
+                                        </h4>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("patient")}:</span>
+                                            <span className="detail-value">{currentAppointment.patientName}</span>
+                                        </div>
                                     </div>
-                                    <div className="detail-item">
-                                        <strong>{t("phone")}:</strong> {selectedAppointment.phone}
+
+                                    <div className="detail-section">
+                                        <h4 className="section-title">
+                                            <FaRegCalendarAlt className="section-icon" />
+                                            {t("appointment_information")}
+                                        </h4>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("date")}:</span>
+                                            <span className="detail-value">{currentAppointment.date}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("time")}:</span>
+                                            <span className="detail-value">{formatTime(currentAppointment.timeSlot)}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("branch")}:</span>
+                                            <span className="detail-value">{currentAppointment.branchName}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("room")}:</span>
+                                            <span className="detail-value">{currentAppointment.roomNumber}</span>
+                                        </div>
                                     </div>
-                                    <div className="detail-item">
-                                        <strong>{t("status")}:</strong> {getStatusBadge(selectedAppointment.status)}
+
+                                    <div className="detail-section">
+                                        <h4 className="section-title">
+                                            <FaStethoscope className="section-icon" />
+                                            {t("status_information")}
+                                        </h4>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("current_status")}:</span>
+                                            <span className={`detail-value status-badge ${getStatusBadgeClass(currentAppointment.status)}`}>
+                                                {getStatusIcon(currentAppointment.status)}
+                                                {t(currentAppointment.status)}
+                                            </span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("new_status")}:</span>
+                                            <span
+                                                className={`detail-value status-badge ${currentAppointment.status === "waiting" ? "status-in-progress" : "status-completed"
+                                                    }`}
+                                            >
+                                                {currentAppointment.status === "waiting" ? (
+                                                    <FaStethoscope className="status-icon" />
+                                                ) : (
+                                                    <FaCheckCircle className="status-icon" />
+                                                )}
+                                                {currentAppointment.status === "waiting" ? t("in_progress") : t("completed")}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-md-6">
-                                    <h4>{t("appointment_information")}</h4>
-                                    <div className="detail-item">
-                                        <strong>{t("date")}:</strong> {moment(selectedAppointment.date).format("DD.MM.YYYY")}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>{t("time")}:</strong> {moment(selectedAppointment.date).format("HH:mm")} -{" "}
-                                        {moment(selectedAppointment.endTime).format("HH:mm")}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>{t("room")}:</strong> {selectedAppointment.roomName}
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="row mt-4">
-                                <div className="col-12">
-                                    <h4>{t("medical_information")}</h4>
-                                    <div className="detail-item">
-                                        <strong>{t("symptoms")}:</strong> {selectedAppointment.symptoms || t("not_specified")}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>{t("notes")}:</strong> {selectedAppointment.notes || t("not_specified")}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>{t("diagnosis")}:</strong> {selectedAppointment.diagnosis || t("not_specified")}
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>{t("treatment")}:</strong> {selectedAppointment.treatment || t("not_specified")}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Status change buttons */}
-                            <div className="status-actions mt-4">
-                                <h4>{t("change_status")}</h4>
-                                <div className="btn-group">
-                                    {selectedAppointment.status !== "confirmed" && (
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => handleStatusChange("confirmed")}
-                                            disabled={selectedAppointment.status === "completed"}
-                                        >
-                                            <FaCheckCircle /> {t("confirm")}
-                                        </Button>
-                                    )}
-
-                                    {selectedAppointment.status !== "completed" && (
-                                        <Button
-                                            variant="success"
-                                            onClick={() => handleStatusChange("completed")}
-                                            disabled={selectedAppointment.status === "cancelled"}
-                                        >
-                                            <FaCheckCircle /> {t("complete")}
-                                        </Button>
-                                    )}
-
-                                    {selectedAppointment.status !== "cancelled" && (
-                                        <Button
-                                            variant="danger"
-                                            onClick={() => handleStatusChange("cancelled")}
-                                            disabled={selectedAppointment.status === "completed"}
-                                        >
-                                            <FaTimesCircle /> {t("cancel")}
-                                        </Button>
-                                    )}
+                                <div className="form-group">
+                                    <label htmlFor="diagnosis">
+                                        <FaClipboardList className="form-icon" /> {t("diagnosis")}
+                                    </label>
+                                    <textarea
+                                        id="diagnosis"
+                                        value={diagnosis}
+                                        onChange={handleDiagnosisChange}
+                                        rows="3"
+                                        placeholder={t("enter_diagnosis")}
+                                    ></textarea>
                                 </div>
                             </div>
                         </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseModal}>
-                        {t("close")}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
+                                {t("cancel")}
+                            </button>
+                            <button className="btn btn-primary" onClick={handleEditAppointment} disabled={isUpdating}>
+                                {isUpdating ? (
+                                    <>
+                                        <FaSpinner className="spinner-icon" />
+                                        {t("updating")}...
+                                    </>
+                                ) : (
+                                    <>
+                                        {currentAppointment.status === "waiting" ? (
+                                            <FaStethoscope className="action-icon" />
+                                        ) : (
+                                            <FaCheckCircle className="action-icon" />
+                                        )}
+                                        {getNextStatusLabel(currentAppointment.status)}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
-export default DocSchedule;

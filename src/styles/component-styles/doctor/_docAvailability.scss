@@ -1,0 +1,798 @@
+// Variables
+$primary-color: #4361ee;
+$primary-light: #eef2ff;
+$primary-dark: #3a56d4;
+$secondary-color: #6c757d;
+$success-color: #10b981;
+$success-light: #ecfdf5;
+$warning-color: #f59e0b;
+$warning-light: #fffbeb;
+$danger-color: #ef4444;
+$danger-light: #fee2e2;
+$info-color: #3b82f6;
+$info-light: #eff6ff;
+$light-color: #f8f9fa;
+$dark-color: #212529;
+$border-color: #e9ecef;
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$border-radius: 8px;
+$transition-fast: all 0.2s ease;
+$transition-normal: all 0.3s ease;
+$font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+// Mixins
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@mixin flex-start {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+@mixin flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+@mixin card {
+    background-color: white;
+    border-radius: $border-radius;
+    box-shadow: $shadow-sm;
+    transition: $transition-normal;
+
+    &:hover {
+        box-shadow: $shadow-md;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+// Main Styles
+.doctor-availability {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: $font-family;
+    color: $dark-color;
+    animation: fadeIn 0.5s ease;
+
+    // Page Header
+    .page-header {
+        @include flex-between;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .header-title {
+            @include flex-start;
+            gap: 12px;
+
+            .header-icon {
+                font-size: 28px;
+                color: $primary-color;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 600;
+            }
+        }
+
+        .header-actions {
+            @include flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+
+            .view-toggle {
+                @include flex-start;
+                gap: 8px;
+                background-color: $light-color;
+                padding: 4px;
+                border-radius: $border-radius;
+                box-shadow: $shadow-sm;
+            }
+        }
+    }
+
+    // Buttons
+    .btn {
+        @include flex-center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: $border-radius;
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &.btn-primary {
+            background-color: $primary-color;
+            color: white;
+
+            &:hover:not(:disabled) {
+                background-color: $primary-dark;
+            }
+
+            &:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
+        }
+
+        &.btn-secondary {
+            background-color: $secondary-color;
+            color: white;
+
+            &:hover:not(:disabled) {
+                background-color: darken($secondary-color, 10%);
+            }
+        }
+
+        &.btn-danger {
+            background-color: $danger-color;
+            color: white;
+
+            &:hover:not(:disabled) {
+                background-color: darken($danger-color, 10%);
+            }
+        }
+
+        &.btn-outline {
+            background-color: transparent;
+            border: 1px solid $border-color;
+            color: $secondary-color;
+
+            &:hover {
+                background-color: $light-color;
+            }
+        }
+
+        &.btn-today {
+            background-color: $info-light;
+            color: $info-color;
+
+            &:hover {
+                background-color: darken($info-light, 5%);
+            }
+        }
+
+        &.btn-icon {
+            padding: 8px;
+            border-radius: 50%;
+            background-color: $light-color;
+            color: $secondary-color;
+
+            &:hover {
+                background-color: darken($light-color, 5%);
+                color: $dark-color;
+            }
+        }
+
+        .spinner-icon {
+            animation: spin 1s linear infinite;
+        }
+    }
+
+    // Calendar Header
+    .calendar-header {
+        @include flex-between;
+        margin-bottom: 24px;
+
+        h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: $primary-color;
+        }
+    }
+
+    // Week View
+    .week-view {
+        @include card;
+        padding: 24px;
+        margin-bottom: 24px;
+        animation: slideIn 0.3s ease;
+
+        .week-grid {
+            display: flex;
+            overflow-x: auto;
+            border: 1px solid $border-color;
+            border-radius: $border-radius;
+
+            .time-labels {
+                min-width: 80px;
+                border-right: 1px solid $border-color;
+
+                .day-label {
+                    height: 100px;
+                    border-bottom: 1px solid $border-color;
+                    @include flex-center;
+                    font-weight: 600;
+                    color: $secondary-color;
+                    background-color: $light-color;
+                }
+
+                .time-label {
+                    height: 80px;
+                    border-bottom: 1px solid $border-color;
+                    @include flex-center;
+                    flex-direction: column;
+                    gap: 4px;
+                    font-weight: 500;
+                    color: $secondary-color;
+
+                    .time-icon {
+                        font-size: 14px;
+                    }
+                }
+            }
+
+            .day-column {
+                flex: 1;
+                min-width: 150px;
+
+                .day-label {
+                    height: 100px;
+                    border-bottom: 1px solid $border-color;
+                    @include flex-column;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: $light-color;
+                    cursor: pointer;
+                    transition: $transition-fast;
+
+                    &:hover {
+                        background-color: darken($light-color, 5%);
+                    }
+
+                    &.today {
+                        background-color: $primary-light;
+
+                        .day-number {
+                            background-color: $primary-color;
+                            color: white;
+                        }
+                    }
+
+                    &.day-available {
+                        border-top: 3px solid $success-color;
+                    }
+
+                    &.day-unavailable {
+                        border-top: 3px solid $secondary-color;
+
+                        .day-name,
+                        .day-number {
+                            color: $secondary-color;
+                        }
+                    }
+
+                    .day-name {
+                        font-weight: 600;
+                        color: $secondary-color;
+                    }
+
+                    .day-number {
+                        width: 36px;
+                        height: 36px;
+                        @include flex-center;
+                        font-size: 18px;
+                        font-weight: 600;
+                        border-radius: 50%;
+                        margin: 4px 0;
+                    }
+
+                    .day-status {
+                        font-size: 12px;
+
+                        .status-icon {
+                            font-size: 14px;
+
+                            &.unavailable {
+                                color: $secondary-color;
+                            }
+                        }
+
+                        .branch-badge {
+                            @include flex-center;
+                            gap: 4px;
+                            padding: 4px 8px;
+                            border-radius: 20px;
+                            background-color: $success-light;
+                            color: $success-color;
+
+                            .branch-icon {
+                                font-size: 12px;
+                            }
+                        }
+                    }
+                }
+
+                .time-cell {
+                    height: 80px;
+                    border-bottom: 1px solid $border-color;
+                    border-right: 1px solid $border-color;
+                    padding: 4px;
+                    position: relative;
+
+                    &.time-available {
+                        background-color: $success-light;
+                    }
+
+                    &.time-unavailable {
+                        background-color: $light-color;
+                    }
+
+                    &.time-booked {
+                        background-color: $primary-light;
+                    }
+
+                    &.today-cell {
+                        border-left: 3px solid $primary-color;
+                    }
+
+                    .appointment-indicator {
+                        height: 100%;
+                        width: 100%;
+                        background-color: rgba($primary-color, 0.1);
+                        border-radius: $border-radius;
+                        padding: 8px;
+                        border-left: 3px solid $primary-color;
+
+                        .appointment-content {
+                            @include flex-column;
+                            gap: 4px;
+
+                            .patient-name {
+                                font-weight: 500;
+                                font-size: 12px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+
+                            .appointment-time {
+                                font-size: 11px;
+                                color: $secondary-color;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Day View
+    .day-view {
+        @include card;
+        padding: 24px;
+        margin-bottom: 24px;
+        animation: slideIn 0.3s ease;
+
+        .day-schedule {
+            .unavailable-day {
+                @include flex-column;
+                align-items: center;
+                gap: 16px;
+                padding: 40px;
+                text-align: center;
+
+                .unavailable-icon {
+                    font-size: 48px;
+                    color: $secondary-color;
+                }
+
+                h3 {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: $secondary-color;
+                }
+
+                p {
+                    margin: 0;
+                    color: $secondary-color;
+                    max-width: 400px;
+                }
+            }
+
+            .day-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+
+                .info-card {
+                    @include card;
+                    padding: 16px;
+
+                    .info-header {
+                        @include flex-start;
+                        gap: 8px;
+                        margin-bottom: 12px;
+
+                        .info-icon {
+                            color: $primary-color;
+                        }
+
+                        h3 {
+                            margin: 0;
+                            font-size: 16px;
+                            font-weight: 600;
+                        }
+                    }
+
+                    .info-content {
+                        p {
+                            margin: 0 0 4px 0;
+
+                            &.info-address {
+                                font-size: 14px;
+                                color: $secondary-color;
+                            }
+
+                            &:last-child {
+                                margin-bottom: 0;
+                            }
+                        }
+                    }
+                }
+
+                .info-actions {
+                    @include flex-center;
+                    grid-column: 1 / -1;
+                    margin-top: 8px;
+                }
+            }
+
+            .day-appointments {
+                .section-title {
+                    @include flex-start;
+                    gap: 8px;
+                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: $primary-color;
+                    border-bottom: 1px solid $border-color;
+                    padding-bottom: 12px;
+
+                    .section-icon {
+                        color: $primary-color;
+                    }
+                }
+
+                .appointments-list {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 16px;
+
+                    .appointment-card {
+                        @include card;
+                        padding: 16px;
+                        border-left: 4px solid $primary-color;
+
+                        .appointment-time {
+                            @include flex-start;
+                            gap: 8px;
+                            margin-bottom: 12px;
+                            font-weight: 600;
+
+                            .time-icon {
+                                color: $secondary-color;
+                            }
+                        }
+
+                        .appointment-details {
+                            .patient-name {
+                                font-weight: 500;
+                                margin-bottom: 4px;
+                            }
+
+                            .appointment-notes {
+                                font-size: 14px;
+                                color: $secondary-color;
+                            }
+                        }
+                    }
+
+                    .no-appointments {
+                        grid-column: 1 / -1;
+                        padding: 24px;
+                        text-align: center;
+                        background-color: $light-color;
+                        border-radius: $border-radius;
+
+                        p {
+                            margin: 0;
+                            color: $secondary-color;
+                            font-style: italic;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Modal
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        @include flex-center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+        backdrop-filter: blur(4px);
+
+        .modal {
+            background-color: white;
+            border-radius: $border-radius;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: $shadow-lg;
+            animation: slideIn 0.3s ease;
+
+            .modal-header {
+                @include flex-between;
+                padding: 20px 24px;
+                border-bottom: 1px solid $border-color;
+
+                h3 {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: $primary-color;
+                }
+
+                .close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 20px;
+                    cursor: pointer;
+                    color: $secondary-color;
+                    transition: $transition-fast;
+
+                    &:hover {
+                        color: $danger-color;
+                    }
+                }
+            }
+
+            .modal-body {
+                padding: 24px;
+
+                .form-group {
+                    margin-bottom: 20px;
+
+                    label {
+                        @include flex-start;
+                        gap: 8px;
+                        margin-bottom: 8px;
+                        font-weight: 500;
+
+                        .form-icon {
+                            color: $primary-color;
+                        }
+                    }
+
+                    input,
+                    select,
+                    textarea {
+                        width: 100%;
+                        padding: 12px;
+                        border-radius: $border-radius;
+                        border: 1px solid $border-color;
+                        font-family: $font-family;
+                        transition: $transition-fast;
+
+                        &:focus {
+                            outline: none;
+                            border-color: $primary-color;
+                            box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+                        }
+                    }
+
+                    textarea {
+                        resize: vertical;
+                        min-height: 80px;
+                    }
+
+                    .form-note {
+                        display: block;
+                        margin-top: 4px;
+                        font-size: 12px;
+                        color: $secondary-color;
+
+                        svg {
+                            margin-right: 4px;
+                        }
+                    }
+                }
+
+                .form-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 16px;
+                }
+            }
+
+            .modal-footer {
+                @include flex-between;
+                padding: 16px 24px;
+                border-top: 1px solid $border-color;
+
+                .right-buttons {
+                    @include flex-start;
+                    gap: 12px;
+                }
+            }
+        }
+    }
+
+    // Loading and Error States
+    .loading-container {
+        @include flex-center;
+        flex-direction: column;
+        gap: 16px;
+        padding: 60px;
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba($primary-color, 0.1);
+            border-top: 4px solid $primary-color;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        p {
+            color: $secondary-color;
+            font-size: 16px;
+            margin: 0;
+        }
+    }
+
+    .error-container {
+        @include flex-center;
+        flex-direction: column;
+        gap: 16px;
+        padding: 60px;
+        text-align: center;
+
+        .error-icon {
+            font-size: 48px;
+            color: $danger-color;
+        }
+
+        h2 {
+            color: $danger-color;
+            margin: 0;
+        }
+
+        p {
+            color: $secondary-color;
+            margin: 0 0 16px 0;
+        }
+    }
+
+    // Responsive Styles
+    @media (max-width: 992px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        .day-view {
+            .day-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            .header-actions {
+                flex-wrap: wrap;
+                gap: 8px;
+
+                .view-toggle,
+                button {
+                    width: 100%;
+                }
+            }
+        }
+
+        .modal {
+            width: 95%;
+
+            .modal-body {
+                padding: 16px;
+
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            .modal-footer {
+                flex-direction: column-reverse;
+                gap: 12px;
+
+                .right-buttons {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .btn {
+                    width: 100%;
+                }
+            }
+        }
+    }
+}

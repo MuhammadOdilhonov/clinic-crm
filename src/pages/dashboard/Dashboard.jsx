@@ -36,6 +36,12 @@ import PatientDetails from "../../components/patientDetails/PatientDetails"
 import ASchedule from "../../components/admin/ASchedule/ASchedule"
 import ACabinets from "../../components/admin/ACabinet/ACabinets"
 import DocSchedule from "../../components/doctor/DocSchedule/DocSchedule"
+import DocPatients from "../../components/doctor/DocPatients/DocPatients"
+import DocAvailability from "../../components/doctor/DocAvailability/DocAvailability"
+import NursePatientCare from "../../components/nurse/nursePatientCare/NursePatientCare"
+import NurseVitalSigns from "../../components/nurse/nurseVitalSigns/NurseVitalSigns"
+import NurseMedications from "../../components/nurse/nurseMedications/NurseMedications"
+import NurseSchedule from "../../components/nurse/nurseSchedule/NurseSchedule"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch } = useAuth()
@@ -308,18 +314,18 @@ export default function Dashboard() {
                         {/* Doctor Routes */}
                         <Route path="/doctor" element={<DoctorDashboard />} />
                         <Route path="/doctor/schedule" element={<DocSchedule />} />
-                        {/* <Route path="/doctor/patients" element={<DoctorPatients />} />
-                        <Route path="/doctor/availability" element={<DoctorAvailability />} /> */}
+                        <Route path="/doctor/patients" element={<DocPatients />} />
+                        <Route path="/doctor/availability" element={<DocAvailability />} />
                         <Route path="/doctor/tasks" element={<DocTasks />} />
 
                         {/* Nurse Routes */}
                         <Route path="/nurse" element={<NurseDashboard />} />
-                        <Route path="/nurse/rooms" element={<NurseRooms />} />
-                        {/* <Route path="/nurse/patients" element={<NursePatients />} /> */}
-                        {/* <Route path="/nurse/vitals" element={<NurseVitals />} /> */}
-                        {/* <Route path="/nurse/medications" element={<NurseMedications />} /> */}
-                        {/* <Route path="/nurse/schedule" element={<NurseSchedule />} /> */}
                         <Route path="/nurse/tasks" element={<NurseTasks />} />
+                        <Route path="/nurse/rooms" element={<NurseRooms />} />
+                        <Route path="/nurse/patients" element={<NursePatientCare />} />
+                        <Route path="/nurse/vitals" element={<NurseVitalSigns />} />
+                        <Route path="/nurse/medications" element={<NurseMedications />} />
+                        <Route path="/nurse/schedule" element={<NurseSchedule />} />
 
                         {/* Common Routes */}
                         <Route path="/notifications" element={<Notifications />} />

@@ -1,1584 +1,1381 @@
-import React , { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import {
-    FaUserPlus,
+    FaUserNurse,
     FaSearch,
+    FaPlus,
     FaEdit,
     FaTrash,
+    FaFilter,
+    FaSortAmountDown,
+    FaSortAmountUp,
+    FaEye,
+    FaUserMd,
+    FaCalendarAlt,
+    FaEnvelope,
+    FaPhone,
+    FaIdCard,
+    FaMapMarkerAlt,
+    FaUserCog,
     FaTimes,
     FaCheck,
-    FaUserNurse,
-    FaFilter,
-    FaMoneyBillWave,
-    FaPlane,
-    FaFilePdf,
-    FaFileExcel,
+    FaExchangeAlt,
+    FaClock,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 
 export default function StaffNurses() {
-    const { selectedBranch } = useAuth()
+    const { user, selectedBranch } = useAuth()
     const { t } = useLanguage()
-
-    // Nurse specialties
-    const nurseSpecialties = [
-        { value: "general", label: t("general_nurse") },
-        { value: "pediatric", label: t("pediatric_nurse") },
-        { value: "surgical", label: t("surgical_nurse") },
-        { value: "icu", label: t("icu_nurse") },
-        { value: "emergency", label: t("emergency_nurse") },
-        { value: "psychiatric", label: t("psychiatric_nurse") },
-        { value: "geriatric", label: t("geriatric_nurse") },
-        { value: "obstetric", label: t("obstetric_nurse") },
-        { value: "oncology", label: t("oncology_nurse") },
-        { value: "anesthetic", label: t("anesthetic_nurse") },
-    ]
-
-    // Mock data for nurses
-    const initialNursesData = {
-        all: [
-            {
-                id: 1,
-                name: "Nilufar Rahimova",
-                specialty: "pediatric",
-                department: "Pediatriya",
-                phone: "+998 90 456 78 90",
-                email: "nilufar@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 2800000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 5,
-                patients: 80,
-                rating: 4.7,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Pediatriya hamshiraligi", "Bolalar reanimatsiyasi"],
-                schedule: "Dushanba-Juma: 08:00-16:00",
-                shift: "morning",
-            },
-            {
-                id: 2,
-                name: "Zarina Umarova",
-                specialty: "surgical",
-                department: "Jarrohlik",
-                phone: "+998 90 567 89 01",
-                email: "zarina@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 3000000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 7,
-                patients: 65,
-                rating: 4.5,
-                education: "Samarqand Tibbiyot Kolleji",
-                certifications: ["Jarrohlik hamshiraligi", "Sterilizatsiya"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-            {
-                id: 3,
-                name: "Gulnora Karimova",
-                specialty: "icu",
-                department: "Reanimatsiya",
-                phone: "+998 90 678 90 12",
-                email: "gulnora@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3200000,
-                onVacation: true,
-                vacationDates: "2023-06-10 - 2023-06-25",
-                experience: 9,
-                patients: 45,
-                rating: 4.9,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Reanimatsiya hamshiraligi", "Yurak-o'pka reanimatsiyasi"],
-                schedule: "Dushanba-Juma: 08:00-20:00",
-                shift: "night",
-            },
-            {
-                id: 4,
-                name: "Malika Azimova",
-                specialty: "general",
-                department: "Terapiya",
-                phone: "+998 90 789 01 23",
-                email: "malika@example.com",
-                status: "inactive",
-                branch: "branch1",
-                salary: 2600000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 3,
-                patients: 90,
-                rating: 4.2,
-                education: "Andijon Tibbiyot Kolleji",
-                certifications: ["Umumiy hamshiralik"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-            {
-                id: 5,
-                name: "Dilfuza Yusupova",
-                specialty: "emergency",
-                department: "Shoshilinch",
-                phone: "+998 90 890 12 34",
-                email: "dilfuza@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 3100000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 6,
-                patients: 110,
-                rating: 4.6,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Shoshilinch tibbiy yordam", "Travmatologiya"],
-                schedule: "Seshanba-Shanba: 08:00-20:00",
-                shift: "evening",
-            },
-            {
-                id: 6,
-                name: "Nargiza Toshmatova",
-                specialty: "obstetric",
-                department: "Ginekologiya",
-                phone: "+998 90 901 23 45",
-                email: "nargiza@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 2900000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 4,
-                patients: 75,
-                rating: 4.4,
-                education: "Farg'ona Tibbiyot Kolleji",
-                certifications: ["Akusherlik", "Chaqaloq parvarishi"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-        ],
-        branch1: [
-            {
-                id: 2,
-                name: "Zarina Umarova",
-                specialty: "surgical",
-                department: "Jarrohlik",
-                phone: "+998 90 567 89 01",
-                email: "zarina@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 3000000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 7,
-                patients: 65,
-                rating: 4.5,
-                education: "Samarqand Tibbiyot Kolleji",
-                certifications: ["Jarrohlik hamshiraligi", "Sterilizatsiya"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-            {
-                id: 4,
-                name: "Malika Azimova",
-                specialty: "general",
-                department: "Terapiya",
-                phone: "+998 90 789 01 23",
-                email: "malika@example.com",
-                status: "inactive",
-                branch: "branch1",
-                salary: 2600000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 3,
-                patients: 90,
-                rating: 4.2,
-                education: "Andijon Tibbiyot Kolleji",
-                certifications: ["Umumiy hamshiralik"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-        ],
-        branch2: [
-            {
-                id: 1,
-                name: "Nilufar Rahimova",
-                specialty: "pediatric",
-                department: "Pediatriya",
-                phone: "+998 90 456 78 90",
-                email: "nilufar@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 2800000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 5,
-                patients: 80,
-                rating: 4.7,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Pediatriya hamshiraligi", "Bolalar reanimatsiyasi"],
-                schedule: "Dushanba-Juma: 08:00-16:00",
-                shift: "morning",
-            },
-            {
-                id: 5,
-                name: "Dilfuza Yusupova",
-                specialty: "emergency",
-                department: "Shoshilinch",
-                phone: "+998 90 890 12 34",
-                email: "dilfuza@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 3100000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 6,
-                patients: 110,
-                rating: 4.6,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Shoshilinch tibbiy yordam", "Travmatologiya"],
-                schedule: "Seshanba-Shanba: 08:00-20:00",
-                shift: "evening",
-            },
-        ],
-        branch3: [
-            {
-                id: 3,
-                name: "Gulnora Karimova",
-                specialty: "icu",
-                department: "Reanimatsiya",
-                phone: "+998 90 678 90 12",
-                email: "gulnora@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3200000,
-                onVacation: true,
-                vacationDates: "2023-06-10 - 2023-06-25",
-                experience: 9,
-                patients: 45,
-                rating: 4.9,
-                education: "Toshkent Tibbiyot Kolleji",
-                certifications: ["Reanimatsiya hamshiraligi", "Yurak-o'pka reanimatsiyasi"],
-                schedule: "Dushanba-Juma: 08:00-20:00",
-                shift: "night",
-            },
-            {
-                id: 6,
-                name: "Nargiza Toshmatova",
-                specialty: "obstetric",
-                department: "Ginekologiya",
-                phone: "+998 90 901 23 45",
-                email: "nargiza@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 2900000,
-                onVacation: false,
-                vacationDates: null,
-                experience: 4,
-                patients: 75,
-                rating: 4.4,
-                education: "Farg'ona Tibbiyot Kolleji",
-                certifications: ["Akusherlik", "Chaqaloq parvarishi"],
-                schedule: "Dushanba-Juma: 09:00-17:00",
-                shift: "morning",
-            },
-        ],
-    }
-
-    const [initialNurses, setInitialNurses] = useState(
-        selectedBranch === "all" ? initialNursesData.all : initialNursesData[selectedBranch],
-    )
-    const [nurses, setNurses] = useState(initialNurses)
-    const [searchTerm, setSearchTerm] = useState("")
-    const [showSidebar, setShowSidebar] = useState(false)
-    const [showEditSidebar, setShowEditSidebar] = useState(false)
-    const [currentNurse, setCurrentNurse] = useState(null)
-    const [newNurse, setNewNurse] = useState({
-        name: "",
-        specialty: "general",
-        department: "",
-        phone: "",
-        email: "",
-        status: "active",
-        branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        salary: 0,
-        onVacation: false,
-        vacationDates: null,
-        experience: 0,
-        patients: 0,
-        rating: 0,
-        education: "",
-        certifications: [],
-        schedule: "",
-        shift: "morning",
-    })
-    const [filterSpecialty, setFilterSpecialty] = useState("all")
-    const [filterStatus, setFilterStatus] = useState("all")
-    const [filterBranch, setFilterBranch] = useState(selectedBranch)
-    const [filterVacation, setFilterVacation] = useState("all")
-    const [filterShift, setFilterShift] = useState("all")
-    const [showFilters, setShowFilters] = useState(false)
-    const [showStats, setShowStats] = useState(true)
-    const [showNurseDetails, setShowNurseDetails] = useState(false)
+    const [loading, setLoading] = useState(true)
+    const [nurses, setNurses] = useState([])
+    const [filteredNurses, setFilteredNurses] = useState([])
+    const [searchQuery, setSearchQuery] = useState("")
+    const [showAddForm, setShowAddForm] = useState(false)
+    const [showEditForm, setShowEditForm] = useState(false)
+    const [showViewDetails, setShowViewDetails] = useState(false)
+    const [showScheduleModal, setShowScheduleModal] = useState(false)
+    const [showSwapModal, setShowSwapModal] = useState(false)
     const [selectedNurse, setSelectedNurse] = useState(null)
-    const [newCertification, setNewCertification] = useState("")
-
-    // Stats calculation
-    const [stats, setStats] = useState({
-        totalNurses: 0,
-        activeNurses: 0,
-        onVacation: 0,
-        totalSalaries: 0,
-        bySpecialty: {},
-        byShift: {},
-        averageExperience: 0,
-        totalPatients: 0,
-        averageRating: 0,
+    const [selectedSchedule, setSelectedSchedule] = useState(null)
+    const [otherNurses, setOtherNurses] = useState([])
+    const [selectedOtherNurse, setSelectedOtherNurse] = useState(null)
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        gender: "female",
+        birthDate: "",
+        address: "",
+        specialization: "",
+        experience: "",
+        education: "",
+        startDate: "",
+        department: "",
+        status: "active",
     })
+    const [scheduleData, setScheduleData] = useState({
+        monday: { working: false, startTime: "08:00", endTime: "17:00" },
+        tuesday: { working: false, startTime: "08:00", endTime: "17:00" },
+        wednesday: { working: false, startTime: "08:00", endTime: "17:00" },
+        thursday: { working: false, startTime: "08:00", endTime: "17:00" },
+        friday: { working: false, startTime: "08:00", endTime: "17:00" },
+        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+    })
+    const [sortConfig, setSortConfig] = useState({
+        key: "lastName",
+        direction: "ascending",
+    })
+    const [filterConfig, setFilterConfig] = useState({
+        department: "all",
+        status: "all",
+        gender: "all",
+    })
+    const [departments, setDepartments] = useState([])
+    const [showFilters, setShowFilters] = useState(false)
 
-    // Calculate stats
     useEffect(() => {
-        const calculateStats = () => {
-            const totalNurses = initialNurses.length
-            const activeNurses = initialNurses.filter((n) => n.status === "active").length
-            const onVacation = initialNurses.filter((n) => n.onVacation).length
-            const totalSalaries = initialNurses.reduce((sum, n) => sum + n.salary, 0)
-            const totalExperience = initialNurses.reduce((sum, n) => sum + n.experience, 0)
-            const totalPatients = initialNurses.reduce((sum, n) => sum + n.patients, 0)
-            const totalRating = initialNurses.reduce((sum, n) => sum + n.rating, 0)
+        setLoading(true)
 
-            // Count by specialty
-            const bySpecialty = {}
-            initialNurses.forEach((n) => {
-                if (!bySpecialty[n.specialty]) bySpecialty[n.specialty] = 0
-                bySpecialty[n.specialty]++
-            })
+        // Simulate API call to fetch nurses
+        setTimeout(() => {
+            // Mock nurses data
+            const mockNurses = [
+                {
+                    id: 1,
+                    firstName: "Nilufar",
+                    lastName: "Rahimova",
+                    email: "nilufar.rahimova@clinic.uz",
+                    phone: "+998 90 123 45 67",
+                    gender: "female",
+                    birthDate: "1990-05-15",
+                    address: "Toshkent sh., Chilonzor tumani, 19-kvartal, 10-uy",
+                    specialization: "Kardiologiya hamshirasi",
+                    experience: "5 yil",
+                    education: "Toshkent tibbiyot kolleji",
+                    startDate: "2018-03-10",
+                    department: "Kardiologiya",
+                    status: "active",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        tuesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        wednesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        thursday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        friday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+                    },
+                },
+                {
+                    id: 2,
+                    firstName: "Zarina",
+                    lastName: "Aliyeva",
+                    email: "zarina.aliyeva@clinic.uz",
+                    phone: "+998 90 234 56 78",
+                    gender: "female",
+                    birthDate: "1992-08-20",
+                    address: "Toshkent sh., Yunusobod tumani, 12-kvartal, 5-uy",
+                    specialization: "Pediatriya hamshirasi",
+                    experience: "3 yil",
+                    education: "Samarqand tibbiyot kolleji",
+                    startDate: "2020-01-15",
+                    department: "Pediatriya",
+                    status: "active",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: true, startTime: "09:00", endTime: "18:00" },
+                        tuesday: { working: true, startTime: "09:00", endTime: "18:00" },
+                        wednesday: { working: true, startTime: "09:00", endTime: "18:00" },
+                        thursday: { working: true, startTime: "09:00", endTime: "18:00" },
+                        friday: { working: true, startTime: "09:00", endTime: "18:00" },
+                        saturday: { working: true, startTime: "09:00", endTime: "14:00" },
+                        sunday: { working: false, startTime: "09:00", endTime: "14:00" },
+                    },
+                },
+                {
+                    id: 3,
+                    firstName: "Gulnora",
+                    lastName: "Karimova",
+                    email: "gulnora.karimova@clinic.uz",
+                    phone: "+998 90 345 67 89",
+                    gender: "female",
+                    birthDate: "1988-11-10",
+                    address: "Toshkent sh., Mirzo Ulug'bek tumani, 6-kvartal, 12-uy",
+                    specialization: "Jarrohlik hamshirasi",
+                    experience: "8 yil",
+                    education: "Toshkent tibbiyot kolleji",
+                    startDate: "2015-06-20",
+                    department: "Jarrohlik",
+                    status: "active",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        tuesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        wednesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        thursday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        friday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+                    },
+                },
+                {
+                    id: 4,
+                    firstName: "Malika",
+                    lastName: "Umarova",
+                    email: "malika.umarova@clinic.uz",
+                    phone: "+998 90 456 78 90",
+                    gender: "female",
+                    birthDate: "1995-03-25",
+                    address: "Toshkent sh., Shayxontohur tumani, 15-kvartal, 8-uy",
+                    specialization: "Nevrologiya hamshirasi",
+                    experience: "2 yil",
+                    education: "Farg'ona tibbiyot kolleji",
+                    startDate: "2021-02-10",
+                    department: "Nevrologiya",
+                    status: "active",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        tuesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        wednesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        thursday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        friday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+                    },
+                },
+                {
+                    id: 5,
+                    firstName: "Dilnoza",
+                    lastName: "Saidova",
+                    email: "dilnoza.saidova@clinic.uz",
+                    phone: "+998 90 567 89 01",
+                    gender: "female",
+                    birthDate: "1991-07-12",
+                    address: "Toshkent sh., Olmazor tumani, 8-kvartal, 15-uy",
+                    specialization: "Terapiya hamshirasi",
+                    experience: "6 yil",
+                    education: "Toshkent tibbiyot kolleji",
+                    startDate: "2017-09-05",
+                    department: "Terapiya",
+                    status: "active",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        tuesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        wednesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        thursday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        friday: { working: true, startTime: "08:00", endTime: "17:00" },
+                        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+                    },
+                },
+                {
+                    id: 6,
+                    firstName: "Aziza",
+                    lastName: "Toshmatova",
+                    email: "aziza.toshmatova@clinic.uz",
+                    phone: "+998 90 678 90 12",
+                    gender: "female",
+                    birthDate: "1993-12-30",
+                    address: "Toshkent sh., Yashnobod tumani, 10-kvartal, 20-uy",
+                    specialization: "Ginekologiya hamshirasi",
+                    experience: "4 yil",
+                    education: "Andijon tibbiyot kolleji",
+                    startDate: "2019-04-15",
+                    department: "Ginekologiya",
+                    status: "inactive",
+                    avatar: "/placeholder.svg?height=150&width=150",
+                    schedule: {
+                        monday: { working: false, startTime: "08:00", endTime: "17:00" },
+                        tuesday: { working: false, startTime: "08:00", endTime: "17:00" },
+                        wednesday: { working: false, startTime: "08:00", endTime: "17:00" },
+                        thursday: { working: false, startTime: "08:00", endTime: "17:00" },
+                        friday: { working: false, startTime: "08:00", endTime: "17:00" },
+                        saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                        sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+                    },
+                },
+            ]
 
-            // Count by shift
-            const byShift = {
-                morning: 0,
-                evening: 0,
-                night: 0,
-            }
-            initialNurses.forEach((n) => {
-                if (n.shift) byShift[n.shift]++
-            })
+            // Extract unique departments
+            const uniqueDepartments = [...new Set(mockNurses.map((nurse) => nurse.department))]
 
-            setStats({
-                totalNurses,
-                activeNurses,
-                onVacation,
-                totalSalaries,
-                bySpecialty,
-                byShift,
-                averageExperience: totalNurses ? (totalExperience / totalNurses).toFixed(1) : 0,
-                totalPatients,
-                averageRating: totalNurses ? (totalRating / totalNurses).toFixed(1) : 0,
-            })
-        }
-
-        calculateStats()
-    }, [initialNurses])
-
-    // Update nurses when branch changes
-    useEffect(() => {
-        if (selectedBranch === "all") {
-            setInitialNurses(initialNursesData.all)
-            setNurses(initialNursesData.all)
-        } else {
-            setInitialNurses(initialNursesData[selectedBranch])
-            setNurses(initialNursesData[selectedBranch])
-        }
-
-        setNewNurse({
-            ...newNurse,
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        })
-
-        setFilterBranch(selectedBranch)
+            setNurses(mockNurses)
+            setFilteredNurses(mockNurses)
+            setDepartments(uniqueDepartments)
+            setLoading(false)
+        }, 800)
     }, [selectedBranch])
 
-    // Filter nurses based on search term, specialty, status, branch, vacation and shift
+    // Apply search, sort, and filters
     useEffect(() => {
-        let filteredNurses = [...initialNurses]
+        let result = [...nurses]
 
-        // Filter by search term
-        if (searchTerm) {
-            filteredNurses = filteredNurses.filter(
+        // Apply search
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase()
+            result = result.filter(
                 (nurse) =>
-                    nurse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    nurse.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    nurse.email.toLowerCase().includes(searchTerm.toLowerCase()),
+                    nurse.firstName.toLowerCase().includes(query) ||
+                    nurse.lastName.toLowerCase().includes(query) ||
+                    nurse.email.toLowerCase().includes(query) ||
+                    nurse.phone.toLowerCase().includes(query) ||
+                    nurse.department.toLowerCase().includes(query) ||
+                    nurse.specialization.toLowerCase().includes(query),
             )
         }
 
-        // Filter by specialty
-        if (filterSpecialty !== "all") {
-            filteredNurses = filteredNurses.filter((nurse) => nurse.specialty === filterSpecialty)
+        // Apply filters
+        if (filterConfig.department !== "all") {
+            result = result.filter((nurse) => nurse.department === filterConfig.department)
         }
 
-        // Filter by status
-        if (filterStatus !== "all") {
-            filteredNurses = filteredNurses.filter((nurse) => nurse.status === filterStatus)
+        if (filterConfig.status !== "all") {
+            result = result.filter((nurse) => nurse.status === filterConfig.status)
         }
 
-        // Filter by branch (if viewing all branches)
-        if (selectedBranch === "all" && filterBranch !== "all") {
-            filteredNurses = filteredNurses.filter((nurse) => nurse.branch === filterBranch)
+        if (filterConfig.gender !== "all") {
+            result = result.filter((nurse) => nurse.gender === filterConfig.gender)
         }
 
-        // Filter by vacation status
-        if (filterVacation !== "all") {
-            filteredNurses = filteredNurses.filter((nurse) =>
-                filterVacation === "on_vacation" ? nurse.onVacation : !nurse.onVacation,
-            )
+        // Apply sorting
+        if (sortConfig.key) {
+            result.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === "ascending" ? -1 : 1
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === "ascending" ? 1 : -1
+                }
+                return 0
+            })
         }
 
-        // Filter by shift
-        if (filterShift !== "all") {
-            filteredNurses = filteredNurses.filter((nurse) => nurse.shift === filterShift)
+        setFilteredNurses(result)
+    }, [nurses, searchQuery, sortConfig, filterConfig])
+
+    // Handle sort request
+    const requestSort = (key) => {
+        let direction = "ascending"
+        if (sortConfig.key === key && sortConfig.direction === "ascending") {
+            direction = "descending"
         }
-
-        setNurses(filteredNurses)
-    }, [searchTerm, filterSpecialty, filterStatus, filterBranch, filterVacation, filterShift, initialNurses])
-
-    // Handle search input change
-    const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value)
+        setSortConfig({ key, direction })
     }
 
-    // Handle new nurse input change
-    const handleNewNurseChange = (e) => {
-        const { name, value, type, checked } = e.target
-        setNewNurse({
-            ...newNurse,
-            [name]:
-                type === "checkbox"
-                    ? checked
-                    : name === "salary" || name === "experience" || name === "patients" || name === "rating"
-                        ? value === ""
-                            ? 0
-                            : Number(value)
-                        : value,
+    // Get sort icon
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) {
+            return null
+        }
+        return sortConfig.direction === "ascending" ? <FaSortAmountUp /> : <FaSortAmountDown />
+    }
+
+    // Handle filter change
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target
+        setFilterConfig({
+            ...filterConfig,
+            [name]: value,
         })
     }
 
-    // Handle edit nurse input change
-    const handleEditNurseChange = (e) => {
-        const { name, value, type, checked } = e.target
-        setCurrentNurse({
-            ...currentNurse,
-            [name]:
-                type === "checkbox"
-                    ? checked
-                    : name === "salary" || name === "experience" || name === "patients" || name === "rating"
-                        ? Number(value)
-                        : value,
+    // Reset filters
+    const resetFilters = () => {
+        setFilterConfig({
+            department: "all",
+            status: "all",
+            gender: "all",
         })
+        setSearchQuery("")
     }
 
-    // Toggle filters
+    // Toggle filters visibility
     const toggleFilters = () => {
         setShowFilters(!showFilters)
     }
 
-    // Toggle stats
-    const toggleStats = () => {
-        setShowStats(!showStats)
+    // Handle form input change
+    const handleInputChange = (e) => {
+        const { name, value } = e.target
+        setFormData({
+            ...formData,
+            [name]: value,
+        })
     }
 
-    // Open add sidebar
-    const openAddSidebar = () => {
-        setShowSidebar(true)
+    // Handle schedule input change
+    const handleScheduleChange = (day, field, value) => {
+        setScheduleData({
+            ...scheduleData,
+            [day]: {
+                ...scheduleData[day],
+                [field]: value,
+            },
+        })
     }
 
-    // Close add sidebar
-    const closeAddSidebar = () => {
-        setShowSidebar(false)
-        setNewNurse({
-            name: "",
-            specialty: "general",
-            department: "",
-            phone: "",
+    // Open add form
+    const handleAddNurse = () => {
+        setFormData({
+            firstName: "",
+            lastName: "",
             email: "",
-            status: "active",
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-            salary: 0,
-            onVacation: false,
-            vacationDates: null,
-            experience: 0,
-            patients: 0,
-            rating: 0,
+            phone: "",
+            gender: "female",
+            birthDate: "",
+            address: "",
+            specialization: "",
+            experience: "",
             education: "",
-            certifications: [],
-            schedule: "",
-            shift: "morning",
+            startDate: new Date().toISOString().split("T")[0],
+            department: departments[0] || "",
+            status: "active",
         })
-        setNewCertification("")
+        setShowAddForm(true)
     }
 
-    // Open edit sidebar
-    const openEditSidebar = (nurse) => {
-        setCurrentNurse(nurse)
-        setShowEditSidebar(true)
-    }
-
-    // Close edit sidebar
-    const closeEditSidebar = () => {
-        setShowEditSidebar(false)
-        setCurrentNurse(null)
-    }
-
-    // Add new nurse
-    const addNurse = (e) => {
-        e.preventDefault()
-        const id = Math.max(...initialNursesData.all.map((n) => n.id)) + 1
-        const newNurseMember = { ...newNurse, id }
-
-        // Update all nurses data
-        const updatedAllNurses = [...initialNursesData.all, newNurseMember]
-        initialNursesData.all = updatedAllNurses
-
-        // Update branch-specific nurses data
-        initialNursesData[newNurseMember.branch] = [...initialNursesData[newNurseMember.branch], newNurseMember]
-
-        // Update current view
-        if (selectedBranch === "all" || selectedBranch === newNurseMember.branch) {
-            setInitialNurses((prev) => [...prev, newNurseMember])
-        }
-
-        closeAddSidebar()
-    }
-
-    // Update nurse
-    const updateNurse = (e) => {
-        e.preventDefault()
-
-        // Update in all nurses data
-        const updatedAllNurses = initialNursesData.all.map((nurse) => (nurse.id === currentNurse.id ? currentNurse : nurse))
-        initialNursesData.all = updatedAllNurses
-
-        // Update in branch-specific data
-        // First remove from old branch if branch changed
-        if (currentNurse.branch !== currentNurse._prevBranch && currentNurse._prevBranch) {
-            initialNursesData[currentNurse._prevBranch] = initialNursesData[currentNurse._prevBranch].filter(
-                (nurse) => nurse.id !== currentNurse.id,
-            )
-        }
-
-        // Then add to new branch
-        if (initialNursesData[currentNurse.branch]) {
-            initialNursesData[currentNurse.branch] = initialNursesData[currentNurse.branch].filter(
-                (nurse) => nurse.id !== currentNurse.id,
-            )
-            initialNursesData[currentNurse.branch].push(currentNurse)
-        }
-
-        // Update current view
-        if (selectedBranch === "all") {
-            setInitialNurses(updatedAllNurses)
-        } else if (selectedBranch === currentNurse.branch) {
-            setInitialNurses(initialNursesData[selectedBranch])
-        }
-
-        closeEditSidebar()
-    }
-
-    // Delete nurse
-    const deleteNurse = (id) => {
-        if (window.confirm(t("confirm_delete_nurse"))) {
-            // Find the nurse to get their branch
-            const nurseToDelete = initialNursesData.all.find((nurse) => nurse.id === id)
-
-            // Remove from all nurses data
-            initialNursesData.all = initialNursesData.all.filter((nurse) => nurse.id !== id)
-
-            // Remove from branch-specific data
-            if (nurseToDelete && nurseToDelete.branch) {
-                initialNursesData[nurseToDelete.branch] = initialNursesData[nurseToDelete.branch].filter(
-                    (nurse) => nurse.id !== id,
-                )
-            }
-
-            // Update current view
-            setInitialNurses((prev) => prev.filter((nurse) => nurse.id !== id))
-        }
-    }
-
-    // Get specialty label
-    const getSpecialtyLabel = (specialtyValue) => {
-        const specialty = nurseSpecialties.find((spec) => spec.value === specialtyValue)
-        return specialty ? specialty.label : specialtyValue
-    }
-
-    // Get shift label
-    const getShiftLabel = (shift) => {
-        switch (shift) {
-            case "morning":
-                return t("morning_shift")
-            case "evening":
-                return t("evening_shift")
-            case "night":
-                return t("night_shift")
-            default:
-                return shift
-        }
-    }
-
-    // View nurse details
-    const viewNurseDetails = (nurse) => {
+    // Open edit form
+    const handleEditNurse = (nurse) => {
         setSelectedNurse(nurse)
-        setShowNurseDetails(true)
-    }
-
-    // Close nurse details
-    const closeNurseDetails = () => {
-        setShowNurseDetails(false)
-        setSelectedNurse(null)
-    }
-
-    // Add certification to new nurse
-    const addCertification = () => {
-        if (newCertification.trim()) {
-            setNewNurse({
-                ...newNurse,
-                certifications: [...newNurse.certifications, newCertification.trim()],
-            })
-            setNewCertification("")
-        }
-    }
-
-    // Remove certification from new nurse
-    const removeCertification = (index) => {
-        const updatedCertifications = [...newNurse.certifications]
-        updatedCertifications.splice(index, 1)
-        setNewNurse({
-            ...newNurse,
-            certifications: updatedCertifications,
+        setFormData({
+            firstName: nurse.firstName,
+            lastName: nurse.lastName,
+            email: nurse.email,
+            phone: nurse.phone,
+            gender: nurse.gender,
+            birthDate: nurse.birthDate,
+            address: nurse.address,
+            specialization: nurse.specialization,
+            experience: nurse.experience,
+            education: nurse.education,
+            startDate: nurse.startDate,
+            department: nurse.department,
+            status: nurse.status,
         })
+        setShowEditForm(true)
     }
 
-    // Add certification to current nurse
-    const addCertificationToCurrentNurse = () => {
-        if (newCertification.trim() && currentNurse) {
-            setCurrentNurse({
-                ...currentNurse,
-                certifications: [...currentNurse.certifications, newCertification.trim()],
-            })
-            setNewCertification("")
+    // Open view details
+    const handleViewNurse = (nurse) => {
+        setSelectedNurse(nurse)
+        setShowViewDetails(true)
+    }
+
+    // Open schedule modal
+    const handleScheduleModal = (nurse) => {
+        setSelectedNurse(nurse)
+        setScheduleData(
+            nurse.schedule || {
+                monday: { working: false, startTime: "08:00", endTime: "17:00" },
+                tuesday: { working: false, startTime: "08:00", endTime: "17:00" },
+                wednesday: { working: false, startTime: "08:00", endTime: "17:00" },
+                thursday: { working: false, startTime: "08:00", endTime: "17:00" },
+                friday: { working: false, startTime: "08:00", endTime: "17:00" },
+                saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+            },
+        )
+        setShowScheduleModal(true)
+    }
+
+    // Open swap schedule modal
+    const handleSwapSchedule = (nurse, day) => {
+        setSelectedNurse(nurse)
+        setSelectedSchedule(day)
+        // Filter other active nurses from the same department
+        const availableNurses = nurses.filter(
+            (n) => n.id !== nurse.id && n.department === nurse.department && n.status === "active",
+        )
+        setOtherNurses(availableNurses)
+        setSelectedOtherNurse(null)
+        setShowSwapModal(true)
+    }
+
+    // Handle form submission for adding a new nurse
+    const handleAddSubmit = (e) => {
+        e.preventDefault()
+
+        // Create new nurse object
+        const newNurse = {
+            id: nurses.length + 1,
+            ...formData,
+            avatar: "/placeholder.svg?height=150&width=150",
+            schedule: {
+                monday: { working: true, startTime: "08:00", endTime: "17:00" },
+                tuesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                wednesday: { working: true, startTime: "08:00", endTime: "17:00" },
+                thursday: { working: true, startTime: "08:00", endTime: "17:00" },
+                friday: { working: true, startTime: "08:00", endTime: "17:00" },
+                saturday: { working: false, startTime: "08:00", endTime: "13:00" },
+                sunday: { working: false, startTime: "08:00", endTime: "13:00" },
+            },
+        }
+
+        // Add to nurses list
+        setNurses([...nurses, newNurse])
+        setShowAddForm(false)
+    }
+
+    // Handle form submission for editing a nurse
+    const handleEditSubmit = (e) => {
+        e.preventDefault()
+
+        // Update nurse object
+        const updatedNurses = nurses.map((nurse) =>
+            nurse.id === selectedNurse.id
+                ? {
+                    ...nurse,
+                    ...formData,
+                }
+                : nurse,
+        )
+
+        // Update nurses list
+        setNurses(updatedNurses)
+        setShowEditForm(false)
+    }
+
+    // Handle schedule update
+    const handleScheduleSubmit = (e) => {
+        e.preventDefault()
+
+        // Update nurse schedule
+        const updatedNurses = nurses.map((nurse) =>
+            nurse.id === selectedNurse.id
+                ? {
+                    ...nurse,
+                    schedule: scheduleData,
+                }
+                : nurse,
+        )
+
+        // Update nurses list
+        setNurses(updatedNurses)
+        setShowScheduleModal(false)
+    }
+
+    // Handle schedule swap
+    const handleSwapSubmit = (e) => {
+        e.preventDefault()
+
+        if (!selectedOtherNurse) {
+            alert(t("please_select_nurse"))
+            return
+        }
+
+        // Swap schedules between nurses
+        const updatedNurses = nurses.map((nurse) => {
+            if (nurse.id === selectedNurse.id) {
+                const updatedSchedule = { ...nurse.schedule }
+                updatedSchedule[selectedSchedule] = { ...selectedOtherNurse.schedule[selectedSchedule] }
+                return {
+                    ...nurse,
+                    schedule: updatedSchedule,
+                }
+            } else if (nurse.id === selectedOtherNurse.id) {
+                const updatedSchedule = { ...nurse.schedule }
+                updatedSchedule[selectedSchedule] = { ...selectedNurse.schedule[selectedSchedule] }
+                return {
+                    ...nurse,
+                    schedule: updatedSchedule,
+                }
+            }
+            return nurse
+        })
+
+        // Update nurses list
+        setNurses(updatedNurses)
+        setShowSwapModal(false)
+    }
+
+    // Handle nurse deletion
+    const handleDeleteNurse = (nurseId) => {
+        if (window.confirm(t("confirm_delete_nurse"))) {
+            setNurses(nurses.filter((nurse) => nurse.id !== nurseId))
         }
     }
 
-    // Remove certification from current nurse
-    const removeCertificationFromCurrentNurse = (index) => {
-        if (currentNurse) {
-            const updatedCertifications = [...currentNurse.certifications]
-            updatedCertifications.splice(index, 1)
-            setCurrentNurse({
-                ...currentNurse,
-                certifications: updatedCertifications,
-            })
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return ""
+        const date = new Date(dateString)
+        return date.toLocaleDateString()
+    }
+
+    // Get day name in Uzbek
+    const getDayName = (day) => {
+        switch (day) {
+            case "monday":
+                return "Dushanba"
+            case "tuesday":
+                return "Seshanba"
+            case "wednesday":
+                return "Chorshanba"
+            case "thursday":
+                return "Payshanba"
+            case "friday":
+                return "Juma"
+            case "saturday":
+                return "Shanba"
+            case "sunday":
+                return "Yakshanba"
+            default:
+                return day
         }
     }
 
-    // Export to PDF
-    const exportToPDF = () => {
-        alert(t("export_to_pdf_function"))
-    }
-
-    // Export to Excel
-    const exportToExcel = () => {
-        alert(t("export_to_excel_function"))
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>{t("loading")}...</p>
+            </div>
+        )
     }
 
     return (
-        <div className="nurse-container">
-            <div className="nurse-header">
-                <h1 className="nurse-title">{t("nurses")}</h1>
-                <div className="nurse-actions">
-                    <button className="nurse-btn nurse-btn-outline nurse-btn-icon" onClick={toggleStats}>
-                        {showStats ? <FaTimes /> : <FaMoneyBillWave />} {showStats ? t("close_stats") : t("statistics")}
+        <div className="director-staff-nurses">
+            <div className="page-header">
+                <h1 className="page-title">
+                    <FaUserNurse /> {t("nurses_management")}
+                </h1>
+                <div className="header-actions">
+                    <div className="search-box">
+                        <FaSearch />
+                        <input
+                            type="text"
+                            placeholder={t("search_nurses")}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <button className="filter-button" onClick={toggleFilters}>
+                        <FaFilter /> {t("filters")}
                     </button>
-                    <button className="nurse-btn nurse-btn-outline nurse-btn-icon" onClick={exportToPDF}>
-                        <FaFilePdf /> {t("export_to_pdf")}
-                    </button>
-                    <button className="nurse-btn nurse-btn-outline nurse-btn-icon" onClick={exportToExcel}>
-                        <FaFileExcel /> {t("export_to_excel")}
-                    </button>
-                    <button className="nurse-btn nurse-btn-primary nurse-btn-icon" onClick={openAddSidebar}>
-                        <FaUserPlus /> {t("add_new_nurse")}
+                    <button className="add-button" onClick={handleAddNurse}>
+                        <FaPlus /> {t("add_nurse")}
                     </button>
                 </div>
             </div>
 
-            {showStats && (
-                <div className="nurse-stats-container">
-                    <div className="nurse-stats-grid">
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-icon-wrapper">
-                                <FaUserNurse className="nurse-stat-icon" />
-                            </div>
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.totalNurses}</div>
-                                <div className="nurse-stat-label">{t("total_nurses")}</div>
-                            </div>
-                        </div>
-
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-icon-wrapper">
-                                <FaCheck className="nurse-stat-icon" />
-                            </div>
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.activeNurses}</div>
-                                <div className="nurse-stat-label">{t("active_nurses")}</div>
-                            </div>
-                        </div>
-
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-icon-wrapper">
-                                <FaPlane className="nurse-stat-icon" />
-                            </div>
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.onVacation}</div>
-                                <div className="nurse-stat-label">{t("nurses_on_vacation")}</div>
-                            </div>
-                        </div>
-
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-icon-wrapper">
-                                <FaMoneyBillWave className="nurse-stat-icon" />
-                            </div>
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">
-                                    {stats.totalSalaries.toLocaleString()} {t("currency")}
-                                </div>
-                                <div className="nurse-stat-label">{t("total_salary")}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="nurse-stats-grid">
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.averageExperience}</div>
-                                <div className="nurse-stat-label">{t("average_experience")}</div>
-                            </div>
-                        </div>
-
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.totalPatients}</div>
-                                <div className="nurse-stat-label">{t("total_patients")}</div>
-                            </div>
-                        </div>
-
-                        <div className="nurse-stat-card">
-                            <div className="nurse-stat-content">
-                                <div className="nurse-stat-value">{stats.averageRating}</div>
-                                <div className="nurse-stat-label">{t("average_rating")}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="nurse-specialty-distribution">
-                        <h3>{t("specialty_distribution")}</h3>
-                        <div className="nurse-specialty-bars">
-                            {Object.entries(stats.bySpecialty).map(([specialty, count]) => (
-                                <div className="nurse-specialty-bar-item" key={specialty}>
-                                    <div className="nurse-specialty-info">
-                                        <span className="nurse-specialty-name">{getSpecialtyLabel(specialty)}</span>
-                                        <span className="nurse-specialty-count">{count}</span>
-                                    </div>
-                                    <div className="nurse-specialty-bar-container">
-                                        <div
-                                            className="nurse-specialty-bar-fill"
-                                            style={{ width: `${(count / stats.totalNurses) * 100}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
+            {showFilters && (
+                <div className="filters-panel">
+                    <div className="filter-group">
+                        <label>{t("department")}:</label>
+                        <select name="department" value={filterConfig.department} onChange={handleFilterChange}>
+                            <option value="all">{t("all_departments")}</option>
+                            {departments.map((dept) => (
+                                <option key={dept} value={dept}>
+                                    {dept}
+                                </option>
                             ))}
-                        </div>
+                        </select>
                     </div>
 
-                    <div className="nurse-shift-distribution">
-                        <h3>{t("shift_distribution")}</h3>
-                        <div className="nurse-shift-grid">
-                            <div className="nurse-shift-card">
-                                <div className="nurse-shift-title">{t("morning_shift")}</div>
-                                <div className="nurse-shift-count">{stats.byShift.morning}</div>
+                    <div className="filter-group">
+                        <label>{t("status")}:</label>
+                        <select name="status" value={filterConfig.status} onChange={handleFilterChange}>
+                            <option value="all">{t("all_statuses")}</option>
+                            <option value="active">{t("active")}</option>
+                            <option value="inactive">{t("inactive")}</option>
+                        </select>
+                    </div>
+
+                    <div className="filter-group">
+                        <label>{t("gender")}:</label>
+                        <select name="gender" value={filterConfig.gender} onChange={handleFilterChange}>
+                            <option value="all">{t("all_genders")}</option>
+                            <option value="male">{t("male")}</option>
+                            <option value="female">{t("female")}</option>
+                        </select>
+                    </div>
+
+                    <button className="reset-filters" onClick={resetFilters}>
+                        {t("reset_filters")}
+                    </button>
+                </div>
+            )}
+
+            <div className="nurses-container">
+                {filteredNurses.length > 0 ? (
+                    <div className="nurses-grid">
+                        {filteredNurses.map((nurse) => (
+                            <div key={nurse.id} className={`nurse-card ${nurse.status === "inactive" ? "inactive" : ""}`}>
+                                <div className="nurse-header">
+                                    <div className="nurse-avatar">
+                                        <img src={nurse.avatar || "/placeholder.svg"} alt={`${nurse.firstName} ${nurse.lastName}`} />
+                                    </div>
+                                    <div className="nurse-info">
+                                        <h3 className="nurse-name">{`${nurse.firstName} ${nurse.lastName}`}</h3>
+                                        <p className="nurse-specialization">{nurse.specialization}</p>
+                                        <p className="nurse-department">{nurse.department}</p>
+                                        <div className={`status-badge ${nurse.status}`}>
+                                            {nurse.status === "active" ? t("active") : t("inactive")}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="nurse-contact">
+                                    <p>
+                                        <FaEnvelope /> {nurse.email}
+                                    </p>
+                                    <p>
+                                        <FaPhone /> {nurse.phone}
+                                    </p>
+                                </div>
+                                <div className="nurse-actions">
+                                    <button className="view-button" onClick={() => handleViewNurse(nurse)}>
+                                        <FaEye /> {t("view")}
+                                    </button>
+                                    <button className="edit-button" onClick={() => handleEditNurse(nurse)}>
+                                        <FaEdit /> {t("edit")}
+                                    </button>
+                                    <button className="schedule-button" onClick={() => handleScheduleModal(nurse)}>
+                                        <FaCalendarAlt /> {t("schedule")}
+                                    </button>
+                                    <button className="delete-button" onClick={() => handleDeleteNurse(nurse.id)}>
+                                        <FaTrash /> {t("delete")}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="nurse-shift-card">
-                                <div className="nurse-shift-title">{t("evening_shift")}</div>
-                                <div className="nurse-shift-count">{stats.byShift.evening}</div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="no-nurses-message">
+                        <FaUserNurse />
+                        <p>{t("no_nurses_found")}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Add Nurse Form */}
+            {showAddForm && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>
+                                <FaPlus /> {t("add_nurse")}
+                            </h2>
+                            <button className="close-button" onClick={() => setShowAddForm(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddSubmit}>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="firstName">{t("first_name")}*</label>
+                                    <input
+                                        type="text"
+                                        id="firstName"
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="lastName">{t("last_name")}*</label>
+                                    <input
+                                        type="text"
+                                        id="lastName"
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
                             </div>
-                            <div className="nurse-shift-card">
-                                <div className="nurse-shift-title">{t("night_shift")}</div>
-                                <div className="nurse-shift-count">{stats.byShift.night}</div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="email">{t("email")}*</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="phone">{t("phone")}*</label>
+                                    <input
+                                        type="text"
+                                        id="phone"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="gender">{t("gender")}</label>
+                                    <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange}>
+                                        <option value="female">{t("female")}</option>
+                                        <option value="male">{t("male")}</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="birthDate">{t("birth_date")}</label>
+                                    <input
+                                        type="date"
+                                        id="birthDate"
+                                        name="birthDate"
+                                        value={formData.birthDate}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="address">{t("address")}</label>
+                                <input type="text" id="address" name="address" value={formData.address} onChange={handleInputChange} />
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="specialization">{t("specialization")}*</label>
+                                    <input
+                                        type="text"
+                                        id="specialization"
+                                        name="specialization"
+                                        value={formData.specialization}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="experience">{t("experience")}</label>
+                                    <input
+                                        type="text"
+                                        id="experience"
+                                        name="experience"
+                                        value={formData.experience}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="education">{t("education")}</label>
+                                <input
+                                    type="text"
+                                    id="education"
+                                    name="education"
+                                    value={formData.education}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="startDate">{t("start_date")}*</label>
+                                    <input
+                                        type="date"
+                                        id="startDate"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="department">{t("department")}*</label>
+                                    <select
+                                        id="department"
+                                        name="department"
+                                        value={formData.department}
+                                        onChange={handleInputChange}
+                                        required
+                                    >
+                                        {departments.map((dept) => (
+                                            <option key={dept} value={dept}>
+                                                {dept}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="status">{t("status")}</label>
+                                <select id="status" name="status" value={formData.status} onChange={handleInputChange}>
+                                    <option value="active">{t("active")}</option>
+                                    <option value="inactive">{t("inactive")}</option>
+                                </select>
+                            </div>
+
+                            <div className="form-actions">
+                                <button type="button" className="cancel-button" onClick={() => setShowAddForm(false)}>
+                                    {t("cancel")}
+                                </button>
+                                <button type="submit" className="submit-button">
+                                    {t("add_nurse")}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Nurse Form */}
+            {showEditForm && selectedNurse && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>
+                                <FaEdit /> {t("edit_nurse")}
+                            </h2>
+                            <button className="close-button" onClick={() => setShowEditForm(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="firstName">{t("first_name")}*</label>
+                                    <input
+                                        type="text"
+                                        id="firstName"
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="lastName">{t("last_name")}*</label>
+                                    <input
+                                        type="text"
+                                        id="lastName"
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="email">{t("email")}*</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="phone">{t("phone")}*</label>
+                                    <input
+                                        type="text"
+                                        id="phone"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="gender">{t("gender")}</label>
+                                    <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange}>
+                                        <option value="female">{t("female")}</option>
+                                        <option value="male">{t("male")}</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="birthDate">{t("birth_date")}</label>
+                                    <input
+                                        type="date"
+                                        id="birthDate"
+                                        name="birthDate"
+                                        value={formData.birthDate}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="address">{t("address")}</label>
+                                <input type="text" id="address" name="address" value={formData.address} onChange={handleInputChange} />
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="specialization">{t("specialization")}*</label>
+                                    <input
+                                        type="text"
+                                        id="specialization"
+                                        name="specialization"
+                                        value={formData.specialization}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="experience">{t("experience")}</label>
+                                    <input
+                                        type="text"
+                                        id="experience"
+                                        name="experience"
+                                        value={formData.experience}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="education">{t("education")}</label>
+                                <input
+                                    type="text"
+                                    id="education"
+                                    name="education"
+                                    value={formData.education}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="startDate">{t("start_date")}*</label>
+                                    <input
+                                        type="date"
+                                        id="startDate"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="department">{t("department")}*</label>
+                                    <select
+                                        id="department"
+                                        name="department"
+                                        value={formData.department}
+                                        onChange={handleInputChange}
+                                        required
+                                    >
+                                        {departments.map((dept) => (
+                                            <option key={dept} value={dept}>
+                                                {dept}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="status">{t("status")}</label>
+                                <select id="status" name="status" value={formData.status} onChange={handleInputChange}>
+                                    <option value="active">{t("active")}</option>
+                                    <option value="inactive">{t("inactive")}</option>
+                                </select>
+                            </div>
+
+                            <div className="form-actions">
+                                <button type="button" className="cancel-button" onClick={() => setShowEditForm(false)}>
+                                    {t("cancel")}
+                                </button>
+                                <button type="submit" className="submit-button">
+                                    {t("update_nurse")}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Nurse Details */}
+            {showViewDetails && selectedNurse && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>
+                                <FaUserNurse /> {t("nurse_details")}
+                            </h2>
+                            <button className="close-button" onClick={() => setShowViewDetails(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="nurse-details">
+                            <div className="nurse-profile-header">
+                                <div className="nurse-avatar-large">
+                                    <img
+                                        src={selectedNurse.avatar || "/placeholder.svg"}
+                                        alt={`${selectedNurse.firstName} ${selectedNurse.lastName}`}
+                                    />
+                                </div>
+                                <div className="nurse-profile-info">
+                                    <h3 className="nurse-full-name">{`${selectedNurse.firstName} ${selectedNurse.lastName}`}</h3>
+                                    <p className="nurse-title">{selectedNurse.specialization}</p>
+                                    <div className={`status-badge ${selectedNurse.status}`}>
+                                        {selectedNurse.status === "active" ? t("active") : t("inactive")}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="nurse-details-grid">
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaIdCard /> {t("id")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.id}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaEnvelope /> {t("email")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.email}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaPhone /> {t("phone")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.phone}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaUserMd /> {t("gender")}:
+                                    </div>
+                                    <div className="detail-value">{t(selectedNurse.gender)}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaCalendarAlt /> {t("birth_date")}:
+                                    </div>
+                                    <div className="detail-value">{formatDate(selectedNurse.birthDate)}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaMapMarkerAlt /> {t("address")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.address}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaUserCog /> {t("specialization")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.specialization}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaUserCog /> {t("experience")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.experience}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaUserCog /> {t("education")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.education}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaCalendarAlt /> {t("start_date")}:
+                                    </div>
+                                    <div className="detail-value">{formatDate(selectedNurse.startDate)}</div>
+                                </div>
+
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <FaUserCog /> {t("department")}:
+                                    </div>
+                                    <div className="detail-value">{selectedNurse.department}</div>
+                                </div>
+                            </div>
+
+                            <div className="schedule-section">
+                                <h4>
+                                    <FaCalendarAlt /> {t("work_schedule")}
+                                </h4>
+                                <div className="schedule-grid">
+                                    {selectedNurse.schedule &&
+                                        Object.entries(selectedNurse.schedule).map(([day, schedule]) => (
+                                            <div key={day} className={`schedule-day ${schedule.working ? "working" : "not-working"}`}>
+                                                <div className="day-name">{getDayName(day)}</div>
+                                                {schedule.working ? (
+                                                    <div className="work-hours">
+                                                        <FaClock /> {schedule.startTime} - {schedule.endTime}
+                                                    </div>
+                                                ) : (
+                                                    <div className="day-off">{t("day_off")}</div>
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+
+                            <div className="detail-actions">
+                                <button
+                                    className="edit-button"
+                                    onClick={() => {
+                                        setShowViewDetails(false)
+                                        handleEditNurse(selectedNurse)
+                                    }}
+                                >
+                                    <FaEdit /> {t("edit")}
+                                </button>
+                                <button
+                                    className="schedule-button"
+                                    onClick={() => {
+                                        setShowViewDetails(false)
+                                        handleScheduleModal(selectedNurse)
+                                    }}
+                                >
+                                    <FaCalendarAlt /> {t("edit_schedule")}
+                                </button>
+                                <button className="close-details-button" onClick={() => setShowViewDetails(false)}>
+                                    <FaCheck /> {t("ok")}
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="nurse-filters-container">
-                <div className="nurse-search-filter">
-                    <div className="nurse-search-input">
-                        <FaSearch className="nurse-search-icon" />
-                        <input type="text" placeholder={t("search")} value={searchTerm} onChange={handleSearchChange} />
-                    </div>
-                    <button className={`nurse-filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
-                        <FaFilter /> {t("filters")}
-                    </button>
-                </div>
-
-                {showFilters && (
-                    <div className="nurse-advanced-filters">
-                        <div className="nurse-filter-group">
-                            <label>{t("specialty")}:</label>
-                            <select value={filterSpecialty} onChange={(e) => setFilterSpecialty(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                {nurseSpecialties.map((specialty) => (
-                                    <option key={specialty.value} value={specialty.value}>
-                                        {specialty.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="nurse-filter-group">
-                            <label>{t("status")}:</label>
-                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                <option value="active">{t("active")}</option>
-                                <option value="inactive">{t("inactive")}</option>
-                            </select>
-                        </div>
-
-                        {selectedBranch === "all" && (
-                            <div className="nurse-filter-group">
-                                <label>{t("branch")}:</label>
-                                <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
-                                    <option value="all">{t("all")}</option>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
-                                </select>
-                            </div>
-                        )}
-
-                        <div className="nurse-filter-group">
-                            <label>{t("vacation_status")}:</label>
-                            <select value={filterVacation} onChange={(e) => setFilterVacation(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                <option value="on_vacation">{t("on_vacation")}</option>
-                                <option value="not_on_vacation">{t("at_work")}</option>
-                            </select>
-                        </div>
-
-                        <div className="nurse-filter-group">
-                            <label>{t("shift")}:</label>
-                            <select value={filterShift} onChange={(e) => setFilterShift(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                <option value="morning">{t("morning_shift")}</option>
-                                <option value="evening">{t("evening_shift")}</option>
-                                <option value="night">{t("night_shift")}</option>
-                            </select>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="nurse-dashboard-card">
-                <div className="nurse-table-responsive">
-                    <table className="nurse-data-table">
-                        <thead>
-                            <tr>
-                                <th>{t("name")}</th>
-                                <th>{t("specialty")}</th>
-                                <th>{t("department")}</th>
-                                <th>{t("phone")}</th>
-                                <th>{t("monthly_salary")}</th>
-                                <th>{t("experience")}</th>
-                                <th>{t("patients_count")}</th>
-                                <th>{t("rating")}</th>
-                                <th>{t("shift")}</th>
-                                <th>{t("vacation_status")}</th>
-                                <th>{t("status")}</th>
-                                <th>{t("actions")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {nurses.map((nurse) => (
-                                <tr key={nurse.id}>
-                                    <td>
-                                        <div className="nurse-name-cell" onClick={() => viewNurseDetails(nurse)}>
-                                            {nurse.name}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className={`nurse-specialty-badge ${nurse.specialty}`}>
-                                            {getSpecialtyLabel(nurse.specialty)}
-                                        </div>
-                                    </td>
-                                    <td>{nurse.department}</td>
-                                    <td>{nurse.phone}</td>
-                                    <td>
-                                        {nurse.salary.toLocaleString()} {t("currency")}
-                                    </td>
-                                    <td>
-                                        {nurse.experience} {t("years")}
-                                    </td>
-                                    <td>{nurse.patients}</td>
-                                    <td>
-                                        <div className="nurse-rating">
-                                            <span className="nurse-rating-value">{nurse.rating}</span>
-                                            <span className="nurse-rating-star">★</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className={`nurse-shift-badge ${nurse.shift}`}>{getShiftLabel(nurse.shift)}</div>
-                                    </td>
-                                    <td>
-                                        <div className={`nurse-vacation-badge ${nurse.onVacation ? "on-vacation" : "working"}`}>
-                                            {nurse.onVacation ? (
-                                                <>
-                                                    <FaPlane /> {t("on_vacation")}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaCheck /> {t("at_work")}
-                                                </>
-                                            )}
-                                        </div>
-                                        {nurse.onVacation && nurse.vacationDates && (
-                                            <div className="nurse-vacation-dates">{nurse.vacationDates}</div>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className={`nurse-status-badge ${nurse.status}`}>
-                                            {nurse.status === "active" ? (
-                                                <>
-                                                    <FaCheck /> {t("active")}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaTimes /> {t("inactive")}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="nurse-action-buttons">
-                                            <button className="nurse-btn-icon nurse-edit" onClick={() => openEditSidebar(nurse)}>
-                                                <FaEdit />
-                                            </button>
-                                            <button className="nurse-btn-icon nurse-delete" onClick={() => deleteNurse(nurse.id)}>
-                                                <FaTrash />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {nurses.length === 0 && (
-                                <tr>
-                                    <td colSpan="12" className="nurse-no-data">
-                                        {t("no_data_found")}
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Add Nurse Sidebar */}
-            <div className={`nurse-sidebar-overlay ${showSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
-            <div className={`nurse-sidebar ${showSidebar ? "active" : ""}`}>
-                <div className="nurse-sidebar-header">
-                    <h2>{t("add_new_nurse")}</h2>
-                    <button className="nurse-close-button" onClick={closeAddSidebar}>
-                        <FaTimes />
-                    </button>
-                </div>
-                <div className="nurse-sidebar-content">
-                    <form onSubmit={addNurse}>
-                        <div className="nurse-form-group">
-                            <label>{t("full_name")}</label>
-                            <input type="text" name="name" value={newNurse.name} onChange={handleNewNurseChange} required />
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("specialty")}</label>
-                            <select name="specialty" value={newNurse.specialty} onChange={handleNewNurseChange} required>
-                                {nurseSpecialties.map((specialty) => (
-                                    <option key={specialty.value} value={specialty.value}>
-                                        {specialty.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("department")}</label>
-                            <input
-                                type="text"
-                                name="department"
-                                value={newNurse.department}
-                                onChange={handleNewNurseChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="nurse-form-row">
-                            <div className="nurse-form-group">
-                                <label>{t("phone")}</label>
-                                <input type="text" name="phone" value={newNurse.phone} onChange={handleNewNurseChange} required />
-                            </div>
-
-                            <div className="nurse-form-group">
-                                <label>{t("email")}</label>
-                                <input type="email" name="email" value={newNurse.email} onChange={handleNewNurseChange} required />
-                            </div>
-                        </div>
-
-                        <div className="nurse-form-row">
-                            <div className="nurse-form-group">
-                                <label>
-                                    {t("monthly_salary")} ({t("currency")})
-                                </label>
-                                <input type="number" name="salary" value={newNurse.salary} onChange={handleNewNurseChange} required />
-                            </div>
-
-                            <div className="nurse-form-group">
-                                <label>
-                                    {t("experience")} ({t("years")})
-                                </label>
-                                <input
-                                    type="number"
-                                    name="experience"
-                                    value={newNurse.experience}
-                                    onChange={handleNewNurseChange}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="nurse-form-row">
-                            <div className="nurse-form-group">
-                                <label>{t("patients_count")}</label>
-                                <input
-                                    type="number"
-                                    name="patients"
-                                    value={newNurse.patients}
-                                    onChange={handleNewNurseChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="nurse-form-group">
-                                <label>{t("rating")} (1-5)</label>
-                                <input
-                                    type="number"
-                                    name="rating"
-                                    min="1"
-                                    max="5"
-                                    step="0.1"
-                                    value={newNurse.rating}
-                                    onChange={handleNewNurseChange}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("education")}</label>
-                            <input type="text" name="education" value={newNurse.education} onChange={handleNewNurseChange} required />
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("schedule")}</label>
-                            <input
-                                type="text"
-                                name="schedule"
-                                value={newNurse.schedule}
-                                onChange={handleNewNurseChange}
-                                placeholder={t("schedule_example")}
-                                required
-                            />
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("shift")}</label>
-                            <select name="shift" value={newNurse.shift} onChange={handleNewNurseChange} required>
-                                <option value="morning">{t("morning_shift")}</option>
-                                <option value="evening">{t("evening_shift")}</option>
-                                <option value="night">{t("night_shift")}</option>
-                            </select>
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("certifications")}</label>
-                            <div className="nurse-certification-input">
-                                <input
-                                    type="text"
-                                    value={newCertification}
-                                    onChange={(e) => setNewCertification(e.target.value)}
-                                    placeholder={t("add_certification")}
-                                />
-                                <button type="button" className="nurse-btn nurse-btn-sm" onClick={addCertification}>
-                                    {t("add")}
-                                </button>
-                            </div>
-                            {newNurse.certifications.length > 0 && (
-                                <div className="nurse-certifications-list">
-                                    {newNurse.certifications.map((cert, index) => (
-                                        <div className="nurse-certification-item" key={index}>
-                                            <span>{cert}</span>
-                                            <button
-                                                type="button"
-                                                className="nurse-btn-icon nurse-delete-sm"
-                                                onClick={() => removeCertification(index)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="nurse-form-group">
-                            <label>{t("status")}</label>
-                            <select name="status" value={newNurse.status} onChange={handleNewNurseChange}>
-                                <option value="active">{t("active")}</option>
-                                <option value="inactive">{t("inactive")}</option>
-                            </select>
-                        </div>
-
-                        <div className="nurse-form-group nurse-checkbox-group">
-                            <input
-                                type="checkbox"
-                                id="onVacation"
-                                name="onVacation"
-                                checked={newNurse.onVacation}
-                                onChange={handleNewNurseChange}
-                            />
-                            <label htmlFor="onVacation">{t("on_vacation")}</label>
-                        </div>
-
-                        {newNurse.onVacation && (
-                            <div className="nurse-form-group">
-                                <label>{t("vacation_period")}</label>
-                                <input
-                                    type="text"
-                                    name="vacationDates"
-                                    value={newNurse.vacationDates || ""}
-                                    onChange={handleNewNurseChange}
-                                    placeholder={t("vacation_period_example")}
-                                />
-                            </div>
-                        )}
-
-                        {selectedBranch === "all" && (
-                            <div className="nurse-form-group">
-                                <label>{t("branch")}</label>
-                                <select name="branch" value={newNurse.branch} onChange={handleNewNurseChange}>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
-                                </select>
-                            </div>
-                        )}
-
-                        <div className="nurse-form-actions">
-                            <button type="submit" className="nurse-btn nurse-btn-primary">
-                                {t("add")}
-                            </button>
-                            <button type="button" className="nurse-btn nurse-btn-secondary" onClick={closeAddSidebar}>
-                                {t("cancel")}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* Edit Nurse Sidebar */}
-            <div className={`nurse-sidebar-overlay ${showEditSidebar ? "active" : ""}`} onClick={closeEditSidebar}></div>
-            <div className={`nurse-sidebar ${showEditSidebar ? "active" : ""}`}>
-                {currentNurse && (
-                    <>
-                        <div className="nurse-sidebar-header">
-                            <h2>{t("edit_nurse")}</h2>
-                            <button className="nurse-close-button" onClick={closeEditSidebar}>
+            {/* Schedule Modal */}
+            {showScheduleModal && selectedNurse && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>
+                                <FaCalendarAlt /> {t("edit_schedule")} - {selectedNurse.firstName} {selectedNurse.lastName}
+                            </h2>
+                            <button className="close-button" onClick={() => setShowScheduleModal(false)}>
                                 <FaTimes />
                             </button>
                         </div>
-                        <div className="nurse-sidebar-content">
-                            <form onSubmit={updateNurse}>
-                                <div className="nurse-form-group">
-                                    <label>{t("full_name")}</label>
-                                    <input type="text" name="name" value={currentNurse.name} onChange={handleEditNurseChange} required />
-                                </div>
-
-                                <div className="nurse-form-group">
-                                    <label>{t("specialty")}</label>
-                                    <select name="specialty" value={currentNurse.specialty} onChange={handleEditNurseChange} required>
-                                        {nurseSpecialties.map((specialty) => (
-                                            <option key={specialty.value} value={specialty.value}>
-                                                {specialty.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="nurse-form-group">
-                                    <label>{t("department")}</label>
-                                    <input
-                                        type="text"
-                                        name="department"
-                                        value={currentNurse.department}
-                                        onChange={handleEditNurseChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="nurse-form-row">
-                                    <div className="nurse-form-group">
-                                        <label>{t("phone")}</label>
-                                        <input
-                                            type="text"
-                                            name="phone"
-                                            value={currentNurse.phone}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
+                        <form onSubmit={handleScheduleSubmit}>
+                            <div className="schedule-form">
+                                {Object.entries(scheduleData).map(([day, schedule]) => (
+                                    <div key={day} className="schedule-day-form">
+                                        <div className="day-header">
+                                            <div className="day-name">{getDayName(day)}</div>
+                                            <div className="day-toggle">
+                                                <label className="switch">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={schedule.working}
+                                                        onChange={(e) => handleScheduleChange(day, "working", e.target.checked)}
+                                                    />
+                                                    <span className="slider round"></span>
+                                                </label>
+                                                <span className="toggle-label">{schedule.working ? t("working") : t("day_off")}</span>
+                                            </div>
+                                        </div>
+                                        {schedule.working && (
+                                            <div className="day-hours">
+                                                <div className="time-input">
+                                                    <label>{t("start_time")}</label>
+                                                    <input
+                                                        type="time"
+                                                        value={schedule.startTime}
+                                                        onChange={(e) => handleScheduleChange(day, "startTime", e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="time-input">
+                                                    <label>{t("end_time")}</label>
+                                                    <input
+                                                        type="time"
+                                                        value={schedule.endTime}
+                                                        onChange={(e) => handleScheduleChange(day, "endTime", e.target.value)}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="swap-button"
+                                                    onClick={() => handleSwapSchedule(selectedNurse, day)}
+                                                >
+                                                    <FaExchangeAlt /> {t("swap_with_another_nurse")}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
+                                ))}
+                            </div>
+                            <div className="form-actions">
+                                <button type="button" className="cancel-button" onClick={() => setShowScheduleModal(false)}>
+                                    {t("cancel")}
+                                </button>
+                                <button type="submit" className="submit-button">
+                                    {t("save_schedule")}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
-                                    <div className="nurse-form-group">
-                                        <label>{t("email")}</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={currentNurse.email}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="nurse-form-row">
-                                    <div className="nurse-form-group">
-                                        <label>
-                                            {t("monthly_salary")} ({t("currency")})
-                                        </label>
-                                        <input
-                                            type="number"
-                                            name="salary"
-                                            value={currentNurse.salary}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="nurse-form-group">
-                                        <label>
-                                            {t("experience")} ({t("years")})
-                                        </label>
-                                        <input
-                                            type="number"
-                                            name="experience"
-                                            value={currentNurse.experience}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="nurse-form-row">
-                                    <div className="nurse-form-group">
-                                        <label>{t("patients_count")}</label>
-                                        <input
-                                            type="number"
-                                            name="patients"
-                                            value={currentNurse.patients}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="nurse-form-group">
-                                        <label>{t("rating")} (1-5)</label>
-                                        <input
-                                            type="number"
-                                            name="rating"
-                                            min="1"
-                                            max="5"
-                                            step="0.1"
-                                            value={currentNurse.rating}
-                                            onChange={handleEditNurseChange}
-                                            required
-                                        />
+            {/* Swap Schedule Modal */}
+            {showSwapModal && selectedNurse && selectedSchedule && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>
+                                <FaExchangeAlt /> {t("swap_schedule")} - {getDayName(selectedSchedule)}
+                            </h2>
+                            <button className="close-button" onClick={() => setShowSwapModal(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSwapSubmit}>
+                            <div className="swap-form">
+                                <div className="current-nurse">
+                                    <h3>{t("current_nurse")}</h3>
+                                    <div className="nurse-info">
+                                        <div className="nurse-avatar">
+                                            <img
+                                                src={selectedNurse.avatar || "/placeholder.svg"}
+                                                alt={`${selectedNurse.firstName} ${selectedNurse.lastName}`}
+                                            />
+                                        </div>
+                                        <div className="nurse-details">
+                                            <p className="nurse-name">
+                                                {selectedNurse.firstName} {selectedNurse.lastName}
+                                            </p>
+                                            <p className="nurse-department">{selectedNurse.department}</p>
+                                            <div className="schedule-info">
+                                                {selectedNurse.schedule[selectedSchedule].working ? (
+                                                    <p>
+                                                        <FaClock /> {selectedNurse.schedule[selectedSchedule].startTime} -{" "}
+                                                        {selectedNurse.schedule[selectedSchedule].endTime}
+                                                    </p>
+                                                ) : (
+                                                    <p>{t("day_off")}</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="nurse-form-group">
-                                    <label>{t("education")}</label>
-                                    <input
-                                        type="text"
-                                        name="education"
-                                        value={currentNurse.education}
-                                        onChange={handleEditNurseChange}
-                                        required
-                                    />
+                                <div className="swap-icon">
+                                    <FaExchangeAlt />
                                 </div>
 
-                                <div className="nurse-form-group">
-                                    <label>{t("schedule")}</label>
-                                    <input
-                                        type="text"
-                                        name="schedule"
-                                        value={currentNurse.schedule}
-                                        onChange={handleEditNurseChange}
-                                        placeholder={t("schedule_example")}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="nurse-form-group">
-                                    <label>{t("shift")}</label>
-                                    <select name="shift" value={currentNurse.shift} onChange={handleEditNurseChange} required>
-                                        <option value="morning">{t("morning_shift")}</option>
-                                        <option value="evening">{t("evening_shift")}</option>
-                                        <option value="night">{t("night_shift")}</option>
-                                    </select>
-                                </div>
-
-                                <div className="nurse-form-group">
-                                    <label>{t("certifications")}</label>
-                                    <div className="nurse-certification-input">
-                                        <input
-                                            type="text"
-                                            value={newCertification}
-                                            onChange={(e) => setNewCertification(e.target.value)}
-                                            placeholder={t("add_certification")}
-                                        />
-                                        <button type="button" className="nurse-btn nurse-btn-sm" onClick={addCertificationToCurrentNurse}>
-                                            {t("add")}
-                                        </button>
-                                    </div>
-                                    {currentNurse.certifications.length > 0 && (
-                                        <div className="nurse-certifications-list">
-                                            {currentNurse.certifications.map((cert, index) => (
-                                                <div className="nurse-certification-item" key={index}>
-                                                    <span>{cert}</span>
-                                                    <button
-                                                        type="button"
-                                                        className="nurse-btn-icon nurse-delete-sm"
-                                                        onClick={() => removeCertificationFromCurrentNurse(index)}
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
+                                <div className="other-nurse">
+                                    <h3>{t("select_nurse_to_swap")}</h3>
+                                    {otherNurses.length > 0 ? (
+                                        <div className="nurses-list">
+                                            {otherNurses.map((nurse) => (
+                                                <div
+                                                    key={nurse.id}
+                                                    className={`nurse-item ${selectedOtherNurse?.id === nurse.id ? "selected" : ""}`}
+                                                    onClick={() => setSelectedOtherNurse(nurse)}
+                                                >
+                                                    <div className="nurse-avatar">
+                                                        <img
+                                                            src={nurse.avatar || "/placeholder.svg"}
+                                                            alt={`${nurse.firstName} ${nurse.lastName}`}
+                                                        />
+                                                    </div>
+                                                    <div className="nurse-details">
+                                                        <p className="nurse-name">
+                                                            {nurse.firstName} {nurse.lastName}
+                                                        </p>
+                                                        <div className="schedule-info">
+                                                            {nurse.schedule[selectedSchedule].working ? (
+                                                                <p>
+                                                                    <FaClock /> {nurse.schedule[selectedSchedule].startTime} -{" "}
+                                                                    {nurse.schedule[selectedSchedule].endTime}
+                                                                </p>
+                                                            ) : (
+                                                                <p>{t("day_off")}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {selectedOtherNurse?.id === nurse.id && (
+                                                        <div className="selected-mark">
+                                                            <FaCheck />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="nurse-form-group">
-                                    <label>{t("status")}</label>
-                                    <select name="status" value={currentNurse.status} onChange={handleEditNurseChange}>
-                                        <option value="active">{t("active")}</option>
-                                        <option value="inactive">{t("inactive")}</option>
-                                    </select>
-                                </div>
-
-                                <div className="nurse-form-group nurse-checkbox-group">
-                                    <input
-                                        type="checkbox"
-                                        id="editOnVacation"
-                                        name="onVacation"
-                                        checked={currentNurse.onVacation}
-                                        onChange={handleEditNurseChange}
-                                    />
-                                    <label htmlFor="editOnVacation">{t("on_vacation")}</label>
-                                </div>
-
-                                {currentNurse.onVacation && (
-                                    <div className="nurse-form-group">
-                                        <label>{t("vacation_period")}</label>
-                                        <input
-                                            type="text"
-                                            name="vacationDates"
-                                            value={currentNurse.vacationDates || ""}
-                                            onChange={handleEditNurseChange}
-                                            placeholder={t("vacation_period_example")}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedBranch === "all" && (
-                                    <div className="nurse-form-group">
-                                        <label>{t("branch")}</label>
-                                        <select
-                                            name="branch"
-                                            value={currentNurse.branch}
-                                            onChange={(e) => {
-                                                const newValue = e.target.value
-                                                setCurrentNurse((prev) => ({
-                                                    ...prev,
-                                                    _prevBranch: prev.branch,
-                                                    branch: newValue,
-                                                }))
-                                            }}
-                                        >
-                                            <option value="branch1">{t("branch1")}</option>
-                                            <option value="branch2">{t("branch2")}</option>
-                                            <option value="branch3">{t("branch3")}</option>
-                                        </select>
-                                    </div>
-                                )}
-
-                                <div className="nurse-form-actions">
-                                    <button type="submit" className="nurse-btn nurse-btn-primary">
-                                        {t("save")}
-                                    </button>
-                                    <button type="button" className="nurse-btn nurse-btn-secondary" onClick={closeEditSidebar}>
-                                        {t("cancel")}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* Nurse Details Modal */}
-            <div className={`nurse-modal-overlay ${showNurseDetails ? "active" : ""}`} onClick={closeNurseDetails}></div>
-            <div className={`nurse-modal ${showNurseDetails ? "active" : ""}`}>
-                {selectedNurse && (
-                    <>
-                        <div className="nurse-modal-header">
-                            <h2>{selectedNurse.name}</h2>
-                            <button className="nurse-close-button" onClick={closeNurseDetails}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className="nurse-modal-content">
-                            <div className="nurse-details-grid">
-                                <div className="nurse-details-section">
-                                    <h3>{t("personal_info")}</h3>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("specialty")}:</span>
-                                        <span className="nurse-details-value">{getSpecialtyLabel(selectedNurse.specialty)}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("department")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.department}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("phone")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.phone}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("email")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.email}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("status")}:</span>
-                                        <span className={`nurse-details-status ${selectedNurse.status}`}>
-                                            {selectedNurse.status === "active" ? t("active") : t("inactive")}
-                                        </span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("vacation_status")}:</span>
-                                        <span className={`nurse-details-status ${selectedNurse.onVacation ? "on-vacation" : "working"}`}>
-                                            {selectedNurse.onVacation ? t("on_vacation") : t("at_work")}
-                                        </span>
-                                    </div>
-                                    {selectedNurse.onVacation && selectedNurse.vacationDates && (
-                                        <div className="nurse-details-item">
-                                            <span className="nurse-details-label">{t("vacation_period")}:</span>
-                                            <span className="nurse-details-value">{selectedNurse.vacationDates}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="nurse-details-section">
-                                    <h3>{t("professional_info")}</h3>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("education")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.education}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("experience")}:</span>
-                                        <span className="nurse-details-value">
-                                            {selectedNurse.experience} {t("years")}
-                                        </span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("patients_count")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.patients}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("rating")}:</span>
-                                        <span className="nurse-details-value">
-                                            {selectedNurse.rating} <span className="nurse-rating-star">★</span>
-                                        </span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("monthly_salary")}:</span>
-                                        <span className="nurse-details-value">
-                                            {selectedNurse.salary.toLocaleString()} {t("currency")}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="nurse-details-section">
-                                    <h3>{t("work_info")}</h3>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("schedule")}:</span>
-                                        <span className="nurse-details-value">{selectedNurse.schedule}</span>
-                                    </div>
-                                    <div className="nurse-details-item">
-                                        <span className="nurse-details-label">{t("shift")}:</span>
-                                        <span className="nurse-details-value">{getShiftLabel(selectedNurse.shift)}</span>
-                                    </div>
-                                    {selectedBranch === "all" && (
-                                        <div className="nurse-details-item">
-                                            <span className="nurse-details-label">{t("branch")}:</span>
-                                            <span className="nurse-details-value">{t(selectedNurse.branch)}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="nurse-details-section">
-                                    <h3>{t("certifications")}</h3>
-                                    {selectedNurse.certifications.length > 0 ? (
-                                        <ul className="nurse-details-certifications">
-                                            {selectedNurse.certifications.map((cert, index) => (
-                                                <li key={index}>{cert}</li>
-                                            ))}
-                                        </ul>
                                     ) : (
-                                        <p>{t("no_certifications")}</p>
+                                        <div className="no-nurses">
+                                            <p>{t("no_available_nurses")}</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-
-                            <div className="nurse-details-actions">
-                                <button className="nurse-btn nurse-btn-primary" onClick={() => openEditSidebar(selectedNurse)}>
-                                    <FaEdit /> {t("edit")}
+                            <div className="form-actions">
+                                <button type="button" className="cancel-button" onClick={() => setShowSwapModal(false)}>
+                                    {t("cancel")}
                                 </button>
-                                <button className="nurse-btn nurse-btn-secondary" onClick={closeNurseDetails}>
-                                    {t("close")}
+                                <button type="submit" className="submit-button" disabled={!selectedOtherNurse}>
+                                    {t("confirm_swap")}
                                 </button>
                             </div>
-                        </div>
-                    </>
-                )}
-            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
-
