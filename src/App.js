@@ -9,6 +9,7 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import NotFound from "./pages/notFount/NotFount"
 import ProtectedRoute from "./components/protectedRoute/ProtectedRoute"
 import "./styles/styles.scss"
+import AppointmentDetails from "./components/appointmentDetails/AppointmentDetails"
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/appointment-details/:id" element={<AppointmentDetails />} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" />} />
           </Routes>
