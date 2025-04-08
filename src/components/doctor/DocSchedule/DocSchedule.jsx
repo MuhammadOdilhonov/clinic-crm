@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
@@ -24,6 +26,9 @@ import {
     FaRegUser,
     FaRegClipboard,
     FaRegCalendarCheck,
+    FaInfoCircle,
+    FaQuestionCircle,
+    FaExternalLinkAlt,
 } from "react-icons/fa"
 
 export default function DocSchedule() {
@@ -31,6 +36,9 @@ export default function DocSchedule() {
     const { t } = useLanguage()
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [showStatusLegend, setShowStatusLegend] = useState(false)
+    const [showActionLegend, setShowActionLegend] = useState(false)
+    const [redirecting, setRedirecting] = useState(false)
 
     // Data states
     const [branches, setBranches] = useState([])
@@ -56,6 +64,58 @@ export default function DocSchedule() {
     const [viewMode, setViewMode] = useState("table") // table, day, week
     const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStartDate(new Date()))
     const [isUpdating, setIsUpdating] = useState(false)
+
+    // Status definitions for legend
+    const statusDefinitions = [
+        { status: "waiting", icon: <FaRegClock />, label: t("waiting"), description: t("patient_not_arrived_yet") },
+        {
+            status: "confirmed",
+            icon: <FaCheckCircle />,
+            label: t("confirmed"),
+            description: t("appointment_confirmed_ready"),
+        },
+        {
+            status: "in_progress",
+            icon: <FaStethoscope />,
+            label: t("in_progress"),
+            description: t("appointment_currently_active"),
+        },
+        {
+            status: "completed",
+            icon: <FaRegCalendarCheck />,
+            label: t("completed"),
+            description: t("appointment_finished"),
+        },
+        { status: "cancelled", icon: <FaTimesCircle />, label: t("cancelled"), description: t("appointment_cancelled") },
+    ]
+
+    // Action definitions for legend
+    const actionDefinitions = [
+        {
+            action: "start",
+            icon: <FaStethoscope />,
+            label: t("start_appointment"),
+            description: t("begin_patient_examination"),
+        },
+        {
+            action: "complete",
+            icon: <FaCheckCircle />,
+            label: t("complete_appointment"),
+            description: t("mark_appointment_as_completed"),
+        },
+        {
+            action: "view_details",
+            icon: <FaInfoCircle />,
+            label: t("view_details"),
+            description: t("see_appointment_details"),
+        },
+        {
+            action: "redirect",
+            icon: <FaExternalLinkAlt />,
+            label: t("patient_record"),
+            description: t("go_to_patient_record"),
+        },
+    ]
 
     // Fetch data
     useEffect(() => {
@@ -206,7 +266,7 @@ export default function DocSchedule() {
                             date: today,
                             timeSlot: "09:00",
                             duration: 60,
-                            status: "waiting",
+                            status: "confirmed",
                             diagnosis: "Follow-up check",
                             createdAt: "2023-05-19T09:45:00Z",
                         },
@@ -353,7 +413,7 @@ export default function DocSchedule() {
             // Update appointment status based on current status
             let newStatus = currentAppointment.status
 
-            if (currentAppointment.status === "waiting") {
+            if (currentAppointment.status === "confirmed") {
                 newStatus = "in_progress"
             } else if (currentAppointment.status === "in_progress") {
                 newStatus = "completed"
@@ -380,7 +440,23 @@ export default function DocSchedule() {
             setSelectedTimeSlot("")
             setDiagnosis("")
             setShowEditModal(false)
+
+            // If the appointment is now completed, redirect to patient record
+            if (newStatus === "completed") {
+                redirectToPatientRecord(updatedAppointment.patientId)
+            }
         }, 800)
+    }
+
+    // Redirect to patient record
+    const redirectToPatientRecord = (patientId) => {
+        setRedirecting(true)
+        // Simulate redirection to another page
+        setTimeout(() => {
+            // In a real app, you would use router.push or window.location
+            alert(`Redirecting to patient record for patient ID: ${patientId}`)
+            setRedirecting(false)
+        }, 1500)
     }
 
     // Handle view mode change
@@ -459,12 +535,12 @@ export default function DocSchedule() {
 
     // Check if status can be changed
     const canChangeStatus = (status) => {
-        return status === "waiting" || status === "in_progress"
+        return status === "confirmed" || status === "in_progress"
     }
 
     // Get next status label
     const getNextStatusLabel = (status) => {
-        if (status === "waiting") {
+        if (status === "confirmed") {
             return t("start_appointment")
         } else if (status === "in_progress") {
             return t("complete_appointment")
@@ -490,6 +566,18 @@ export default function DocSchedule() {
         }
     }
 
+    // Toggle status legend
+    const toggleStatusLegend = () => {
+        setShowStatusLegend(!showStatusLegend)
+        if (showActionLegend) setShowActionLegend(false)
+    }
+
+    // Toggle action legend
+    const toggleActionLegend = () => {
+        setShowActionLegend(!showActionLegend)
+        if (showStatusLegend) setShowStatusLegend(false)
+    }
+
     // Loading state
     if (loading) {
         return (
@@ -510,6 +598,16 @@ export default function DocSchedule() {
                 <button className="btn btn-primary" onClick={() => window.location.reload()}>
                     {t("try_again")}
                 </button>
+            </div>
+        )
+    }
+
+    // Redirecting state
+    if (redirecting) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>{t("redirecting_to_patient_record")}...</p>
             </div>
         )
     }
@@ -571,6 +669,62 @@ export default function DocSchedule() {
                 </div>
             </div>
 
+            {/* Legend Buttons */}
+            <div className="legend-buttons">
+                <button className="btn btn-legend" onClick={toggleStatusLegend}>
+                    <FaQuestionCircle /> {t("status_legend")}
+                </button>
+                <button className="btn btn-legend" onClick={toggleActionLegend}>
+                    <FaQuestionCircle /> {t("action_legend")}
+                </button>
+            </div>
+
+            {/* Status Legend */}
+            {showStatusLegend && (
+                <div className="legend-container status-legend">
+                    <div className="legend-header">
+                        <h3>{t("status_legend")}</h3>
+                        <button className="close-btn" onClick={toggleStatusLegend}>
+                            ×
+                        </button>
+                    </div>
+                    <div className="legend-content">
+                        {statusDefinitions.map((item) => (
+                            <div key={item.status} className="legend-item">
+                                <div className={`legend-icon ${getStatusBadgeClass(item.status)}`}>{item.icon}</div>
+                                <div className="legend-text">
+                                    <span className="legend-label">{item.label}</span>
+                                    <span className="legend-description">{item.description}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Action Legend */}
+            {showActionLegend && (
+                <div className="legend-container action-legend">
+                    <div className="legend-header">
+                        <h3>{t("action_legend")}</h3>
+                        <button className="close-btn" onClick={toggleActionLegend}>
+                            ×
+                        </button>
+                    </div>
+                    <div className="legend-content">
+                        {actionDefinitions.map((item) => (
+                            <div key={item.action} className="legend-item">
+                                <div className="legend-icon action-icon">{item.icon}</div>
+                                <div className="legend-text">
+                                    <span className="legend-label">{item.label}</span>
+                                    <span className="legend-description">{item.description}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Table View */}
             {viewMode === "table" && (
                 <div className="appointments-table-container">
@@ -620,9 +774,6 @@ export default function DocSchedule() {
                                         <td>
                                             <div className="status-badge-container">
                                                 {getStatusIcon(appointment.status)}
-                                                <span className={`status-badge ${getStatusBadgeClass(appointment.status)}`}>
-                                                    {t(appointment.status)}
-                                                </span>
                                             </div>
                                         </td>
                                         <td>
@@ -633,14 +784,31 @@ export default function DocSchedule() {
                                                         onClick={() => openEditModal(appointment)}
                                                         title={getNextStatusLabel(appointment.status)}
                                                     >
-                                                        {appointment.status === "waiting" ? (
+                                                        {appointment.status === "confirmed" ? (
                                                             <FaStethoscope className="action-icon" />
                                                         ) : (
                                                             <FaCheckCircle className="action-icon" />
                                                         )}
-                                                        <span className="action-text">{getNextStatusLabel(appointment.status)}</span>
                                                     </button>
                                                 )}
+                                                {appointment.status === "completed" && (
+                                                    <button
+                                                        className="btn btn-action btn-redirect"
+                                                        onClick={() => redirectToPatientRecord(appointment.patientId)}
+                                                        title={t("go_to_patient_record")}
+                                                    >
+                                                        <FaExternalLinkAlt className="action-icon" />
+                                                    </button>
+                                                )}
+                                                {appointment.status !== "confirmed" &&
+                                                    appointment.status !== "in_progress" &&
+                                                    appointment.status !== "completed" && (
+                                                        <button
+                                                        className="btn btn-action btn-redirect"
+                                                    >
+                                                        <FaRegClock className="action-icon" />
+                                                    </button>
+                                                    )}
                                             </div>
                                         </td>
                                     </tr>
@@ -747,12 +915,26 @@ export default function DocSchedule() {
                                                     {canChangeStatus(appointment.status) && (
                                                         <div className="appointment-actions">
                                                             <button className="btn btn-action-card">
-                                                                {appointment.status === "waiting" ? (
+                                                                {appointment.status === "confirmed" ? (
                                                                     <FaStethoscope className="action-icon" />
                                                                 ) : (
                                                                     <FaCheckCircle className="action-icon" />
                                                                 )}
                                                                 <span>{getNextStatusLabel(appointment.status)}</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {appointment.status === "completed" && (
+                                                        <div className="appointment-actions">
+                                                            <button
+                                                                className="btn btn-action-card btn-redirect"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    redirectToPatientRecord(appointment.patientId)
+                                                                }}
+                                                            >
+                                                                <FaExternalLinkAlt className="action-icon" />
+                                                                <span>{t("patient_record")}</span>
                                                             </button>
                                                         </div>
                                                     )}
@@ -910,15 +1092,15 @@ export default function DocSchedule() {
                                         <div className="detail-row">
                                             <span className="detail-label">{t("new_status")}:</span>
                                             <span
-                                                className={`detail-value status-badge ${currentAppointment.status === "waiting" ? "status-in-progress" : "status-completed"
+                                                className={`detail-value status-badge ${currentAppointment.status === "confirmed" ? "status-in-progress" : "status-completed"
                                                     }`}
                                             >
-                                                {currentAppointment.status === "waiting" ? (
+                                                {currentAppointment.status === "confirmed" ? (
                                                     <FaStethoscope className="status-icon" />
                                                 ) : (
                                                     <FaCheckCircle className="status-icon" />
                                                 )}
-                                                {currentAppointment.status === "waiting" ? t("in_progress") : t("completed")}
+                                                {currentAppointment.status === "confirmed" ? t("in_progress") : t("completed")}
                                             </span>
                                         </div>
                                     </div>
@@ -951,7 +1133,7 @@ export default function DocSchedule() {
                                     </>
                                 ) : (
                                     <>
-                                        {currentAppointment.status === "waiting" ? (
+                                        {currentAppointment.status === "confirmed" ? (
                                             <FaStethoscope className="action-icon" />
                                         ) : (
                                             <FaCheckCircle className="action-icon" />
@@ -967,4 +1149,3 @@ export default function DocSchedule() {
         </div>
     )
 }
-
