@@ -9,8 +9,8 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import NotFound from "./pages/notFount/NotFount"
 import ProtectedRoute from "./components/protectedRoute/ProtectedRoute"
 import "./styles/styles.scss"
-import AppointmentDetails from "./components/appointmentDetails/AppointmentDetails"
 import AppointmentDetailsResult from "./components/appointmentDetailsResult/AppointmentDetailsResult"
+import AppointmentDetails from "./components/appointmentDetails/AppointmentDetails"
 
 function App() {
   return (

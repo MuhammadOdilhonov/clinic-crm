@@ -739,7 +739,7 @@ export default function DocSchedule() {
             {/* Legend Buttons */}
             <div className="legend-buttons">
                 <button className="btn btn-legend" onClick={toggleStatusLegend}>
-                    <FaQuestionCircle /> {t("status_legend")}
+                    <FaQuestionCircle /> {t("status_legendd")}
                 </button>
                 <button className="btn btn-legend" onClick={toggleActionLegend}>
                     <FaQuestionCircle /> {t("action_legend")}

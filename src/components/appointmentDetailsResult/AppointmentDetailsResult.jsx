@@ -7,7 +7,6 @@ import { OrbitControls, useGLTF, Html } from "@react-three/drei"
 // Tooltip component
 const QuestionMarkTooltip = () => {
     const [showTooltip, setShowTooltip] = useState(false)
-    const [showSuccessModal, setShowSuccessModal] = useState(false)
 
     return (
         <span
