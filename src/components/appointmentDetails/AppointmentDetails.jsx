@@ -341,7 +341,7 @@ const AppointmentDetails = () => {
     return (
         <div className="anatomy-viewer">
             <div className="anatomy-model-container">
-                <Canvas camera={{ position: [0, 0.5, 1.5], fov: 50 }} shadows>
+                <Canvas camera={{ position: [0, 0, 1.5], fov: 50 }} shadows>
                     <ambientLight intensity={0.8} />
                     <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
                     <Suspense fallback={<LoadingIndicator />}>

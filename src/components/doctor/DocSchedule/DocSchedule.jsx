@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import {
@@ -39,6 +39,8 @@ export default function DocSchedule() {
     const [showStatusLegend, setShowStatusLegend] = useState(false)
     const [showActionLegend, setShowActionLegend] = useState(false)
     const [redirecting, setRedirecting] = useState(false)
+    const [resultWindowOpened, setResultWindowOpened] = useState(false)
+    const [appointmentCompleted, setAppointmentCompleted] = useState(false)
 
     // Data states
     const [branches, setBranches] = useState([])
@@ -64,6 +66,10 @@ export default function DocSchedule() {
     const [viewMode, setViewMode] = useState("table") // table, day, week
     const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStartDate(new Date()))
     const [isUpdating, setIsUpdating] = useState(false)
+
+    // Reference to track if window was opened
+    const resultWindowRef = useRef(null)
+    const checkWindowIntervalRef = useRef(null)
 
     // Status definitions for legend
     const statusDefinitions = [
@@ -115,7 +121,37 @@ export default function DocSchedule() {
             label: t("patient_record"),
             description: t("go_to_patient_record"),
         },
+        {
+            action: "waiting",
+            icon: <FaRegClock />,
+            label: t("waiting"),
+            description: t("appointment_waiting"),
+        },
     ]
+
+    // Check if the result window is closed
+    useEffect(() => {
+        if (resultWindowOpened && resultWindowRef.current) {
+            checkWindowIntervalRef.current = setInterval(() => {
+                if (resultWindowRef.current && resultWindowRef.current.closed) {
+                    clearInterval(checkWindowIntervalRef.current)
+                    setResultWindowOpened(false)
+                    setAppointmentCompleted(true)
+
+                    // Update appointment status and close modal
+                    if (currentAppointment) {
+                        completeAppointment()
+                    }
+                }
+            }, 1000)
+        }
+
+        return () => {
+            if (checkWindowIntervalRef.current) {
+                clearInterval(checkWindowIntervalRef.current)
+            }
+        }
+    }, [resultWindowOpened])
 
     // Fetch data
     useEffect(() => {
@@ -402,6 +438,7 @@ export default function DocSchedule() {
         setSelectedTimeSlot(appointment.timeSlot)
         setDiagnosis(appointment.diagnosis)
         setShowEditModal(true)
+        setAppointmentCompleted(false)
     }
 
     // Handle edit appointment
@@ -415,37 +452,67 @@ export default function DocSchedule() {
 
             if (currentAppointment.status === "confirmed") {
                 newStatus = "in_progress"
+
+                // Update the appointment status
+                const updatedAppointment = {
+                    ...currentAppointment,
+                    status: newStatus,
+                    diagnosis: diagnosis,
+                }
+
+                const updatedAppointments = appointments.map((appointment) =>
+                    appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                )
+
+                setAppointments(updatedAppointments)
+                setIsUpdating(false)
+                setShowEditModal(false)
+
+                // Reset form
+                setCurrentAppointment(null)
+                setSelectedBranchId("")
+                setSelectedPatientId("")
+                setSelectedRoomId("")
+                setSelectedTimeSlot("")
+                setDiagnosis("")
             } else if (currentAppointment.status === "in_progress") {
-                newStatus = "completed"
-            }
-
-            const updatedAppointment = {
-                ...currentAppointment,
-                status: newStatus,
-                diagnosis: diagnosis,
-            }
-
-            const updatedAppointments = appointments.map((appointment) =>
-                appointment.id === currentAppointment.id ? updatedAppointment : appointment,
-            )
-
-            setAppointments(updatedAppointments)
-            setIsUpdating(false)
-
-            // Reset form
-            setCurrentAppointment(null)
-            setSelectedBranchId("")
-            setSelectedPatientId("")
-            setSelectedRoomId("")
-            setSelectedTimeSlot("")
-            setDiagnosis("")
-            setShowEditModal(false)
-
-            // If the appointment is now completed, redirect to patient record
-            if (newStatus === "completed") {
-                redirectToPatientRecord(updatedAppointment.patientId)
+                // For in_progress appointments, open the details page in a new tab
+                // and keep the modal open with loading state
+                openAppointmentDetailsPage(currentAppointment.id)
             }
         }, 800)
+    }
+
+    // Complete appointment after returning from details page
+    const completeAppointment = () => {
+        // Update the appointment to completed status
+        const updatedAppointment = {
+            ...currentAppointment,
+            status: "completed",
+            diagnosis: diagnosis,
+        }
+
+        const updatedAppointments = appointments.map((appointment) =>
+            appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+        )
+
+        setAppointments(updatedAppointments)
+        setIsUpdating(false)
+
+        // Reset form and close modal
+        setCurrentAppointment(null)
+        setSelectedBranchId("")
+        setSelectedPatientId("")
+        setSelectedRoomId("")
+        setSelectedTimeSlot("")
+        setDiagnosis("")
+        setShowEditModal(false)
+    }
+
+    // Open appointment details page in a new tab
+    const openAppointmentDetailsPage = (appointmentId) => {
+        resultWindowRef.current = window.open(`/appointment-details-result/${appointmentId}`, "_blank")
+        setResultWindowOpened(true)
     }
 
     // Redirect to patient record
@@ -552,15 +619,15 @@ export default function DocSchedule() {
     const getStatusIcon = (status) => {
         switch (status) {
             case "waiting":
-                return <FaRegClock className="status-icon" />
+                return <FaRegClock className={`status-icon ${getStatusBadgeClass(status)}`} />
             case "confirmed":
-                return <FaCheckCircle className="status-icon" />
+                return <FaCheckCircle className={`status-icon ${getStatusBadgeClass(status)}`} />
             case "in_progress":
-                return <FaStethoscope className="status-icon" />
+                return <FaStethoscope className={`status-icon ${getStatusBadgeClass(status)}`} />
             case "completed":
-                return <FaRegCalendarCheck className="status-icon" />
+                return <FaRegCalendarCheck className={`status-icon ${getStatusBadgeClass(status)}`} />
             case "cancelled":
-                return <FaTimesCircle className="status-icon" />
+                return <FaTimesCircle className={`status-icon ${getStatusBadgeClass(status)}`} />
             default:
                 return null
         }
@@ -714,7 +781,11 @@ export default function DocSchedule() {
                     <div className="legend-content">
                         {actionDefinitions.map((item) => (
                             <div key={item.action} className="legend-item">
-                                <div className="legend-icon action-icon">{item.icon}</div>
+                                <div
+                                    className={`legend-icon action-icon ${item.action === "waiting" ? "action-waiting" : item.action === "start" ? "action-start" : item.action === "complete" ? "action-complete" : item.action === "redirect" ? "action-redirect" : ""}`}
+                                >
+                                    {item.icon}
+                                </div>
                                 <div className="legend-text">
                                     <span className="legend-label">{item.label}</span>
                                     <span className="legend-description">{item.description}</span>
@@ -772,9 +843,7 @@ export default function DocSchedule() {
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="status-badge-container">
-                                                {getStatusIcon(appointment.status)}
-                                            </div>
+                                            <div className="status-badge-container">{getStatusIcon(appointment.status)}</div>
                                         </td>
                                         <td>
                                             <div className="action-buttons">
@@ -785,29 +854,27 @@ export default function DocSchedule() {
                                                         title={getNextStatusLabel(appointment.status)}
                                                     >
                                                         {appointment.status === "confirmed" ? (
-                                                            <FaStethoscope className="action-icon" />
+                                                            <FaStethoscope className="action-icon action-start" />
                                                         ) : (
-                                                            <FaCheckCircle className="action-icon" />
+                                                            <FaCheckCircle className="action-icon action-complete" />
                                                         )}
                                                     </button>
                                                 )}
                                                 {appointment.status === "completed" && (
                                                     <button
                                                         className="btn btn-action btn-redirect"
-                                                        onClick={() => redirectToPatientRecord(appointment.patientId)}
+                                                        onClick={() => window.open(`/appointment-details/${appointment.id}`, "_blank")}
                                                         title={t("go_to_patient_record")}
                                                     >
-                                                        <FaExternalLinkAlt className="action-icon" />
+                                                        <FaExternalLinkAlt className="action-icon action-redirect" />
                                                     </button>
                                                 )}
                                                 {appointment.status !== "confirmed" &&
                                                     appointment.status !== "in_progress" &&
                                                     appointment.status !== "completed" && (
-                                                        <button
-                                                        className="btn btn-action btn-redirect"
-                                                    >
-                                                        <FaRegClock className="action-icon" />
-                                                    </button>
+                                                        <button className="btn btn-action btn-waiting" disabled title={t("no_actions_available")}>
+                                                            <FaRegClock className="action-icon action-waiting" />
+                                                        </button>
                                                     )}
                                             </div>
                                         </td>
@@ -916,9 +983,9 @@ export default function DocSchedule() {
                                                         <div className="appointment-actions">
                                                             <button className="btn btn-action-card">
                                                                 {appointment.status === "confirmed" ? (
-                                                                    <FaStethoscope className="action-icon" />
+                                                                    <FaStethoscope className="action-icon action-start" />
                                                                 ) : (
-                                                                    <FaCheckCircle className="action-icon" />
+                                                                    <FaCheckCircle className="action-icon action-complete" />
                                                                 )}
                                                                 <span>{getNextStatusLabel(appointment.status)}</span>
                                                             </button>
@@ -930,10 +997,10 @@ export default function DocSchedule() {
                                                                 className="btn btn-action-card btn-redirect"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
-                                                                    redirectToPatientRecord(appointment.patientId)
+                                                                    window.open(`/appointment-details-result/${appointment.id}`, "_blank")
                                                                 }}
                                                             >
-                                                                <FaExternalLinkAlt className="action-icon" />
+                                                                <FaExternalLinkAlt className="action-icon action-redirect" />
                                                                 <span>{t("patient_record")}</span>
                                                             </button>
                                                         </div>
@@ -1125,18 +1192,27 @@ export default function DocSchedule() {
                             <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
                                 {t("cancel")}
                             </button>
-                            <button className="btn btn-primary" onClick={handleEditAppointment} disabled={isUpdating}>
-                                {isUpdating ? (
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleEditAppointment}
+                                disabled={isUpdating || resultWindowOpened}
+                            >
+                                {isUpdating || resultWindowOpened ? (
                                     <>
                                         <FaSpinner className="spinner-icon" />
                                         {t("updating")}...
                                     </>
+                                ) : appointmentCompleted ? (
+                                    <>
+                                        <FaCheckCircle className="action-icon action-complete" />
+                                        {t("appointment_completed")}
+                                    </>
                                 ) : (
                                     <>
                                         {currentAppointment.status === "confirmed" ? (
-                                            <FaStethoscope className="action-icon" />
+                                            <FaStethoscope className="action-icon action-start" />
                                         ) : (
-                                            <FaCheckCircle className="action-icon" />
+                                            <FaCheckCircle className="action-icon action-complete" />
                                         )}
                                         {getNextStatusLabel(currentAppointment.status)}
                                     </>

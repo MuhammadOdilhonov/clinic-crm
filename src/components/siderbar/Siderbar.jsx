@@ -29,6 +29,7 @@ import {
     FaMoneyBillWave,
     FaLanguage,
     FaTasks,
+    FaPhoneAlt,
 } from "react-icons/fa"
 
 export default function Sidebar(isOpen, toggleSidebar) {
@@ -194,6 +195,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     <li>
                                         <NavLink to="/dashboard/director" className={({ isActive }) => (isActive ? "active" : "")} end>
                                             <FaChartLine /> <span>{t("dashboard")}</span>
+                                        </NavLink>
+                                    </li>
+                                     <li>
+                                        <NavLink to="/dashboard/director/lid" className={({ isActive }) => (isActive ? "active" : "")} end>
+                                            <FaPhoneAlt /> <span>Lidlar</span>
                                         </NavLink>
                                     </li>
 

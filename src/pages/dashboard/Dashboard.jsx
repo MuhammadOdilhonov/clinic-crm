@@ -42,6 +42,7 @@ import NursePatientCare from "../../components/nurse/nursePatientCare/NursePatie
 import NurseVitalSigns from "../../components/nurse/nurseVitalSigns/NurseVitalSigns"
 import NurseMedications from "../../components/nurse/nurseMedications/NurseMedications"
 import NurseSchedule from "../../components/nurse/nurseSchedule/NurseSchedule"
+import Lid from "../../components/derector/Lid/Lid"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch } = useAuth()
@@ -290,6 +291,7 @@ export default function Dashboard() {
                         <Route path="/" element={<Navigate to={getDashboardRoute()} />} />
                         {/* Director Routes */}
                         <Route path="/director" element={<DirectorDashboard />} />
+                        <Route path="/director/lid" element={<Lid />} />
                         <Route path="/director/staff" element={<DirectorStaff />} />
                         <Route path="/director/staff/doctors" element={<StaffDoctors />} />
                         <Route path="/director/staff/nurses" element={<StaffNurses />} />

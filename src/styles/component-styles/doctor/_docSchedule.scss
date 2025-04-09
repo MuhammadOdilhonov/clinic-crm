@@ -304,6 +304,26 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                         background-color: $primary-color;
                         color: white;
                     }
+
+                    &.action-waiting {
+                        background-color: $secondary-color;
+                        color: white;
+                    }
+
+                    &.action-start {
+                        background-color: $warning-color;
+                        color: white;
+                    }
+
+                    &.action-complete {
+                        background-color: $success-color;
+                        color: white;
+                    }
+
+                    &.action-redirect {
+                        background-color: $info-color;
+                        color: white;
+                    }
                 }
 
                 .legend-text {
@@ -405,13 +425,32 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: $primary-light;
             color: $primary-color;
             padding: 8px 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
 
             &:hover {
                 background-color: darken($primary-light, 5%);
             }
 
             .action-icon {
-                font-size: 14px;
+                font-size: 18px;
+
+                &.action-start {
+                    color: $warning-color;
+                }
+
+                &.action-complete {
+                    color: $success-color;
+                }
+
+                &.action-redirect {
+                    color: $info-color;
+                }
+
+                &.action-waiting {
+                    color: $secondary-color;
+                }
             }
 
             .action-text {
@@ -422,11 +461,11 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
             &.btn-redirect {
                 background-color: $info-light;
-                color: $info-color;
+            }
 
-                &:hover {
-                    background-color: darken($info-light, 5%);
-                }
+            &.btn-waiting {
+                background-color: $light-color;
+                cursor: not-allowed;
             }
         }
 
@@ -439,6 +478,20 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
             &:hover {
                 background-color: rgba($primary-color, 0.2);
+            }
+
+            .action-icon {
+                &.action-start {
+                    color: $warning-color;
+                }
+
+                &.action-complete {
+                    color: $success-color;
+                }
+
+                &.action-redirect {
+                    color: $info-color;
+                }
             }
 
             &.btn-redirect {
@@ -534,45 +587,35 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
 
             .status-badge-container {
-                @include flex-start;
-                gap: 6px;
-            }
-
-            .status-badge {
-                display: inline-block;
-                padding: 4px 8px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 500;
-
-                &.status-waiting {
-                    background-color: $secondary-color;
-                    color: white;
-                }
-
-                &.status-confirmed {
-                    background-color: $info-color;
-                    color: white;
-                }
-
-                &.status-in-progress {
-                    background-color: $warning-color;
-                    color: white;
-                }
-
-                &.status-completed {
-                    background-color: $success-color;
-                    color: white;
-                }
-
-                &.status-cancelled {
-                    background-color: $danger-color;
-                    color: white;
-                }
+                @include flex-center;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background-color: $light-color;
             }
 
             .status-icon {
-                font-size: 12px;
+                font-size: 20px;
+
+                &.status-waiting {
+                    color: $secondary-color;
+                }
+
+                &.status-confirmed {
+                    color: $info-color;
+                }
+
+                &.status-in-progress {
+                    color: $warning-color;
+                }
+
+                &.status-completed {
+                    color: $success-color;
+                }
+
+                &.status-cancelled {
+                    color: $danger-color;
+                }
             }
 
             .action-buttons {
@@ -931,6 +974,26 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
                                 .status-icon {
                                     font-size: 10px;
+
+                                    &.status-waiting {
+                                        color: $secondary-color;
+                                    }
+
+                                    &.status-confirmed {
+                                        color: $info-color;
+                                    }
+
+                                    &.status-in-progress {
+                                        color: $warning-color;
+                                    }
+
+                                    &.status-completed {
+                                        color: $success-color;
+                                    }
+
+                                    &.status-cancelled {
+                                        color: $danger-color;
+                                    }
                                 }
 
                                 .patient-name {

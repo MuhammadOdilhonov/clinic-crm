@@ -10,6 +10,7 @@ import NotFound from "./pages/notFount/NotFount"
 import ProtectedRoute from "./components/protectedRoute/ProtectedRoute"
 import "./styles/styles.scss"
 import AppointmentDetails from "./components/appointmentDetails/AppointmentDetails"
+import AppointmentDetailsResult from "./components/appointmentDetailsResult/AppointmentDetailsResult"
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
               }
             />
             <Route path="/appointment-details/:id" element={<AppointmentDetails />} />
+            <Route path="/appointment-details-result/:id" element={<AppointmentDetailsResult />} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" />} />
           </Routes>
