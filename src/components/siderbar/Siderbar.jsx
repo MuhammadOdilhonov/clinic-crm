@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
+import client, { BaseUrlImg } from "../../api/apiService"
+import ApiLogo from "../../api/apiLogo"
 import {
     FaChartLine,
     FaUsers,
@@ -39,6 +41,7 @@ export default function Sidebar(isOpen, toggleSidebar) {
     const location = useLocation()
     const [isMobileOpen, setIsMobileOpen] = useState(false)
     const [expandedMenus, setExpandedMenus] = useState({})
+    const [dataClinicLogo, setDataClinicLogo] = useState({})
     const [showLanguageSelector, setShowLanguageSelector] = useState(false)
     const [showPartnershipInfo, setShowPartnershipInfo] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -48,7 +51,20 @@ export default function Sidebar(isOpen, toggleSidebar) {
         if (isMobileOpen) {
             setIsMobileOpen(false)
         }
+        loadLogo()
     }, [location.pathname])
+    const loadLogo = async () => {
+        try {
+            const data = await ApiLogo.fetchLogo()
+            console.log("Logo ma'lumotlari:", data)
+            setDataClinicLogo(data)
+
+
+        } catch (err) {
+            console.error("Logo yuklab bo‘lmadi:", err)
+        }
+    }
+
 
     // Close sidebar when clicking outside on mobile
     useEffect(() => {
@@ -93,12 +109,7 @@ export default function Sidebar(isOpen, toggleSidebar) {
     }
 
     // Hamkorlik ma'lumotlari
-    const partnershipInfo = {
-        ourCompany: "Clinic Crm",
-        partnerCompany: "Dental Academy",
-        description: "Rasmiy hamkorlik shartnomasi asosida biz bilan ish yuritmoqda",
-        year: "2023-2026",
-    }
+
 
     return (
         <>
@@ -120,11 +131,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                             <div className="partnership-animation">
                                 {/* Bu joyga GIF qo'yiladi */}
                                 <div className="handshake-placeholder">
-                                    <img style={{marginLeft:"10px"}} src="/images/contract-icon.gif" alt="clinic-logo" />
+                                    <img style={{ marginLeft: "10px" }} src="/images/contract-icon.gif" alt="clinic-logo" />
                                 </div>
                             </div>
                             <div className="company-logo partner-company">
-                                <img className="logo-icon" src="/images/dental-logo.jpg" alt="your-logo" />
+                                <img className="logo-icon" src={BaseUrlImg + dataClinicLogo.logo} alt="your-logo" />
                             </div>
                         </div>
 
@@ -132,10 +143,10 @@ export default function Sidebar(isOpen, toggleSidebar) {
                         {showPartnershipInfo && (
                             <div className="partnership-info">
                                 <p className="partnership-title">
-                                    {partnershipInfo.ourCompany} va {partnershipInfo.partnerCompany}
+                                    Clinic Crm va {dataClinicLogo.name}
                                 </p>
-                                <p className="partnership-description">{partnershipInfo.description}</p>
-                                <p className="partnership-year">{partnershipInfo.year}</p>
+                                <p className="partnership-description">Rasmiy hamkorlik shartnomasi asosida biz bilan ish yuritmoqda</p>
+                                <p className="partnership-year">{dataClinicLogo.begin_contract}-{dataClinicLogo.end_contract}</p>
                             </div>
                         )}
                     </div>
@@ -183,11 +194,6 @@ export default function Sidebar(isOpen, toggleSidebar) {
                     <div className="nav-section">
                         <div className="nav-section-title">{t("main_menu")}</div>
                         <ul>
-                            <li>
-                                <NavLink to="/" className={({ isActive }) => (isActive ? "active" : "")}>
-                                    <FaHome /> <span>{t("home")}</span>
-                                </NavLink>
-                            </li>
 
                             {/* Director Menu Items */}
                             {hasRole("director") && (
@@ -197,7 +203,7 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                             <FaChartLine /> <span>{t("dashboard")}</span>
                                         </NavLink>
                                     </li>
-                                     <li>
+                                    <li>
                                         <NavLink to="/dashboard/director/lid" className={({ isActive }) => (isActive ? "active" : "")} end>
                                             <FaPhoneAlt /> <span>Lidlar</span>
                                         </NavLink>
