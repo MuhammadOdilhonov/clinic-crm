@@ -40,16 +40,16 @@ $user-color: #616161;
   transition: $transition;
   overflow-y: auto;
   box-shadow: $box-shadow;
-
+  
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;
   }
-
+  
   &::-webkit-scrollbar-track {
     background: $hover-bg;
   }
-
+  
   &::-webkit-scrollbar-thumb {
     background-color: $text-muted;
     border-radius: 20px;
@@ -266,27 +266,27 @@ $user-color: #616161;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   display: inline-block;
-
+  
   &.director {
     background-color: rgba($director-color, 0.1);
     color: $director-color;
   }
-
+  
   &.admin {
     background-color: rgba($admin-color, 0.1);
     color: $admin-color;
   }
-
+  
   &.doctor {
     background-color: rgba($doctor-color, 0.1);
     color: $doctor-color;
   }
-
+  
   &.nurse {
     background-color: rgba($nurse-color, 0.1);
     color: $nurse-color;
   }
-
+  
   &.user {
     background-color: rgba($user-color, 0.1);
     color: $user-color;
@@ -313,16 +313,16 @@ $user-color: #616161;
   font-size: 0.9rem;
   cursor: pointer;
   transition: $transition;
-
+  
   &:hover {
     background-color: darken($hover-bg, 2%);
   }
-
+  
   svg {
     font-size: 1.1rem;
     color: $primary-color;
   }
-
+  
   span {
     flex: 1;
     text-align: left;
@@ -355,15 +355,15 @@ $user-color: #616161;
   font-size: 0.9rem;
   cursor: pointer;
   transition: $transition;
-
+  
   &:last-child {
     border-bottom: none;
   }
-
+  
   &:hover {
     background-color: $hover-bg;
   }
-
+  
   &.active {
     background-color: $active-bg;
     color: $active-color;
@@ -401,12 +401,11 @@ $user-color: #616161;
 .sidebar-nav li {
   margin-bottom: 0.25rem;
   position: relative;
-
+  
   &.active {
     background-color: $active-bg;
-
-    >a,
-    >button {
+    
+    > a, > button {
       color: $active-color;
       font-weight: 500;
     }
@@ -429,17 +428,17 @@ $user-color: #616161;
   background: none;
   border: none;
   cursor: pointer;
-
+  
   &:hover {
     background-color: $hover-bg;
     color: $active-color;
   }
-
+  
   &.active {
     background-color: $active-bg;
     color: $active-color;
     font-weight: 500;
-
+    
     &::before {
       content: '';
       position: absolute;
@@ -452,7 +451,7 @@ $user-color: #616161;
       border-radius: 0 4px 4px 0;
     }
   }
-
+  
   svg {
     font-size: 1.1rem;
     min-width: 1.1rem;
@@ -462,7 +461,7 @@ $user-color: #616161;
 // Submenu toggle
 .submenu-toggle {
   justify-content: space-between;
-
+  
   svg:last-child {
     font-size: 0.9rem;
     margin-left: auto;
@@ -473,9 +472,8 @@ $user-color: #616161;
 .submenu {
   margin-left: 1rem;
   border-left: 1px dashed $sidebar-border;
-
-  a,
-  button {
+  
+  a, button {
     padding: 0.6rem 1.5rem;
     font-size: 0.85rem;
   }
@@ -484,7 +482,7 @@ $user-color: #616161;
 // Logout button
 .logout-button {
   color: #e74c3c;
-
+  
   &:hover {
     background-color: rgba(#e74c3c, 0.1);
     color: #e74c3c;
@@ -498,11 +496,11 @@ $user-color: #616161;
   font-size: 0.75rem;
   color: $text-muted;
   text-align: center;
-
+  
   p {
     margin: 0;
   }
-
+  
   .version {
     margin-top: 0.25rem;
     font-size: 0.7rem;
@@ -528,7 +526,7 @@ $user-color: #616161;
   transition: $transition;
   align-items: center;
   justify-content: center;
-
+  
   &:hover {
     background-color: $hover-bg;
     color: $active-color;
@@ -550,13 +548,8 @@ $user-color: #616161;
 
 // Animations
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 // Responsive styles
@@ -565,20 +558,20 @@ $user-color: #616161;
     position: fixed;
     left: -$sidebar-width;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-
+    
     &.mobile-open {
       left: 0;
     }
   }
-
+  
   .mobile-toggle {
     display: flex;
   }
-
+  
   .sidebar-close {
     display: block;
   }
-
+  
   .sidebar-backdrop {
     display: block;
   }
@@ -588,27 +581,28 @@ $user-color: #616161;
   .sidebar {
     width: 240px;
   }
-
+  
   .user-info {
     padding: 1rem;
   }
-
+  
   .sidebar-nav a,
   .sidebar-nav button {
     padding: 0.75rem 1rem;
   }
-
+  
   .submenu a,
   .submenu button {
     padding: 0.6rem 1rem;
   }
-
+  
   .language-selector {
     padding: 0.75rem 1rem;
   }
-
+  
   .language-dropdown {
     left: 1rem;
     right: 1rem;
   }
 }
+
