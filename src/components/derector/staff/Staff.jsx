@@ -1,18 +1,36 @@
-import React , { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
 import {
-    FaUserPlus,
-    FaSearch,
+    FaUserMd,
+    FaUserNurse,
+    FaUserCog,
     FaEdit,
     FaTrash,
+    FaSync,
+    FaFilter,
+    FaSearch,
+    FaPlus,
+    FaEye,
     FaTimes,
     FaCheck,
-    FaUserMd,
-    FaFilter,
+    FaCalendarAlt,
+    FaSpinner,
+    FaUserTie,
+    FaChevronDown,
+    FaChevronUp,
     FaMoneyBillWave,
-    FaPlane,
+    FaUserAlt,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import apiUsers from "../../../api/apiUsers"
+import apiBranches from "../../../api/apiBranches"
+import apiUsersStatistics from "../../../api/apiUsersStatistics"
+import Pagination from "../../pagination/Pagination"
+import ConfirmModal from "../../modal/ConfirmModal"
+import SuccessModal from "../../modal/SuccessModal"
+import StaffDetailsModal from "./StaffDetailsModal"
 
 export default function Staff() {
     const { selectedBranch } = useAuth()
@@ -23,325 +41,209 @@ export default function Staff() {
         { value: "doctor", label: t("doctor") },
         { value: "admin", label: t("admin") },
         { value: "nurse", label: t("nurse") },
-        { value: "lab_technician", label: t("lab_technician") },
-        { value: "pharmacist", label: t("pharmacist") },
-        { value: "receptionist", label: t("receptionist") },
-        { value: "accountant", label: t("accountant") },
-        { value: "cleaner", label: t("cleaner") },
-        { value: "security", label: t("security") },
-        { value: "buyer", label: t("buyer") },
-        { value: "manager", label: t("manager") },
+        { value: "director", label: t("director") },
     ]
 
-    // Mock data for staff
-    const initialStaffData = {
-        all: [
-            {
-                id: 1,
-                name: "Aziz Karimov",
-                role: "doctor",
-                department: "Kardiologiya",
-                phone: "+998 90 123 45 67",
-                email: "aziz@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 5000000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 2,
-                name: "Malika Umarova",
-                role: "admin",
-                department: "Qabul bo'limi",
-                phone: "+998 90 234 56 78",
-                email: "malika@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 3500000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 3,
-                name: "Jasur Toshmatov",
-                role: "doctor",
-                department: "Nevrologiya",
-                phone: "+998 90 345 67 89",
-                email: "jasur@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 4800000,
-                onVacation: true,
-                vacationDates: "2023-05-20 - 2023-06-05",
-            },
-            {
-                id: 4,
-                name: "Nilufar Rahimova",
-                role: "nurse",
-                department: "Pediatriya",
-                phone: "+998 90 456 78 90",
-                email: "nilufar@example.com",
-                status: "inactive",
-                branch: "branch2",
-                salary: 2800000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 5,
-                name: "Sardor Aliyev",
-                role: "buyer",
-                department: "Xarid bo'limi",
-                phone: "+998 90 567 89 01",
-                email: "sardor@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3200000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 6,
-                name: "Kamola Yusupova",
-                role: "pharmacist",
-                department: "Dorixona",
-                phone: "+998 90 678 90 12",
-                email: "kamola@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3000000,
-                onVacation: false,
-                vacationDates: null,
-            },
-        ],
-        branch1: [
-            {
-                id: 1,
-                name: "Aziz Karimov",
-                role: "doctor",
-                department: "Kardiologiya",
-                phone: "+998 90 123 45 67",
-                email: "aziz@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 5000000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 2,
-                name: "Malika Umarova",
-                role: "admin",
-                department: "Qabul bo'limi",
-                phone: "+998 90 234 56 78",
-                email: "malika@example.com",
-                status: "active",
-                branch: "branch1",
-                salary: 3500000,
-                onVacation: false,
-                vacationDates: null,
-            },
-        ],
-        branch2: [
-            {
-                id: 3,
-                name: "Jasur Toshmatov",
-                role: "doctor",
-                department: "Nevrologiya",
-                phone: "+998 90 345 67 89",
-                email: "jasur@example.com",
-                status: "active",
-                branch: "branch2",
-                salary: 4800000,
-                onVacation: true,
-                vacationDates: "2023-05-20 - 2023-06-05",
-            },
-            {
-                id: 4,
-                name: "Nilufar Rahimova",
-                role: "nurse",
-                department: "Pediatriya",
-                phone: "+998 90 456 78 90",
-                email: "nilufar@example.com",
-                status: "inactive",
-                branch: "branch2",
-                salary: 2800000,
-                onVacation: false,
-                vacationDates: null,
-            },
-        ],
-        branch3: [
-            {
-                id: 5,
-                name: "Sardor Aliyev",
-                role: "buyer",
-                department: "Xarid bo'limi",
-                phone: "+998 90 567 89 01",
-                email: "sardor@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3200000,
-                onVacation: false,
-                vacationDates: null,
-            },
-            {
-                id: 6,
-                name: "Kamola Yusupova",
-                role: "pharmacist",
-                department: "Dorixona",
-                phone: "+998 90 678 90 12",
-                email: "kamola@example.com",
-                status: "active",
-                branch: "branch3",
-                salary: 3000000,
-                onVacation: false,
-                vacationDates: null,
-            },
-        ],
-    }
+    // Specialization options
+    const specializationOptions = [
+        { value: "general", label: t("general") },
+        { value: "cardiology", label: t("cardiology") },
+        { value: "dermatology", label: t("dermatology") },
+        { value: "pediatrics", label: t("pediatrics") },
+        { value: "neurology", label: t("neurology") },
+        { value: "director", label: t("director") },
+        { value: "other", label: t("other") },
+    ]
 
-    const [initialStaff, setInitialStaff] = useState(
-        selectedBranch === "all" ? initialStaffData.all : initialStaffData[selectedBranch],
-    )
-    const [staff, setStaff] = useState(initialStaff)
-    const [searchTerm, setSearchTerm] = useState("")
-    const [showSidebar, setShowSidebar] = useState(false)
-    const [showEditSidebar, setShowEditSidebar] = useState(false)
-    const [currentStaff, setCurrentStaff] = useState(null)
-    const [newStaff, setNewStaff] = useState({
-        name: "",
-        role: "doctor",
-        department: "",
-        phone: "",
-        email: "",
-        status: "active",
-        branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        salary: 0,
-        onVacation: false,
-        vacationDates: null,
+    // Status options
+    const statusOptions = [
+        { value: "faol", label: t("active") },
+        { value: "nofaol", label: t("inactive") },
+        { value: "tatilda", label: t("on_vacation") },
+    ]
+
+    // State for branches
+    const [branches, setBranches] = useState([])
+    const [isLoadingBranches, setIsLoadingBranches] = useState(true)
+    const [branchError, setBranchError] = useState(null)
+
+    // State for staff data
+    const [staff, setStaff] = useState([])
+    const [isLoadingStaff, setIsLoadingStaff] = useState(true)
+    const [staffError, setStaffError] = useState(null)
+    const [totalStaff, setTotalStaff] = useState(0)
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+    // State for staff statistics
+    const [staffStats, setStaffStats] = useState({
+        total_users: 0,
+        active_users: 0,
+        on_leave_users: 0,
+        total_salary: 0,
+        role_distribution: [],
     })
+    const [isLoadingStats, setIsLoadingStats] = useState(true)
+    const [showStats, setShowStats] = useState(true)
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(0) // 0-based for react-paginate
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    // State for filters
+    const [showFilters, setShowFilters] = useState(false)
     const [filterRole, setFilterRole] = useState("all")
     const [filterStatus, setFilterStatus] = useState("all")
     const [filterBranch, setFilterBranch] = useState(selectedBranch)
-    const [filterVacation, setFilterVacation] = useState("all")
-    const [showFilters, setShowFilters] = useState(false)
-    const [showStats, setShowStats] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
 
-    // Stats calculation
-    const [stats, setStats] = useState({
-        totalStaff: 0,
-        activeStaff: 0,
-        onVacation: 0,
-        totalSalaries: 0,
-        byRole: {},
+    // State for user form
+    const [showSidebar, setShowSidebar] = useState(false)
+    const [formMode, setFormMode] = useState("add") // 'add' or 'edit'
+    const [currentStaffMember, setCurrentStaffMember] = useState(null)
+    const [formErrors, setFormErrors] = useState({})
+
+    // State for new staff
+    const [newStaff, setNewStaff] = useState({
+        email: "",
+        first_name: "",
+        last_name: "",
+        role: "doctor",
+        phone_number: "",
+        specialization: "general",
+        status: "faol",
+        clinic: selectedBranch === "all" ? "" : selectedBranch,
+        branch: selectedBranch === "all" ? "" : selectedBranch,
+        salary: "",
+        reason_holiday: "",
+        start_holiday: "",
+        end_holiday: "",
     })
 
-    // Calculate stats
+    // Modal states
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+        type: "warning",
+    })
+
+    const [successModal, setSuccessModal] = useState({
+        isOpen: false,
+        title: "",
+        message: "",
+    })
+
+    // User details modal state
+    const [userDetailsModal, setUserDetailsModal] = useState({
+        isOpen: false,
+        user: null,
+    })
+
+    // Fetch branches from API
     useEffect(() => {
-        const calculateStats = () => {
-            const totalStaff = initialStaff.length
-            const activeStaff = initialStaff.filter((s) => s.status === "active").length
-            const onVacation = initialStaff.filter((s) => s.onVacation).length
-            const totalSalaries = initialStaff.reduce((sum, s) => sum + s.salary, 0)
-
-            // Count by role
-            const byRole = {}
-            initialStaff.forEach((s) => {
-                if (!byRole[s.role]) byRole[s.role] = 0
-                byRole[s.role]++
-            })
-
-            setStats({
-                totalStaff,
-                activeStaff,
-                onVacation,
-                totalSalaries,
-                byRole,
-            })
+        const fetchBranchData = async () => {
+            setIsLoadingBranches(true)
+            setBranchError(null)
+            try {
+                const branchData = await apiBranches.fetchBranches()
+                // Ensure branchData is an array
+                setBranches(Array.isArray(branchData) ? branchData : [])
+            } catch (error) {
+                console.error("Error fetching branches:", error)
+                setBranchError(t("error_fetching_branches"))
+                setBranches([]) // Set to empty array on error
+            } finally {
+                setIsLoadingBranches(false)
+            }
         }
 
-        calculateStats()
-    }, [initialStaff])
+        fetchBranchData()
+    }, [t])
 
-    // Update staff when branch changes
+    // Fetch staff statistics
     useEffect(() => {
-        if (selectedBranch === "all") {
-            setInitialStaff(initialStaffData.all)
-            setStaff(initialStaffData.all)
-        } else {
-            setInitialStaff(initialStaffData[selectedBranch])
-            setStaff(initialStaffData[selectedBranch])
+        const fetchStaffStatistics = async () => {
+            if (!showStats) return
+
+            setIsLoadingStats(true)
+            try {
+                const stats = await apiUsersStatistics.fetchUsersStatistics(filterBranch !== "all" ? filterBranch : null)
+
+                // Set the statistics data directly from the API response
+                setStaffStats(stats)
+            } catch (error) {
+                console.error("Error fetching staff statistics:", error)
+                setStaffStats({
+                    total_users: 0,
+                    active_users: 0,
+                    on_leave_users: 0,
+                    total_salary: 0,
+                    role_distribution: [],
+                })
+            } finally {
+                setIsLoadingStats(false)
+            }
         }
 
-        setNewStaff({
-            ...newStaff,
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        })
+        fetchStaffStatistics()
+    }, [filterBranch, refreshTrigger, showStats])
 
+    // Fetch staff data with pagination and filters
+    const fetchStaffData = useCallback(async () => {
+        setIsLoadingStaff(true)
+        setStaffError(null)
+        try {
+            // Create filters object
+            const filters = {
+                branch: filterBranch !== "all" ? filterBranch : null,
+                role: filterRole !== "all" ? filterRole : null,
+                status: filterStatus !== "all" ? filterStatus : null,
+                search: searchTerm || null,
+            }
+
+            // API uses 1-based pagination, but react-paginate uses 0-based
+            const response = await apiUsers.fetchUsers(currentPage + 1, itemsPerPage, filters)
+
+            setStaff(response.results || [])
+            setTotalStaff(response.count || 0)
+        } catch (error) {
+            console.error("Error fetching staff data:", error)
+            setStaffError(t("error_fetching_staff"))
+            setStaff([])
+            setTotalStaff(0)
+        } finally {
+            setIsLoadingStaff(false)
+        }
+    }, [currentPage, itemsPerPage, filterRole, filterStatus, filterBranch, searchTerm, t])
+
+    useEffect(() => {
+        fetchStaffData()
+    }, [fetchStaffData, refreshTrigger])
+
+    // Update filter branch when selected branch changes
+    useEffect(() => {
         setFilterBranch(selectedBranch)
+        setCurrentPage(0) // Reset to first page when branch changes
+        // Trigger a refresh
+        setRefreshTrigger((prev) => prev + 1)
     }, [selectedBranch])
 
-    // Filter staff based on search term, role, status, branch and vacation
-    useEffect(() => {
-        let filteredStaff = [...initialStaff]
+    // Handle page change
+    const handlePageChange = (selectedPage) => {
+        setCurrentPage(selectedPage)
+    }
 
-        // Filter by search term
-        if (searchTerm) {
-            filteredStaff = filteredStaff.filter(
-                (person) =>
-                    person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    person.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    person.email.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-        }
-
-        // Filter by role
-        if (filterRole !== "all") {
-            filteredStaff = filteredStaff.filter((person) => person.role === filterRole)
-        }
-
-        // Filter by status
-        if (filterStatus !== "all") {
-            filteredStaff = filteredStaff.filter((person) => person.status === filterStatus)
-        }
-
-        // Filter by branch (if viewing all branches)
-        if (selectedBranch === "all" && filterBranch !== "all") {
-            filteredStaff = filteredStaff.filter((person) => person.branch === filterBranch)
-        }
-
-        // Filter by vacation status
-        if (filterVacation !== "all") {
-            filteredStaff = filteredStaff.filter((person) =>
-                filterVacation === "on_vacation" ? person.onVacation : !person.onVacation,
-            )
-        }
-
-        setStaff(filteredStaff)
-    }, [searchTerm, filterRole, filterStatus, filterBranch, filterVacation, initialStaff])
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page when items per page changes
+    }
 
     // Handle search input change
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value)
-    }
-
-    // Handle new staff input change
-    const handleNewStaffChange = (e) => {
-        const { name, value, type, checked } = e.target
-        setNewStaff({
-            ...newStaff,
-            [name]: type === "checkbox" ? checked : name === "salary" ? (value === "" ? 0 : Number.parseInt(value)) : value,
-        })
-    }
-
-    // Handle edit staff input change
-    const handleEditStaffChange = (e) => {
-        const { name, value, type, checked } = e.target
-        setCurrentStaff({
-            ...currentStaff,
-            [name]: type === "checkbox" ? checked : name === "salary" ? Number.parseInt(value) : value,
-        })
+        setCurrentPage(0) // Reset to first page when search term changes
     }
 
     // Toggle filters
@@ -349,121 +251,297 @@ export default function Staff() {
         setShowFilters(!showFilters)
     }
 
-    // Toggle stats
+    // Toggle statistics
     const toggleStats = () => {
         setShowStats(!showStats)
     }
 
+    // Reset filters
+    const resetFilters = () => {
+        setFilterRole("all")
+        setFilterStatus("all")
+        setFilterBranch(selectedBranch)
+        setSearchTerm("")
+        setCurrentPage(0)
+    }
+
+    // Handle new staff input change
+    const handleNewStaffChange = (e) => {
+        const { name, value } = e.target
+        setNewStaff({
+            ...newStaff,
+            [name]: value,
+        })
+
+        // Clear form errors when field is changed
+        if (formErrors[name]) {
+            setFormErrors({
+                ...formErrors,
+                [name]: null,
+            })
+        }
+    }
+
+    // Handle edit staff input change
+    const handleEditStaffChange = (e) => {
+        const { name, value } = e.target
+        setCurrentStaffMember({
+            ...currentStaffMember,
+            [name]: value,
+        })
+
+        // Clear form errors when field is changed
+        if (formErrors[name]) {
+            setFormErrors({
+                ...formErrors,
+                [name]: null,
+            })
+        }
+    }
+
+    // Validate form
+    const validateForm = (data) => {
+        const errors = {}
+
+        // Required fields
+        if (!data.email) errors.email = t("email_required")
+        if (!data.first_name) errors.first_name = t("first_name_required")
+        if (!data.last_name) errors.last_name = t("last_name_required")
+        if (!data.phone_number) errors.phone_number = t("phone_required")
+        if (!data.salary) errors.salary = t("salary_required")
+
+        // Status-specific validations
+        if (data.status === "nofaol" && !data.reason_holiday) {
+            errors.reason_holiday = t("reason_required_for_inactive")
+        }
+
+        if (data.status === "tatilda") {
+            if (!data.start_holiday) errors.start_holiday = t("start_date_required")
+            if (!data.end_holiday) errors.end_holiday = t("end_date_required")
+            if (!data.reason_holiday) errors.reason_holiday = t("reason_required_for_vacation")
+        }
+
+        setFormErrors(errors)
+        return Object.keys(errors).length === 0
+    }
+
     // Open add sidebar
     const openAddSidebar = () => {
+        setFormMode("add")
         setShowSidebar(true)
+        setFormErrors({})
+        setNewStaff({
+            email: "",
+            first_name: "",
+            last_name: "",
+            role: "doctor",
+            phone_number: "",
+            specialization: "general",
+            status: "faol",
+            clinic: selectedBranch === "all" ? (branches.length > 0 ? branches[0].id.toString() : "") : selectedBranch,
+            branch: selectedBranch === "all" ? (branches.length > 0 ? branches[0].id.toString() : "") : selectedBranch,
+            salary: "",
+            reason_holiday: "",
+            start_holiday: "",
+            end_holiday: "",
+        })
     }
 
     // Close add sidebar
     const closeAddSidebar = () => {
         setShowSidebar(false)
-        setNewStaff({
-            name: "",
-            role: "doctor",
-            department: "",
-            phone: "",
-            email: "",
-            status: "active",
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-            salary: 0,
-            onVacation: false,
-            vacationDates: null,
-        })
+        setFormErrors({})
     }
 
     // Open edit sidebar
-    const openEditSidebar = (person) => {
-        setCurrentStaff(person)
-        setShowEditSidebar(true)
+    const openEditSidebar = async (staffId) => {
+        try {
+            setIsLoadingStaff(true)
+            setFormMode("edit")
+            setFormErrors({})
+            const staffMember = await apiUsers.fetchUserById(staffId)
+            setCurrentStaffMember({
+                ...staffMember,
+                _prevBranch: staffMember.branch, // Store previous branch for comparison
+            })
+            setShowSidebar(true)
+        } catch (error) {
+            console.error("Error fetching staff member details:", error)
+            showErrorModal(t("error"), t("error_fetching_staff_details"))
+        } finally {
+            setIsLoadingStaff(false)
+        }
     }
 
     // Close edit sidebar
     const closeEditSidebar = () => {
-        setShowEditSidebar(false)
-        setCurrentStaff(null)
+        setShowSidebar(false)
+        setCurrentStaffMember(null)
+        setFormErrors({})
+    }
+
+    // Show confirm modal
+    const showConfirmModal = (title, message, onConfirm, type = "warning") => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            onConfirm,
+            type,
+        })
+    }
+
+    // Close confirm modal
+    const closeConfirmModal = () => {
+        setConfirmModal({
+            ...confirmModal,
+            isOpen: false,
+        })
+    }
+
+    // Show success modal
+    const showSuccessModal = (title, message) => {
+        setSuccessModal({
+            isOpen: true,
+            title,
+            message,
+        })
+    }
+
+    // Close success modal
+    const closeSuccessModal = () => {
+        setSuccessModal({
+            ...successModal,
+            isOpen: false,
+        })
+    }
+
+    // Show error modal
+    const showErrorModal = (title, message) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            onConfirm: closeConfirmModal,
+            type: "danger",
+        })
+    }
+
+    // Open user details modal
+    const openUserDetailsModal = (user) => {
+        setUserDetailsModal({
+            isOpen: true,
+            user,
+        })
+    }
+
+    // Close user details modal
+    const closeUserDetailsModal = () => {
+        setUserDetailsModal({
+            isOpen: false,
+            user: null,
+        })
     }
 
     // Add new staff
-    const addStaff = (e) => {
+    const addStaff = async (e) => {
         e.preventDefault()
-        const id = Math.max(...initialStaffData.all.map((p) => p.id)) + 1
-        const newStaffMember = { ...newStaff, id }
 
-        // Update all staff data
-        const updatedAllStaff = [...initialStaffData.all, newStaffMember]
-        initialStaffData.all = updatedAllStaff
-
-        // Update branch-specific staff data
-        initialStaffData[newStaffMember.branch] = [...initialStaffData[newStaffMember.branch], newStaffMember]
-
-        // Update current view
-        if (selectedBranch === "all" || selectedBranch === newStaffMember.branch) {
-            setInitialStaff((prev) => [...prev, newStaffMember])
+        if (!validateForm(newStaff)) {
+            return
         }
 
-        closeAddSidebar()
+        try {
+            setIsLoadingStaff(true)
+
+            // Prepare data for API
+            const staffData = {
+                ...newStaff,
+                // Add any additional formatting or transformations needed for the API
+            }
+
+            await apiUsers.createUser(staffData)
+
+            // Refresh staff list
+            setRefreshTrigger((prev) => prev + 1)
+            closeAddSidebar()
+            showSuccessModal(t("success"), t("staff_added_successfully"))
+        } catch (error) {
+            console.error("Error adding staff member:", error)
+            showErrorModal(t("error"), t("error_adding_staff"))
+        } finally {
+            setIsLoadingStaff(false)
+        }
     }
 
     // Update staff
-    const updateStaff = (e) => {
+    const updateStaff = async (e) => {
         e.preventDefault()
 
-        // Update in all staff data
-        const updatedAllStaff = initialStaffData.all.map((person) =>
-            person.id === currentStaff.id ? currentStaff : person,
+        if (!currentStaffMember || !currentStaffMember.id) {
+            console.error("No staff member selected for update")
+            return
+        }
+
+        if (!validateForm(currentStaffMember)) {
+            return
+        }
+
+        try {
+            setIsLoadingStaff(true)
+
+            // Prepare data for API
+            const staffData = {
+                ...currentStaffMember,
+                // Remove any fields that shouldn't be sent to the API
+                _prevBranch: undefined,
+            }
+
+            await apiUsers.updateUser(currentStaffMember.id, staffData)
+
+            // Refresh staff list
+            setRefreshTrigger((prev) => prev + 1)
+            closeEditSidebar()
+            showSuccessModal(t("success"), t("staff_updated_successfully"))
+        } catch (error) {
+            console.error("Error updating staff member:", error)
+            showErrorModal(t("error"), t("error_updating_staff"))
+        } finally {
+            setIsLoadingStaff(false)
+        }
+    }
+
+    // Confirm delete staff
+    const confirmDeleteStaff = (staffId, staffName) => {
+        showConfirmModal(
+            t("confirm_delete"),
+            t("confirm_delete_staff_message", { name: staffName }),
+            () => deleteStaff(staffId),
+            "danger",
         )
-        initialStaffData.all = updatedAllStaff
-
-        // Update in branch-specific data
-        // First remove from old branch if branch changed
-        if (currentStaff.branch !== currentStaff._prevBranch && currentStaff._prevBranch) {
-            initialStaffData[currentStaff._prevBranch] = initialStaffData[currentStaff._prevBranch].filter(
-                (person) => person.id !== currentStaff.id,
-            )
-        }
-
-        // Then add to new branch
-        if (initialStaffData[currentStaff.branch]) {
-            initialStaffData[currentStaff.branch] = initialStaffData[currentStaff.branch].filter(
-                (person) => person.id !== currentStaff.id,
-            )
-            initialStaffData[currentStaff.branch].push(currentStaff)
-        }
-
-        // Update current view
-        if (selectedBranch === "all") {
-            setInitialStaff(updatedAllStaff)
-        } else if (selectedBranch === currentStaff.branch) {
-            setInitialStaff(initialStaffData[selectedBranch])
-        }
-
-        closeEditSidebar()
     }
 
     // Delete staff
-    const deleteStaff = (id) => {
-        if (window.confirm(t("confirm_delete_staff"))) {
-            // Find the staff member to get their branch
-            const staffToDelete = initialStaffData.all.find((person) => person.id === id)
+    const deleteStaff = async (staffId) => {
+        try {
+            setIsLoadingStaff(true)
+            await apiUsers.deleteUser(staffId)
 
-            // Remove from all staff data
-            initialStaffData.all = initialStaffData.all.filter((person) => person.id !== id)
-
-            // Remove from branch-specific data
-            if (staffToDelete && staffToDelete.branch) {
-                initialStaffData[staffToDelete.branch] = initialStaffData[staffToDelete.branch].filter(
-                    (person) => person.id !== id,
-                )
-            }
-
-            // Update current view
-            setInitialStaff((prev) => prev.filter((person) => person.id !== id))
+            // Refresh staff list
+            setRefreshTrigger((prev) => prev + 1)
+            closeConfirmModal()
+            showSuccessModal(t("success"), t("staff_deleted_successfully"))
+        } catch (error) {
+            console.error("Error deleting staff member:", error)
+            showErrorModal(t("error"), t("error_deleting_staff"))
+        } finally {
+            setIsLoadingStaff(false)
         }
+    }
+
+    // Manual refresh data
+    const handleRefreshData = () => {
+        setRefreshTrigger((prev) => prev + 1)
     }
 
     // Get role label
@@ -472,205 +550,145 @@ export default function Staff() {
         return role ? role.label : roleValue
     }
 
-    // Fetch staff data
-    // useEffect(() => {
-    //   // Simulate API call
-    //   setTimeout(() => {
-    //     setStaffData([
-    //       {
-    //         id: 1,
-    //         name: "Dr. Alisher Karimov",
-    //         role: "doctor",
-    //         specialty: "Cardiologist",
-    //         phone: "+998 90 123 45 67",
-    //         email: "alisher@clinic.uz",
-    //         status: "active",
-    //       },
-    //       {
-    //         id: 2,
-    //         name: "Dr. Nodira Azimova",
-    //         role: "doctor",
-    //         specialty: "Neurologist",
-    //         phone: "+998 90 765 43 21",
-    //         email: "nodira@clinic.uz",
-    //         status: "active",
-    //       },
-    //       {
-    //         id: 3,
-    //         name: "Kamola Rakhimova",
-    //         role: "admin",
-    //         specialty: "",
-    //         phone: "+998 90 555 55 55",
-    //         email: "kamola@clinic.uz",
-    //         status: "active",
-    //       },
-    //       {
-    //         id: 4,
-    //         name: "Dilshod Umarov",
-    //         role: "nurse",
-    //         specialty: "",
-    //         phone: "+998 90 333 33 33",
-    //         email: "dilshod@clinic.uz",
-    //         status: "vacation",
-    //       },
-    //       {
-    //         id: 5,
-    //         name: "Gulnora Karimova",
-    //         role: "pharmacist",
-    //         specialty: "",
-    //         phone: "+998 90 222 22 22",
-    //         email: "gulnora@clinic.uz",
-    //         status: "active",
-    //       },
-    //       {
-    //         id: 6,
-    //         name: "Rustam Khasanov",
-    //         role: "buyer",
-    //         specialty: "",
-    //         phone: "+998 90 111 11 11",
-    //         email: "rustam@clinic.uz",
-    //         status: "active",
-    //       },
-    //     ])
-    //     setIsLoading(false)
-    //   }, 1000)
-    // }, [])
+    // Get specialization label
+    const getSpecializationLabel = (specValue) => {
+        const spec = specializationOptions.find((s) => s.value === specValue)
+        return spec ? spec.label : specValue
+    }
 
-    // Handle search
-    // const handleSearch = (e) => {
-    //   setSearchTerm(e.target.value)
-    // }
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        if (isLoadingBranches) return t("loading")
+        if (branchError) return t("unknown")
 
-    // Filter staff based on search term
-    // const filteredStaff = staffData.filter(
-    //   (staff) =>
-    //     staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //     staff.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //     staff.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //     staff.email.toLowerCase().includes(searchTerm.toLowerCase()),
-    // )
+        const branch = branches.find((b) => b.id.toString() === branchId?.toString())
+        return branch ? branch.name : t("unknown_branch")
+    }
 
-    // Handle input change for new staff
-    // const handleInputChange = (e) => {
-    //   const { name, value } = e.target
-    //   setNewStaff({
-    //     ...newStaff,
-    //     [name]: value,
-    //   })
-    // }
+    // Format full name
+    const formatFullName = (firstName, lastName) => {
+        return `${firstName || ""} ${lastName || ""}`.trim()
+    }
 
-    // Handle add staff
-    // const handleAddStaff = (e) => {
-    //   e.preventDefault()
-    //   const newStaffMember = {
-    //     id: staffData.length + 1,
-    //     ...newStaff,
-    //   }
-    //   setStaffData([...staffData, newStaffMember])
-    //   setNewStaff({
-    //     name: "",
-    //     role: "doctor",
-    //     specialty: "",
-    //     phone: "",
-    //     email: "",
-    //     status: "active",
-    //   })
-    //   setShowAddModal(false)
-    // }
+    // Format currency
+    const formatCurrency = (amount) => {
+        if (!amount) return "0"
+        return new Intl.NumberFormat("uz-UZ", {
+            style: "decimal",
+            maximumFractionDigits: 0,
+        }).format(amount)
+    }
 
-    // Get role icon
-    // const getRoleIcon = (role) => {
-    //   switch (role) {
-    //     case "doctor":
-    //       return <FaUserMd className="staff-role-icon doctor" />
-    //     case "admin":
-    //       return <FaUserTie className="staff-role-icon admin" />
-    //     case "nurse":
-    //       return <FaUserNurse className="staff-role-icon nurse" />
-    //     default:
-    //       return <FaUser className="staff-role-icon" />
-    //   }
-    // }
+    // Calculate page count for pagination
+    const pageCount = Math.ceil(totalStaff / itemsPerPage)
+
+    // Calculate progress percentage for position stats
+    const getProgressPercentage = (count) => {
+        if (!staffStats.totalStaff || staffStats.totalStaff === 0) return 0
+        return (count / staffStats.totalStaff) * 100
+    }
 
     return (
         <div className="xodim-container">
             <div className="xodim-header">
                 <h1 className="xodim-title">{t("staff")}</h1>
                 <div className="xodim-actions">
-                    <button className="xodim-btn xodim-btn-outline xodim-btn-icon" onClick={toggleStats}>
-                        {showStats ? <FaTimes /> : <FaMoneyBillWave />} {showStats ? t("close_stats") : t("statistics")}
+                    <button
+                        className="xodim-btn xodim-btn-outline "
+                        onClick={handleRefreshData}
+                        title={t("refresh_data")}
+                    >
+                        <FaSync className={isLoadingStaff ? "xodim-spinner" : ""} />
                     </button>
-                    <button className="xodim-btn xodim-btn-primary xodim-btn-icon" onClick={openAddSidebar}>
-                        <FaUserPlus /> {t("add_new_staff")}
+                    <button className="xodim-btn xodim-btn-primary " onClick={openAddSidebar}>
+                        <FaPlus /> {t("add_new_staff")}
                     </button>
                 </div>
             </div>
 
+            {/* Statistics Toggle Section */}
+            <div className="xodim-stats-toggle" onClick={toggleStats}>
+                <h2>
+                    {t("statistics")} {showStats ? <FaChevronUp /> : <FaChevronDown />}
+                </h2>
+            </div>
+
+            {/* Statistics Section */}
             {showStats && (
                 <div className="xodim-stats-container">
                     <div className="xodim-stats-grid">
                         <div className="xodim-stat-card">
                             <div className="xodim-stat-icon-wrapper">
-                                <FaUserMd className="xodim-stat-icon" />
+                                <FaUserAlt className="xodim-stat-icon" />
                             </div>
                             <div className="xodim-stat-content">
-                                <div className="xodim-stat-value">{stats.totalStaff}</div>
+                                <div className="xodim-stat-value">
+                                    {isLoadingStats ? <FaSpinner className="xodim-spinner" /> : staffStats.total_users}
+                                </div>
                                 <div className="xodim-stat-label">{t("total_staff")}</div>
                             </div>
                         </div>
-
                         <div className="xodim-stat-card">
                             <div className="xodim-stat-icon-wrapper">
                                 <FaCheck className="xodim-stat-icon" />
                             </div>
                             <div className="xodim-stat-content">
-                                <div className="xodim-stat-value">{stats.activeStaff}</div>
+                                <div className="xodim-stat-value">
+                                    {isLoadingStats ? <FaSpinner className="xodim-spinner" /> : staffStats.active_users}
+                                </div>
                                 <div className="xodim-stat-label">{t("active_staff")}</div>
                             </div>
                         </div>
-
                         <div className="xodim-stat-card">
                             <div className="xodim-stat-icon-wrapper">
-                                <FaPlane className="xodim-stat-icon" />
+                                <FaCalendarAlt className="xodim-stat-icon" />
                             </div>
                             <div className="xodim-stat-content">
-                                <div className="xodim-stat-value">{stats.onVacation}</div>
-                                <div className="xodim-stat-label">{t("staff_on_vacation")}</div>
+                                <div className="xodim-stat-value">
+                                    {isLoadingStats ? <FaSpinner className="xodim-spinner" /> : staffStats.on_leave_users}
+                                </div>
+                                <div className="xodim-stat-label">{t("staff_on_leave")}</div>
                             </div>
                         </div>
-
                         <div className="xodim-stat-card">
                             <div className="xodim-stat-icon-wrapper">
                                 <FaMoneyBillWave className="xodim-stat-icon" />
                             </div>
                             <div className="xodim-stat-content">
                                 <div className="xodim-stat-value">
-                                    {stats.totalSalaries.toLocaleString()} {t("currency")}
+                                    {isLoadingStats ? (
+                                        <FaSpinner className="xodim-spinner" />
+                                    ) : (
+                                        `${formatCurrency(staffStats.total_salary)} ${t("so'm")}`
+                                    )}
                                 </div>
                                 <div className="xodim-stat-label">{t("total_salary")}</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="xodim-role-distribution">
-                        <h3>{t("role_distribution")}</h3>
-                        <div className="xodim-role-bars">
-                            {Object.entries(stats.byRole).map(([role, count]) => (
-                                <div className="xodim-role-bar-item" key={role}>
-                                    <div className="xodim-role-info">
-                                        <span className="xodim-role-name">{getRoleLabel(role)}</span>
-                                        <span className="xodim-role-count">{count}</span>
+                    {/* Position Distribution */}
+                    {!isLoadingStats && staffStats.role_distribution && staffStats.role_distribution.length > 0 && (
+                        <div className="xodim-position-stats">
+                            <h3>{t("position_distribution")}</h3>
+                            <div className="xodim-position-stats-list">
+                                {staffStats.role_distribution.map((position, index) => (
+                                    <div key={index} className="xodim-position-stat-item">
+                                        <div className="xodim-position-stat-header">
+                                            <span className="xodim-position-name">{getRoleLabel(position.role)}</span>
+                                            <span className="xodim-position-count">{position.count}</span>
+                                        </div>
+                                        <div className="xodim-position-progress-bar">
+                                            <div
+                                                className="xodim-position-progress"
+                                                style={{ width: `${getProgressPercentage(position.count)}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="xodim-role-bar-container">
-                                        <div
-                                            className="xodim-role-bar-fill"
-                                            style={{ width: `${(count / stats.totalStaff) * 100}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 
@@ -689,7 +707,13 @@ export default function Staff() {
                     <div className="xodim-advanced-filters">
                         <div className="xodim-filter-group">
                             <label>{t("position")}:</label>
-                            <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
+                            <select
+                                value={filterRole}
+                                onChange={(e) => {
+                                    setFilterRole(e.target.value)
+                                    setCurrentPage(0) // Reset to first page when filter changes
+                                }}
+                            >
                                 <option value="all">{t("all")}</option>
                                 {staffPositions.map((position) => (
                                     <option key={position.value} value={position.value}>
@@ -701,248 +725,255 @@ export default function Staff() {
 
                         <div className="xodim-filter-group">
                             <label>{t("status")}:</label>
-                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => {
+                                    setFilterStatus(e.target.value)
+                                    setCurrentPage(0) // Reset to first page when filter changes
+                                }}
+                            >
                                 <option value="all">{t("all")}</option>
-                                <option value="active">{t("active")}</option>
-                                <option value="inactive">{t("inactive")}</option>
+                                {statusOptions.map((status) => (
+                                    <option key={status.value} value={status.value}>
+                                        {status.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
                         {selectedBranch === "all" && (
                             <div className="xodim-filter-group">
                                 <label>{t("branch")}:</label>
-                                <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
+                                <select
+                                    value={filterBranch}
+                                    onChange={(e) => {
+                                        setFilterBranch(e.target.value)
+                                        setCurrentPage(0) // Reset to first page when filter changes
+                                    }}
+                                >
                                     <option value="all">{t("all")}</option>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
+                                    {Array.isArray(branches) &&
+                                        branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id.toString()}>
+                                                {branch.name}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         )}
 
                         <div className="xodim-filter-group">
-                            <label>{t("vacation_status")}:</label>
-                            <select value={filterVacation} onChange={(e) => setFilterVacation(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                <option value="on_vacation">{t("on_vacation")}</option>
-                                <option value="not_on_vacation">{t("at_work")}</option>
-                            </select>
+                            <button className="xodim-btn xodim-btn-outline" onClick={resetFilters}>
+                                {t("reset_filters")}
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="xodim-dashboard-card">
-                <div className="xodim-table-responsive">
-                    <table className="xodim-data-table">
-                        <thead>
-                            <tr>
-                                <th>{t("name")}</th>
-                                <th>{t("position")}</th>
-                                <th>{t("department")}</th>
-                                <th>{t("phone")}</th>
-                                <th>{t("monthly_salary")}</th>
-                                <th>{t("vacation_status")}</th>
-                                <th>{t("status")}</th>
-                                <th>{t("actions")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {staff.map((person) => (
-                                <tr key={person.id}>
-                                    <td>{person.name}</td>
-                                    <td>
-                                        <div className={`xodim-role-badge ${person.role}`}>{getRoleLabel(person.role)}</div>
-                                    </td>
-                                    <td>{person.department}</td>
-                                    <td>{person.phone}</td>
-                                    <td>
-                                        {person.salary.toLocaleString()} {t("currency")}
-                                    </td>
-                                    <td>
-                                        <div className={`xodim-vacation-badge ${person.onVacation ? "on-vacation" : "working"}`}>
-                                            {person.onVacation ? (
-                                                <>
-                                                    <FaPlane /> {t("on_vacation")}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaCheck /> {t("at_work")}
-                                                </>
-                                            )}
-                                        </div>
-                                        {person.onVacation && person.vacationDates && (
-                                            <div className="xodim-vacation-dates">{person.vacationDates}</div>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className={`xodim-status-badge ${person.status}`}>
-                                            {person.status === "active" ? (
-                                                <>
-                                                    <FaCheck /> {t("active")}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaTimes /> {t("inactive")}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="xodim-action-buttons">
-                                            <button className="xodim-btn-icon xodim-edit" onClick={() => openEditSidebar(person)}>
-                                                <FaEdit />
-                                            </button>
-                                            <button className="xodim-btn-icon xodim-delete" onClick={() => deleteStaff(person.id)}>
-                                                <FaTrash />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {staff.length === 0 && (
+            {isLoadingStaff && (
+                <div className="xodim-loading-container">
+                    <div className="xodim-loading">
+                        <FaSpinner className="xodim-spinner" /> {t("loading_staff")}
+                    </div>
+                </div>
+            )}
+
+            {staffError && !isLoadingStaff && (
+                <div className="xodim-error-container">
+                    <div className="xodim-error">
+                        {staffError}
+                        <button className="xodim-btn xodim-btn-outline xodim-btn-sm" onClick={handleRefreshData}>
+                            <FaSync /> {t("try_again")}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {!isLoadingStaff && !staffError && (
+                <div className="xodim-dashboard-card">
+                    <div className="xodim-table-responsive">
+                        <table className="xodim-data-table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="8" className="xodim-no-data">
-                                        {t("no_data_found")}
-                                    </td>
+                                    <th></th> {/* Eye button column */}
+                                    <th>{t("name")}</th>
+                                    <th>{t("position")}</th>
+                                    <th>{t("specialization")}</th>
+                                    <th>{t("phone")}</th>
+                                    <th>{t("status")}</th>
+                                    <th>{t("actions")}</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {staff.length > 0 ? (
+                                    staff.map((person) => (
+                                        <tr key={person.id}>
+                                            <td>
+                                                <button
+                                                    className="xodim-btn-icon xodim-view"
+                                                    onClick={() => openUserDetailsModal(person)}
+                                                    title={t("view_details")}
+                                                >
+                                                    <FaEye />
+                                                </button>
+                                            </td>
+                                            <td>{formatFullName(person.first_name, person.last_name)}</td>
+                                            <td>
+                                                <div className={`xodim-role-badge ${person.role}`}>
+                                                    {person.role === "doctor" ? (
+                                                        <FaUserMd />
+                                                    ) : person.role === "nurse" ? (
+                                                        <FaUserNurse />
+                                                    ) : person.role === "director" ? (
+                                                        <FaUserTie />
+                                                    ) : (
+                                                        <FaUserCog />
+                                                    )}
+                                                    {getRoleLabel(person.role)}
+                                                </div>
+                                            </td>
+                                            <td>{person.specialization_name || getSpecializationLabel(person.specialization)}</td>
+                                            <td>{person.phone_number}</td>
+                                            <td>
+                                                <div
+                                                    className={`xodim-status-badge ${person.status === "faol" ? "active" : person.status === "nofaol" ? "inactive" : "vacation"
+                                                        }`}
+                                                >
+                                                    {person.status === "faol" ? (
+                                                        <>
+                                                            <FaCheck /> {t("active")}
+                                                        </>
+                                                    ) : person.status === "nofaol" ? (
+                                                        <>
+                                                            <FaTimes /> {t("inactive")}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaCalendarAlt /> {t("on_vacation")}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="xodim-action-buttons">
+                                                    <button
+                                                        className="xodim-btn-icon xodim-edit"
+                                                        onClick={() => openEditSidebar(person.id)}
+                                                        title={t("edit")}
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        className="xodim-btn-icon xodim-delete"
+                                                        onClick={() =>
+                                                            confirmDeleteStaff(person.id, formatFullName(person.first_name, person.last_name))
+                                                        }
+                                                        title={t("delete")}
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="xodim-no-data">
+                                            {t("no_data_found")}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Add Staff Sidebar */}
-            <div className={`xodim-sidebar-overlay ${showSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
-            <div className={`xodim-sidebar ${showSidebar ? "active" : ""}`}>
-                <div className="xodim-sidebar-header">
-                    <h2>{t("add_new_staff")}</h2>
-                    <button className="xodim-close-button" onClick={closeAddSidebar}>
-                        <FaTimes />
-                    </button>
-                </div>
-                <div className="xodim-sidebar-content">
-                    <form onSubmit={addStaff}>
-                        <div className="xodim-form-group">
-                            <label>{t("full_name")}</label>
-                            <input type="text" name="name" value={newStaff.name} onChange={handleNewStaffChange} required />
-                        </div>
+            {/* Pagination */}
+            {!isLoadingStaff && !staffError && staff.length > 0 && (
+                <Pagination
+                    pageCount={pageCount}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalStaff}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                />
+            )}
 
-                        <div className="xodim-form-group">
-                            <label>{t("position")}</label>
-                            <select name="role" value={newStaff.role} onChange={handleNewStaffChange} required>
-                                {staffPositions.map((position) => (
-                                    <option key={position.value} value={position.value}>
-                                        {position.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="xodim-form-group">
-                            <label>{t("department")}</label>
-                            <input
-                                type="text"
-                                name="department"
-                                value={newStaff.department}
-                                onChange={handleNewStaffChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="xodim-form-group">
-                            <label>{t("phone")}</label>
-                            <input type="text" name="phone" value={newStaff.phone} onChange={handleNewStaffChange} required />
-                        </div>
-
-                        <div className="xodim-form-group">
-                            <label>{t("email")}</label>
-                            <input type="email" name="email" value={newStaff.email} onChange={handleNewStaffChange} required />
-                        </div>
-
-                        <div className="xodim-form-group">
-                            <label>
-                                {t("monthly_salary")} ({t("currency")})
-                            </label>
-                            <input type="number" name="salary" value={newStaff.salary} onChange={handleNewStaffChange} required />
-                        </div>
-
-                        <div className="xodim-form-group">
-                            <label>{t("status")}</label>
-                            <select name="status" value={newStaff.status} onChange={handleNewStaffChange}>
-                                <option value="active">{t("active")}</option>
-                                <option value="inactive">{t("inactive")}</option>
-                            </select>
-                        </div>
-
-                        <div className="xodim-form-group xodim-checkbox-group">
-                            <input
-                                type="checkbox"
-                                id="onVacation"
-                                name="onVacation"
-                                checked={newStaff.onVacation}
-                                onChange={handleNewStaffChange}
-                            />
-                            <label htmlFor="onVacation">{t("on_vacation")}</label>
-                        </div>
-
-                        {newStaff.onVacation && (
-                            <div className="xodim-form-group">
-                                <label>{t("vacation_period")}</label>
-                                <input
-                                    type="text"
-                                    name="vacationDates"
-                                    value={newStaff.vacationDates || ""}
-                                    onChange={handleNewStaffChange}
-                                    placeholder={t("vacation_period_example")}
-                                />
-                            </div>
-                        )}
-
-                        {selectedBranch === "all" && (
-                            <div className="xodim-form-group">
-                                <label>{t("branch")}</label>
-                                <select name="branch" value={newStaff.branch} onChange={handleNewStaffChange}>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
-                                </select>
-                            </div>
-                        )}
-
-                        <div className="xodim-form-actions">
-                            <button type="submit" className="xodim-btn xodim-btn-primary">
-                                {t("add")}
-                            </button>
-                            <button type="button" className="xodim-btn xodim-btn-secondary" onClick={closeAddSidebar}>
-                                {t("cancel")}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* Edit Staff Sidebar */}
-            <div className={`xodim-sidebar-overlay ${showEditSidebar ? "active" : ""}`} onClick={closeEditSidebar}></div>
-            <div className={`xodim-sidebar ${showEditSidebar ? "active" : ""}`}>
-                {currentStaff && (
-                    <>
+            {/* Add/Edit Staff Sidebar */}
+            {showSidebar && (
+                <>
+                    <div className="xodim-sidebar-overlay active" onClick={closeAddSidebar}></div>
+                    <div className="xodim-sidebar active">
                         <div className="xodim-sidebar-header">
-                            <h2>{t("edit_staff")}</h2>
-                            <button className="xodim-close-button" onClick={closeEditSidebar}>
+                            <h2>{formMode === "add" ? t("add_new_staff") : t("edit_staff")}</h2>
+                            <button className="xodim-close-button" onClick={closeAddSidebar}>
                                 <FaTimes />
                             </button>
                         </div>
                         <div className="xodim-sidebar-content">
-                            <form onSubmit={updateStaff}>
+                            <form onSubmit={formMode === "add" ? addStaff : updateStaff}>
                                 <div className="xodim-form-group">
-                                    <label>{t("full_name")}</label>
-                                    <input type="text" name="name" value={currentStaff.name} onChange={handleEditStaffChange} required />
+                                    <label>{t("email")} *</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formMode === "add" ? newStaff.email : currentStaffMember?.email || ""}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                        required
+                                        className={formErrors.email ? "error" : ""}
+                                    />
+                                    {formErrors.email && <div className="error-message">{formErrors.email}</div>}
                                 </div>
 
                                 <div className="xodim-form-group">
-                                    <label>{t("position")}</label>
-                                    <select name="role" value={currentStaff.role} onChange={handleEditStaffChange} required>
+                                    <label>{t("first_name")} *</label>
+                                    <input
+                                        type="text"
+                                        name="first_name"
+                                        value={formMode === "add" ? newStaff.first_name : currentStaffMember?.first_name || ""}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                        required
+                                        className={formErrors.first_name ? "error" : ""}
+                                    />
+                                    {formErrors.first_name && <div className="error-message">{formErrors.first_name}</div>}
+                                </div>
+
+                                <div className="xodim-form-group">
+                                    <label>{t("last_name")} *</label>
+                                    <input
+                                        type="text"
+                                        name="last_name"
+                                        value={formMode === "add" ? newStaff.last_name : currentStaffMember?.last_name || ""}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                        required
+                                        className={formErrors.last_name ? "error" : ""}
+                                    />
+                                    {formErrors.last_name && <div className="error-message">{formErrors.last_name}</div>}
+                                </div>
+
+                                <div className="xodim-form-group">
+                                    <label>{t("salary")} (UZS) *</label>
+                                    <input
+                                        type="text"
+                                        name="salary"
+                                        value={formMode === "add" ? newStaff.salary : currentStaffMember?.salary || ""}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                        required
+                                        className={formErrors.salary ? "error" : ""}
+                                    />
+                                    {formErrors.salary && <div className="error-message">{formErrors.salary}</div>}
+                                </div>
+
+                                <div className="xodim-form-group">
+                                    <label>{t("role")}</label>
+                                    <select
+                                        name="role"
+                                        value={formMode === "add" ? newStaff.role : currentStaffMember?.role || "doctor"}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                    >
                                         {staffPositions.map((position) => (
                                             <option key={position.value} value={position.value}>
                                                 {position.label}
@@ -952,81 +983,107 @@ export default function Staff() {
                                 </div>
 
                                 <div className="xodim-form-group">
-                                    <label>{t("department")}</label>
+                                    <label>{t("specialization")}</label>
+                                    <select
+                                        name="specialization"
+                                        value={
+                                            formMode === "add" ? newStaff.specialization : currentStaffMember?.specialization || "general"
+                                        }
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                    >
+                                        {specializationOptions.map((spec) => (
+                                            <option key={spec.value} value={spec.value}>
+                                                {spec.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="xodim-form-group">
+                                    <label>{t("phone")} *</label>
                                     <input
                                         type="text"
-                                        name="department"
-                                        value={currentStaff.department}
-                                        onChange={handleEditStaffChange}
+                                        name="phone_number"
+                                        value={formMode === "add" ? newStaff.phone_number : currentStaffMember?.phone_number || ""}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
                                         required
+                                        className={formErrors.phone_number ? "error" : ""}
                                     />
-                                </div>
-
-                                <div className="xodim-form-group">
-                                    <label>{t("phone")}</label>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        value={currentStaff.phone}
-                                        onChange={handleEditStaffChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="xodim-form-group">
-                                    <label>{t("email")}</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={currentStaff.email}
-                                        onChange={handleEditStaffChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="xodim-form-group">
-                                    <label>
-                                        {t("monthly_salary")} ({t("currency")})
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="salary"
-                                        value={currentStaff.salary}
-                                        onChange={handleEditStaffChange}
-                                        required
-                                    />
+                                    {formErrors.phone_number && <div className="error-message">{formErrors.phone_number}</div>}
                                 </div>
 
                                 <div className="xodim-form-group">
                                     <label>{t("status")}</label>
-                                    <select name="status" value={currentStaff.status} onChange={handleEditStaffChange}>
-                                        <option value="active">{t("active")}</option>
-                                        <option value="inactive">{t("inactive")}</option>
+                                    <select
+                                        name="status"
+                                        value={formMode === "add" ? newStaff.status : currentStaffMember?.status || "faol"}
+                                        onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                    >
+                                        {statusOptions.map((status) => (
+                                            <option key={status.value} value={status.value}>
+                                                {status.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
-                                <div className="xodim-form-group xodim-checkbox-group">
-                                    <input
-                                        type="checkbox"
-                                        id="editOnVacation"
-                                        name="onVacation"
-                                        checked={currentStaff.onVacation}
-                                        onChange={handleEditStaffChange}
-                                    />
-                                    <label htmlFor="editOnVacation">{t("on_vacation")}</label>
-                                </div>
-
-                                {currentStaff.onVacation && (
+                                {/* Conditional fields based on status */}
+                                {(formMode === "add" ? newStaff.status : currentStaffMember?.status) === "nofaol" && (
                                     <div className="xodim-form-group">
-                                        <label>{t("vacation_period")}</label>
+                                        <label>{t("reason_for_inactive")} *</label>
                                         <input
                                             type="text"
-                                            name="vacationDates"
-                                            value={currentStaff.vacationDates || ""}
-                                            onChange={handleEditStaffChange}
-                                            placeholder={t("vacation_period_example")}
+                                            name="reason_holiday"
+                                            value={formMode === "add" ? newStaff.reason_holiday : currentStaffMember?.reason_holiday || ""}
+                                            onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                            required
+                                            className={formErrors.reason_holiday ? "error" : ""}
                                         />
+                                        {formErrors.reason_holiday && <div className="error-message">{formErrors.reason_holiday}</div>}
                                     </div>
+                                )}
+
+                                {(formMode === "add" ? newStaff.status : currentStaffMember?.status) === "tatilda" && (
+                                    <>
+                                        <div className="xodim-form-group">
+                                            <label>{t("vacation_start_date")} *</label>
+                                            <input
+                                                type="date"
+                                                name="start_holiday"
+                                                value={formMode === "add" ? newStaff.start_holiday : currentStaffMember?.start_holiday || ""}
+                                                onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                                required
+                                                className={formErrors.start_holiday ? "error" : ""}
+                                            />
+                                            {formErrors.start_holiday && <div className="error-message">{formErrors.start_holiday}</div>}
+                                        </div>
+
+                                        <div className="xodim-form-group">
+                                            <label>{t("vacation_end_date")} *</label>
+                                            <input
+                                                type="date"
+                                                name="end_holiday"
+                                                value={formMode === "add" ? newStaff.end_holiday : currentStaffMember?.end_holiday || ""}
+                                                onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                                required
+                                                className={formErrors.end_holiday ? "error" : ""}
+                                            />
+                                            {formErrors.end_holiday && <div className="error-message">{formErrors.end_holiday}</div>}
+                                        </div>
+
+                                        <div className="xodim-form-group">
+                                            <label>{t("vacation_reason")} *</label>
+                                            <input
+                                                type="text"
+                                                name="reason_holiday"
+                                                value={formMode === "add" ? newStaff.reason_holiday : currentStaffMember?.reason_holiday || ""}
+                                                onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                                required
+                                                className={formErrors.reason_holiday ? "error" : ""}
+                                            />
+                                            {formErrors.reason_holiday && <div className="error-message">{formErrors.reason_holiday}</div>}
+                                        </div>
+                                    </>
                                 )}
 
                                 {selectedBranch === "all" && (
@@ -1034,36 +1091,73 @@ export default function Staff() {
                                         <label>{t("branch")}</label>
                                         <select
                                             name="branch"
-                                            value={currentStaff.branch}
-                                            onChange={(e) => {
-                                                const newValue = e.target.value
-                                                setCurrentStaff((prev) => ({
-                                                    ...prev,
-                                                    _prevBranch: prev.branch,
-                                                    branch: newValue,
-                                                }))
-                                            }}
+                                            value={formMode === "add" ? newStaff.branch : currentStaffMember?.branch || ""}
+                                            onChange={formMode === "add" ? handleNewStaffChange : handleEditStaffChange}
+                                            required
                                         >
-                                            <option value="branch1">{t("branch1")}</option>
-                                            <option value="branch2">{t("branch2")}</option>
-                                            <option value="branch3">{t("branch3")}</option>
+                                            {isLoadingBranches ? (
+                                                <option value="">{t("loading")}</option>
+                                            ) : branchError ? (
+                                                <option value="">{t("error_loading_branches")}</option>
+                                            ) : Array.isArray(branches) && branches.length > 0 ? (
+                                                branches.map((branch) => (
+                                                    <option key={branch.id} value={branch.id.toString()}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))
+                                            ) : (
+                                                <option value="">{t("no_branches_available")}</option>
+                                            )}
                                         </select>
                                     </div>
                                 )}
 
                                 <div className="xodim-form-actions">
-                                    <button type="submit" className="xodim-btn xodim-btn-primary">
-                                        {t("save")}
+                                    <button type="submit" className="xodim-btn xodim-btn-primary" disabled={isLoadingStaff}>
+                                        {isLoadingStaff ? <FaSpinner className="xodim-spinner" /> : null}{" "}
+                                        {formMode === "add" ? t("add") : t("save")}
                                     </button>
-                                    <button type="button" className="xodim-btn xodim-btn-secondary" onClick={closeEditSidebar}>
+                                    <button type="button" className="xodim-btn xodim-btn-secondary" onClick={closeAddSidebar}>
                                         {t("cancel")}
                                     </button>
                                 </div>
                             </form>
                         </div>
-                    </>
-                )}
-            </div>
+                    </div>
+                </>
+            )}
+
+            {/* Staff Details Modal */}
+            {userDetailsModal.isOpen && (
+                <StaffDetailsModal
+                    isOpen={userDetailsModal.isOpen}
+                    onClose={closeUserDetailsModal}
+                    user={userDetailsModal.user}
+                    staffPositions={staffPositions}
+                    specializationOptions={specializationOptions}
+                    getBranchName={getBranchName}
+                />
+            )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={t("confirm")}
+                cancelText={t("cancel")}
+                type={confirmModal.type}
+            />
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={successModal.isOpen}
+                onClose={closeSuccessModal}
+                title={successModal.title}
+                message={successModal.message}
+            />
         </div>
     )
-};
+}

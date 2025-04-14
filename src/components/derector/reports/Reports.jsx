@@ -1,4 +1,6 @@
-import React , { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
 import {
     FaChartBar,
     FaChartLine,
@@ -12,9 +14,20 @@ import {
     FaTimes,
     FaArrowLeft,
     FaArrowRight,
+    FaExclamationTriangle,
+    FaWallet,
+    FaUserMd,
+    FaUsers,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import { getFinancialStatistics, getCashWithdrawals, createCashWithdrawal } from "../../../api/apiFinanceStatistic"
+import { getPatientStatistics } from "../../../api/apiPatientsStatistic"
+import { getDoctorStatistics } from "../../../api/apiDoctorStatistic"
+import apiBranches from "../../../api/apiBranches" // Import apiBranches
+import SuccessModal from "../../modal/SuccessModal"
+
+// Import Chart.js
 import {
     Chart as ChartJS,
     ArcElement,
@@ -37,19 +50,35 @@ export default function Reports() {
     const { t, language } = useLanguage()
     const [reportType, setReportType] = useState("financial")
     const [dateRange, setDateRange] = useState("month")
-    const [reportData, setReportData] = useState(null)
+    const [quarter, setQuarter] = useState(1)
+    const [financialData, setFinancialData] = useState(null)
+    const [patientData, setPatientData] = useState(null)
+    const [doctorData, setDoctorData] = useState(null)
     const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
     const [showHistoryModal, setShowHistoryModal] = useState(false)
+    // Update the withdrawalData state to include branch field
     const [withdrawalData, setWithdrawalData] = useState({
         amount: "",
         reason: "",
         description: "",
+        branch: "",
     })
     const [historyYear, setHistoryYear] = useState(new Date().getFullYear())
     const [searchTerm, setSearchTerm] = useState("")
     const [showFilters, setShowFilters] = useState(false)
     const [filterCategory, setFilterCategory] = useState("all")
     const [filterAmount, setFilterAmount] = useState("all")
+    const [isLoadingFinancial, setIsLoadingFinancial] = useState(true)
+    const [isLoadingPatient, setIsLoadingPatient] = useState(true)
+    const [isLoadingDoctor, setIsLoadingDoctor] = useState(true)
+    const [financialError, setFinancialError] = useState(null)
+    const [patientError, setPatientError] = useState(null)
+    const [doctorError, setDoctorError] = useState(null)
+    const [cashWithdrawals, setCashWithdrawals] = useState([])
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [successMessage, setSuccessMessage] = useState("")
+    // Add a function to get branches (you may need to adjust this based on your actual API)
+    const [branches, setBranches] = useState([])
 
     // Withdrawal reasons
     const withdrawalReasons = [
@@ -65,924 +94,114 @@ export default function Reports() {
         { id: "other", name: t("other_expenses") },
     ]
 
-    // Mock data for withdrawal history
-    const withdrawalHistoryData = [
-        {
-            id: 1,
-            date: "2023-05-15",
-            amount: 5000000,
-            reason: "salary",
-            description: t("salary_payment_description"),
-            branch: "branch1",
-            year: 2023,
-            category: "salary",
-        },
-        {
-            id: 2,
-            date: "2023-05-10",
-            amount: 1200000,
-            reason: "utilities",
-            description: t("utilities_payment_description"),
-            branch: "branch1",
-            year: 2023,
-            category: "utilities",
-        },
-        {
-            id: 3,
-            date: "2023-05-05",
-            amount: 2500000,
-            reason: "supplies",
-            description: t("supplies_payment_description"),
-            branch: "branch2",
-            year: 2023,
-            category: "supplies",
-        },
-        {
-            id: 4,
-            date: "2023-04-25",
-            amount: 800000,
-            reason: "medicine",
-            description: t("medicine_payment_description"),
-            branch: "branch2",
-            year: 2023,
-            category: "medicine",
-        },
-        {
-            id: 5,
-            date: "2023-04-20",
-            amount: 1500000,
-            reason: "salary_increase",
-            description: t("salary_increase_description"),
-            branch: "branch3",
-            year: 2023,
-            category: "salary",
-        },
-        {
-            id: 6,
-            date: "2023-04-15",
-            amount: 3000000,
-            reason: "rent",
-            description: t("rent_payment_description"),
-            branch: "branch3",
-            year: 2023,
-            category: "rent",
-        },
-        {
-            id: 7,
-            date: "2022-12-15",
-            amount: 4800000,
-            reason: "salary",
-            description: t("salary_payment_description"),
-            branch: "branch1",
-            year: 2022,
-            category: "salary",
-        },
-        {
-            id: 8,
-            date: "2022-11-10",
-            amount: 1100000,
-            reason: "utilities",
-            description: t("utilities_payment_description"),
-            branch: "branch1",
-            year: 2022,
-            category: "utilities",
-        },
-        {
-            id: 9,
-            date: "2021-05-15",
-            amount: 4500000,
-            reason: "salary",
-            description: t("salary_payment_description"),
-            branch: "branch1",
-            year: 2021,
-            category: "salary",
-        },
-        {
-            id: 10,
-            date: "2020-05-15",
-            amount: 4200000,
-            reason: "salary",
-            description: t("salary_payment_description"),
-            branch: "branch1",
-            year: 2020,
-            category: "salary",
-        },
-        {
-            id: 11,
-            date: "2019-05-15",
-            amount: 3800000,
-            reason: "salary",
-            description: t("salary_payment_description"),
-            branch: "branch1",
-            year: 2019,
-            category: "salary",
-        },
-    ]
-
-    // Financial data
-    const financialData = {
-        all: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [2800000, 3200000, 2900000, 3600000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [1900000, 2100000, 1800000, 2400000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 12500000,
-                    totalExpenses: 8200000,
-                    profit: 4300000,
-                    profitMargin: 34.4,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [11500000, 12800000, 13200000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [7800000, 8500000, 8900000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 37500000,
-                    totalExpenses: 25200000,
-                    profit: 12300000,
-                    profitMargin: 32.8,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [37500000, 42300000, 39800000, 45400000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [25200000, 28500000, 26900000, 30400000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 165000000,
-                    totalExpenses: 111000000,
-                    profit: 54000000,
-                    profitMargin: 32.7,
-                },
-            },
-        },
-        branch1: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [1200000, 1350000, 1180000, 1470000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [820000, 910000, 780000, 990000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 5200000,
-                    totalExpenses: 3500000,
-                    profit: 1700000,
-                    profitMargin: 32.7,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [4800000, 5300000, 5500000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [3200000, 3600000, 3700000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 15600000,
-                    totalExpenses: 10500000,
-                    profit: 5100000,
-                    profitMargin: 32.7,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [15600000, 17500000, 16400000, 18800000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [10500000, 11800000, 11000000, 12700000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 68300000,
-                    totalExpenses: 46000000,
-                    profit: 22300000,
-                    profitMargin: 32.7,
-                },
-            },
-        },
-        branch2: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [900000, 1050000, 980000, 1170000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [620000, 710000, 680000, 790000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 4100000,
-                    totalExpenses: 2800000,
-                    profit: 1300000,
-                    profitMargin: 31.7,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [3800000, 4300000, 4500000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [2600000, 2900000, 3100000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 12600000,
-                    totalExpenses: 8600000,
-                    profit: 4000000,
-                    profitMargin: 31.7,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [12600000, 14500000, 13400000, 15800000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [8600000, 9800000, 9000000, 10700000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 56300000,
-                    totalExpenses: 38100000,
-                    profit: 18200000,
-                    profitMargin: 32.3,
-                },
-            },
-        },
-        branch3: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [700000, 800000, 740000, 960000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [460000, 480000, 440000, 620000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 3200000,
-                    totalExpenses: 2000000,
-                    profit: 1200000,
-                    profitMargin: 37.5,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [2900000, 3200000, 3400000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [2000000, 2100000, 2200000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 9500000,
-                    totalExpenses: 6300000,
-                    profit: 3200000,
-                    profitMargin: 33.7,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("income"),
-                        data: [9500000, 10300000, 10000000, 11400000],
-                        backgroundColor: "rgba(75, 192, 192, 0.5)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                    {
-                        label: t("expense"),
-                        data: [6300000, 6900000, 6700000, 7600000],
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalIncome: 41200000,
-                    totalExpenses: 27500000,
-                    profit: 13700000,
-                    profitMargin: 33.3,
-                },
-            },
-        },
+    // Format currency
+    const formatCurrency = (amount) => {
+        if (amount === undefined || amount === null) return "0 " + t("currency")
+        return new Intl.NumberFormat("uz-UZ").format(amount) + " " + t("currency")
     }
 
-    // Patients data
-    const patientsData = {
-        all: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [42, 38, 45, 31],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 156,
-                    averagePerWeek: 39,
-                    growth: 8.3,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [145, 162, 178],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 485,
-                    averagePerMonth: 162,
-                    growth: 22.8,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [485, 520, 495, 540],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 2040,
-                    averagePerQuarter: 510,
-                    growth: 11.3,
-                },
-            },
-        },
-        branch1: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [18, 16, 20, 14],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 68,
-                    averagePerWeek: 17,
-                    growth: 11.1,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [62, 70, 78],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 210,
-                    averagePerMonth: 70,
-                    growth: 25.8,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [210, 225, 215, 230],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 880,
-                    averagePerQuarter: 220,
-                    growth: 9.5,
-                },
-            },
-        },
-        branch2: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [14, 12, 15, 9],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 50,
-                    averagePerWeek: 12.5,
-                    growth: 8.7,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [48, 52, 56],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 156,
-                    averagePerMonth: 52,
-                    growth: 16.7,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [156, 165, 160, 175],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 656,
-                    averagePerQuarter: 164,
-                    growth: 12.2,
-                },
-            },
-        },
-        branch3: {
-            month: {
-                labels: [t("week1"), t("week2"), t("week3"), t("week4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [10, 10, 10, 8],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 38,
-                    averagePerWeek: 9.5,
-                    growth: 5.6,
-                },
-            },
-            quarter: {
-                labels: [t("january"), t("february"), t("march")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [35, 40, 44],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 119,
-                    averagePerMonth: 39.7,
-                    growth: 25.7,
-                },
-            },
-            year: {
-                labels: [t("quarter1"), t("quarter2"), t("quarter3"), t("quarter4")],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [119, 130, 120, 135],
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    totalPatients: 504,
-                    averagePerQuarter: 126,
-                    growth: 13.4,
-                },
-            },
-        },
+    // Format percentage
+    const formatPercentage = (value) => {
+        if (value === undefined || value === null) return "0%"
+        return value.toFixed(2) + "%"
     }
 
-    // Staff performance data
-    const staffPerformanceData = {
-        all: {
-            month: {
-                labels: ["Dr. Aziz", "Dr. Jasur", "Dr. Nilufar", "Dr. Sardor", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [28, 32, 19, 24, 22],
-                        backgroundColor: [
-                            "rgba(255, 99, 132, 0.5)",
-                            "rgba(54, 162, 235, 0.5)",
-                            "rgba(255, 206, 86, 0.5)",
-                            "rgba(75, 192, 192, 0.5)",
-                            "rgba(153, 102, 255, 0.5)",
-                        ],
-                        borderColor: [
-                            "rgba(255, 99, 132, 1)",
-                            "rgba(54, 162, 235, 1)",
-                            "rgba(255, 206, 86, 1)",
-                            "rgba(75, 192, 192, 1)",
-                            "rgba(153, 102, 255, 1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 125,
-                    averagePerDoctor: 25,
-                },
-            },
-            quarter: {
-                labels: ["Dr. Aziz", "Dr. Jasur", "Dr. Nilufar", "Dr. Sardor", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [85, 98, 62, 76, 68],
-                        backgroundColor: [
-                            "rgba(255, 99, 132, 0.5)",
-                            "rgba(54, 162, 235, 0.5)",
-                            "rgba(255, 206, 86, 0.5)",
-                            "rgba(75, 192, 192, 0.5)",
-                            "rgba(153, 102, 255, 0.5)",
-                        ],
-                        borderColor: [
-                            "rgba(255, 99, 132, 1)",
-                            "rgba(54, 162, 235, 1)",
-                            "rgba(255, 206, 86, 1)",
-                            "rgba(75, 192, 192, 1)",
-                            "rgba(153, 102, 255, 1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 389,
-                    averagePerDoctor: 78,
-                },
-            },
-            year: {
-                labels: ["Dr. Aziz", "Dr. Jasur", "Dr. Nilufar", "Dr. Sardor", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [345, 392, 248, 305, 272],
-                        backgroundColor: [
-                            "rgba(255, 99, 132, 0.5)",
-                            "rgba(54, 162, 235, 0.5)",
-                            "rgba(255, 206, 86, 0.5)",
-                            "rgba(75, 192, 192, 0.5)",
-                            "rgba(153, 102, 255, 0.5)",
-                        ],
-                        borderColor: [
-                            "rgba(255, 99, 132, 1)",
-                            "rgba(54, 162, 235, 1)",
-                            "rgba(255, 206, 86, 1)",
-                            "rgba(75, 192, 192, 1)",
-                            "rgba(153, 102, 255, 1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 1562,
-                    averagePerDoctor: 312,
-                },
-            },
-        },
-        branch1: {
-            month: {
-                labels: ["Dr. Aziz", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [28, 22],
-                        backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)"],
-                        borderColor: ["rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Aziz",
-                    totalPatients: 50,
-                    averagePerDoctor: 25,
-                },
-            },
-            quarter: {
-                labels: ["Dr. Aziz", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [85, 68],
-                        backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)"],
-                        borderColor: ["rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Aziz",
-                    totalPatients: 153,
-                    averagePerDoctor: 76.5,
-                    r: 76.5,
-                },
-            },
-            year: {
-                labels: ["Dr. Aziz", "Dr. Malika"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [345, 272],
-                        backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)"],
-                        borderColor: ["rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Aziz",
-                    totalPatients: 617,
-                    averagePerDoctor: 308.5,
-                },
-            },
-        },
-        branch2: {
-            month: {
-                labels: ["Dr. Jasur", "Dr. Nilufar"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [32, 19],
-                        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 206, 86, 0.5)"],
-                        borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 51,
-                    averagePerDoctor: 25.5,
-                },
-            },
-            quarter: {
-                labels: ["Dr. Jasur", "Dr. Nilufar"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [98, 62],
-                        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 206, 86, 0.5)"],
-                        borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 160,
-                    averagePerDoctor: 80,
-                },
-            },
-            year: {
-                labels: ["Dr. Jasur", "Dr. Nilufar"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [392, 248],
-                        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 206, 86, 0.5)"],
-                        borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Jasur",
-                    totalPatients: 640,
-                    averagePerDoctor: 320,
-                },
-            },
-        },
-        branch3: {
-            month: {
-                labels: ["Dr. Sardor"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [24],
-                        backgroundColor: ["rgba(75, 192, 192, 0.5)"],
-                        borderColor: ["rgba(75, 192, 192, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Sardor",
-                    totalPatients: 24,
-                    averagePerDoctor: 24,
-                },
-            },
-            quarter: {
-                labels: ["Dr. Sardor"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [76],
-                        backgroundColor: ["rgba(75, 192, 192, 0.5)"],
-                        borderColor: ["rgba(75, 192, 192, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Sardor",
-                    totalPatients: 76,
-                    averagePerDoctor: 76,
-                },
-            },
-            year: {
-                labels: ["Dr. Sardor"],
-                datasets: [
-                    {
-                        label: t("patients_count"),
-                        data: [305],
-                        backgroundColor: ["rgba(75, 192, 192, 0.5)"],
-                        borderColor: ["rgba(75, 192, 192, 1)"],
-                        borderWidth: 1,
-                    },
-                ],
-                summary: {
-                    topPerformer: "Dr. Sardor",
-                    totalPatients: 305,
-                    averagePerDoctor: 305,
-                },
-            },
-        },
-    }
+    // Fetch financial data
+    const fetchFinancialData = useCallback(async () => {
+        setIsLoadingFinancial(true)
+        setFinancialError(null)
+        try {
+            // Use selectedBranch if not "all", otherwise use "all-filial"
+            const branchId = selectedBranch && selectedBranch !== "all" ? selectedBranch : null
+            const data = await getFinancialStatistics(dateRange, dateRange === "quarter" ? quarter : null, branchId)
+            setFinancialData(data)
+        } catch (error) {
+            console.error("Error fetching financial data:", error)
+            setFinancialError(error.message || t("error_fetching_financial_data"))
+        } finally {
+            setIsLoadingFinancial(false)
+        }
+    }, [dateRange, quarter, selectedBranch, t])
+
+    // Fetch patient data
+    const fetchPatientData = useCallback(async () => {
+        setIsLoadingPatient(true)
+        setPatientError(null)
+        try {
+            // Use selectedBranch if not "all", otherwise use "all-filial"
+            const branchId = selectedBranch && selectedBranch !== "all" ? selectedBranch : null
+            const data = await getPatientStatistics(dateRange, dateRange === "quarter" ? quarter : null, branchId)
+            setPatientData(data)
+        } catch (error) {
+            console.error("Error fetching patient data:", error)
+            setPatientError(error.message || t("error_fetching_patient_data"))
+        } finally {
+            setIsLoadingPatient(false)
+        }
+    }, [dateRange, quarter, selectedBranch, t])
+
+    // Fetch doctor data
+    const fetchDoctorData = useCallback(async () => {
+        setIsLoadingDoctor(true)
+        setDoctorError(null)
+        try {
+            // Use selectedBranch if not "all", otherwise use "all-filial"
+            const branchId = selectedBranch && selectedBranch !== "all" ? selectedBranch : null
+            const data = await getDoctorStatistics(dateRange, dateRange === "quarter" ? quarter : null, branchId)
+            setDoctorData(data)
+        } catch (error) {
+            console.error("Error fetching doctor data:", error)
+            setDoctorError(error.message || t("error_fetching_doctor_data"))
+        } finally {
+            setIsLoadingDoctor(false)
+        }
+    }, [dateRange, quarter, selectedBranch, t])
+
+    // Fetch cash withdrawals
+    const fetchCashWithdrawals = useCallback(async () => {
+        try {
+            const data = await getCashWithdrawals()
+            setCashWithdrawals(data.results || [])
+        } catch (error) {
+            console.error("Error fetching cash withdrawals:", error)
+        }
+    }, [])
+
+    // Update the fetchBranches function to use apiBranches.fetchBranches()
+    const fetchBranches = useCallback(async () => {
+        try {
+            // Use the existing apiBranches.fetchBranches method
+            const branchesData = await apiBranches.fetchBranches()
+            setBranches(branchesData || [])
+        } catch (error) {
+            console.error("Error fetching branches:", error)
+        }
+    }, [])
 
     // Update report data when report type, date range or branch changes
     useEffect(() => {
-        let data = null
-
         if (reportType === "financial") {
-            data =
-                selectedBranch === "all" || !financialData[selectedBranch]
-                    ? financialData.all[dateRange]
-                    : financialData[selectedBranch][dateRange]
+            fetchFinancialData()
         } else if (reportType === "patients") {
-            data =
-                selectedBranch === "all" || !patientsData[selectedBranch]
-                    ? patientsData.all[dateRange]
-                    : patientsData[selectedBranch][dateRange]
+            fetchPatientData()
         } else if (reportType === "staff") {
-            data =
-                selectedBranch === "all" || !staffPerformanceData[selectedBranch]
-                    ? staffPerformanceData.all[dateRange]
-                    : staffPerformanceData[selectedBranch][dateRange]
+            fetchDoctorData()
         }
 
-        setReportData(data)
-    }, [reportType, dateRange, selectedBranch, language]) // Added language dependency to update when language changes
+        fetchCashWithdrawals()
+        fetchBranches() // Add this line to fetch branches
+    }, [
+        reportType,
+        dateRange,
+        quarter,
+        selectedBranch,
+        fetchFinancialData,
+        fetchPatientData,
+        fetchDoctorData,
+        fetchCashWithdrawals,
+        fetchBranches, // Add this to dependencies
+        language,
+    ])
 
     // Handle report type change
     const handleReportTypeChange = (type) => {
@@ -992,6 +211,11 @@ export default function Reports() {
     // Handle date range change
     const handleDateRangeChange = (e) => {
         setDateRange(e.target.value)
+    }
+
+    // Handle quarter change
+    const handleQuarterChange = (newQuarter) => {
+        setQuarter(newQuarter)
     }
 
     // Handle download report
@@ -1008,38 +232,40 @@ export default function Reports() {
         })
     }
 
-    // Handle withdrawal submit
-    const handleWithdrawalSubmit = (e) => {
+    // Update the handleWithdrawalSubmit function to include branch in the request
+    const handleWithdrawalSubmit = async (e) => {
         e.preventDefault()
 
-        // Add new withdrawal to history
-        const newWithdrawal = {
-            id: withdrawalHistoryData.length + 1,
-            date: new Date().toISOString().split("T")[0],
-            amount: Number.parseInt(withdrawalData.amount),
-            reason: withdrawalData.reason,
-            description: withdrawalData.description,
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-            year: new Date().getFullYear(),
-            category: withdrawalData.reason.includes("salary") ? "salary" : withdrawalData.reason,
+        try {
+            await createCashWithdrawal(withdrawalData)
+
+            // Reset form and close modal
+            setWithdrawalData({
+                amount: "",
+                reason: "",
+                description: "",
+                branch: "",
+            })
+            setShowWithdrawalModal(false)
+
+            // Show success message
+            setSuccessMessage(t("withdrawal_success"))
+            setShowSuccessModal(true)
+
+            // Refresh withdrawals
+            fetchCashWithdrawals()
+        } catch (error) {
+            console.error("Error creating withdrawal:", error)
+            alert(t("error_creating_withdrawal"))
         }
-
-        withdrawalHistoryData.unshift(newWithdrawal)
-
-        // Reset form and close modal
-        setWithdrawalData({
-            amount: "",
-            reason: "",
-            description: "",
-        })
-        setShowWithdrawalModal(false)
-
-        alert(t("withdrawal_success"))
     }
 
     // Filter withdrawal history
     const getFilteredWithdrawalHistory = () => {
-        let filteredHistory = withdrawalHistoryData.filter((item) => item.year === historyYear)
+        let filteredHistory = cashWithdrawals.filter((item) => {
+            const itemDate = new Date(item.created_at)
+            return itemDate.getFullYear() === historyYear
+        })
 
         if (selectedBranch !== "all") {
             filteredHistory = filteredHistory.filter((item) => item.branch === selectedBranch)
@@ -1049,28 +275,37 @@ export default function Reports() {
             filteredHistory = filteredHistory.filter(
                 (item) =>
                     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    withdrawalReasons
-                        .find((reason) => reason.id === item.reason)
-                        ?.name.toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
+                    item.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (item.clinic && item.clinic.toLowerCase().includes(searchTerm.toLowerCase())),
             )
         }
 
         if (filterCategory !== "all") {
-            filteredHistory = filteredHistory.filter((item) => item.category === filterCategory)
+            filteredHistory = filteredHistory.filter((item) => item.reason === filterCategory)
         }
 
         if (filterAmount !== "all") {
-            if (filterAmount === "high") {
-                filteredHistory = filteredHistory.filter((item) => item.amount >= 2000000)
-            } else if (filterAmount === "medium") {
-                filteredHistory = filteredHistory.filter((item) => item.amount >= 1000000 && item.amount < 2000000)
-            } else if (filterAmount === "low") {
-                filteredHistory = filteredHistory.filter((item) => item.amount < 1000000)
-            }
+            filteredHistory = filteredHistory.filter((item) => {
+                const amount = Number.parseFloat(item.amount)
+                if (filterAmount === "high") {
+                    return amount >= 2000000
+                } else if (filterAmount === "medium") {
+                    return amount >= 1000000 && amount < 2000000
+                } else if (filterAmount === "low") {
+                    return amount < 1000000
+                }
+                return false
+            })
         }
 
         return filteredHistory
+    }
+
+    // Get branch name by ID
+    const getBranchNameById = (branchId) => {
+        if (!branchId) return "-"
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : branchId.toString()
     }
 
     // Toggle filters
@@ -1078,320 +313,557 @@ export default function Reports() {
         setShowFilters(!showFilters)
     }
 
+    // Prepare financial chart data
+    const prepareFinancialChartData = () => {
+        if (!financialData || !financialData.detailed_stats) {
+            return {
+                labels: [],
+                datasets: [
+                    {
+                        label: t("income"),
+                        data: [],
+                        backgroundColor: "rgba(75, 192, 192, 0.5)",
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        borderWidth: 1,
+                    },
+                    {
+                        label: t("expense"),
+                        data: [],
+                        backgroundColor: "rgba(255, 99, 132, 0.5)",
+                        borderColor: "rgba(255, 99, 132, 1)",
+                        borderWidth: 1,
+                    },
+                ],
+            }
+        }
+
+        return {
+            labels: financialData.detailed_stats.map((item) => item.label),
+            datasets: [
+                {
+                    label: t("income"),
+                    data: financialData.detailed_stats.map((item) => item.income),
+                    backgroundColor: "rgba(75, 192, 192, 0.5)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 1,
+                },
+                {
+                    label: t("expense"),
+                    data: financialData.detailed_stats.map((item) => item.expenses),
+                    backgroundColor: "rgba(255, 99, 132, 0.5)",
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    borderWidth: 1,
+                },
+            ],
+        }
+    }
+
+    // Prepare patient chart data
+    const preparePatientChartData = () => {
+        if (!patientData || !patientData.detailed_stats) {
+            return {
+                labels: [],
+                datasets: [
+                    {
+                        label: t("patients_count"),
+                        data: [],
+                        backgroundColor: "rgba(54, 162, 235, 0.5)",
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1,
+                    },
+                ],
+            }
+        }
+
+        return {
+            labels: patientData.detailed_stats.map((item) => item.label),
+            datasets: [
+                {
+                    label: t("patients_count"),
+                    data: patientData.detailed_stats.map((item) => item.patients),
+                    backgroundColor: "rgba(54, 162, 235, 0.5)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1,
+                },
+            ],
+        }
+    }
+
+    // Prepare doctor chart data
+    const prepareDoctorChartData = () => {
+        if (!doctorData || !doctorData.doctor_stats) {
+            return {
+                labels: [],
+                datasets: [
+                    {
+                        label: t("patients_count"),
+                        data: [],
+                        backgroundColor: [
+                            "rgba(255, 99, 132, 0.5)",
+                            "rgba(54, 162, 235, 0.5)",
+                            "rgba(255, 206, 86, 0.5)",
+                            "rgba(75, 192, 192, 0.5)",
+                            "rgba(153, 102, 255, 0.5)",
+                        ],
+                        borderColor: [
+                            "rgba(255, 99, 132, 1)",
+                            "rgba(54, 162, 235, 1)",
+                            "rgba(255, 206, 86, 1)",
+                            "rgba(75, 192, 192, 1)",
+                            "rgba(153, 102, 255, 1)",
+                        ],
+                        borderWidth: 1,
+                    },
+                ],
+            }
+        }
+
+        return {
+            labels: doctorData.doctor_stats.map((item) => item.doctor_name),
+            datasets: [
+                {
+                    label: t("patients_count"),
+                    data: doctorData.doctor_stats.map((item) => item.total_patients),
+                    backgroundColor: [
+                        "rgba(255, 99, 132, 0.5)",
+                        "rgba(54, 162, 235, 0.5)",
+                        "rgba(255, 206, 86, 0.5)",
+                        "rgba(75, 192, 192, 0.5)",
+                        "rgba(153, 102, 255, 0.5)",
+                    ],
+                    borderColor: [
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(54, 162, 235, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)",
+                    ],
+                    borderWidth: 1,
+                },
+            ],
+        }
+    }
+
+    // Chart options
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+            },
+        },
+    }
+
+    // Loading state
+    const isLoading = () => {
+        if (reportType === "financial") return isLoadingFinancial
+        if (reportType === "patients") return isLoadingPatient
+        if (reportType === "staff") return isLoadingDoctor
+        return false
+    }
+
+    // Get current error
+    const getCurrentError = () => {
+        if (reportType === "financial") return financialError
+        if (reportType === "patients") return patientError
+        if (reportType === "staff") return doctorError
+        return null
+    }
+
+    // Retry loading data
+    const retryLoading = () => {
+        if (reportType === "financial") fetchFinancialData()
+        else if (reportType === "patients") fetchPatientData()
+        else if (reportType === "staff") fetchDoctorData()
+    }
+
+    // Format date
+    const formatDate = (dateString) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString()
+    }
+
     return (
-        <div className="director-reports">
-            <div className="page-header">
-                <h1 className="page-title">{t("reports")}</h1>
-                <div className="header-actions">
-                    <button className="btn btn-outline btn-icon" onClick={() => setShowHistoryModal(true)}>
+        <div className="reports-container">
+            <div className="reports-header">
+                <h1 className="reports-title">{t("reports")}</h1>
+                <div className="reports-actions">
+                    <button className="reports-btn reports-btn-outline" onClick={() => setShowHistoryModal(true)}>
                         <FaHistory /> {t("history")}
                     </button>
-                    <button className="btn btn-outline btn-icon" onClick={() => setShowWithdrawalModal(true)}>
-                        <FaMoneyBillWave /> {t("withdraw_cash")}
+                    <button className="reports-btn reports-btn-outline" onClick={() => setShowWithdrawalModal(true)}>
+                        <FaWallet /> {t("withdraw_cash")}
                     </button>
-                    <button className="btn btn-primary btn-icon" onClick={handleDownload}>
+                    <button className="reports-btn reports-btn-primary" onClick={handleDownload}>
                         <FaDownload /> {t("download_report")}
                     </button>
                 </div>
             </div>
 
-            <div className="report-controls">
-                <div className="report-types">
+            <div className="reports-controls">
+                <div className="reports-tabs">
                     <button
-                        className={`report-type-btn ${reportType === "financial" ? "active" : ""}`}
+                        className={`reports-tab ${reportType === "financial" ? "active" : ""}`}
                         onClick={() => handleReportTypeChange("financial")}
                     >
                         <FaMoneyBillWave /> {t("financial")}
                     </button>
                     <button
-                        className={`report-type-btn ${reportType === "patients" ? "active" : ""}`}
+                        className={`reports-tab ${reportType === "patients" ? "active" : ""}`}
                         onClick={() => handleReportTypeChange("patients")}
                     >
-                        <FaChartLine /> {t("patients")}
+                        <FaUsers /> {t("patients")}
                     </button>
                     <button
-                        className={`report-type-btn ${reportType === "staff" ? "active" : ""}`}
+                        className={`reports-tab ${reportType === "staff" ? "active" : ""}`}
                         onClick={() => handleReportTypeChange("staff")}
                     >
-                        <FaChartBar /> {t("staff")}
+                        <FaUserMd /> {t("staff")}
                     </button>
                 </div>
 
-                <div className="report-filters">
-                    <div className="filter-group">
+                <div className="reports-filters">
+                    <div className="reports-filter-group">
                         <label>
                             <FaCalendarAlt /> {t("period")}:
                         </label>
-                        <select value={dateRange} onChange={handleDateRangeChange}>
+                        <select value={dateRange} onChange={handleDateRangeChange} className="reports-select">
                             <option value="month">{t("month")}</option>
                             <option value="quarter">{t("quarter")}</option>
                             <option value="year">{t("year")}</option>
                         </select>
                     </div>
+
+                    {dateRange === "quarter" && (
+                        <div className="reports-filter-group">
+                            <label>{t("quarter")}:</label>
+                            <div className="reports-quarter-selector">
+                                <button
+                                    className={`reports-quarter-btn ${quarter === 1 ? "active" : ""}`}
+                                    onClick={() => handleQuarterChange(1)}
+                                >
+                                    Q1
+                                </button>
+                                <button
+                                    className={`reports-quarter-btn ${quarter === 2 ? "active" : ""}`}
+                                    onClick={() => handleQuarterChange(2)}
+                                >
+                                    Q2
+                                </button>
+                                <button
+                                    className={`reports-quarter-btn ${quarter === 3 ? "active" : ""}`}
+                                    onClick={() => handleQuarterChange(3)}
+                                >
+                                    Q3
+                                </button>
+                                <button
+                                    className={`reports-quarter-btn ${quarter === 4 ? "active" : ""}`}
+                                    onClick={() => handleQuarterChange(4)}
+                                >
+                                    Q4
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {reportData && (
-                <div className="report-content">
+            {getCurrentError() && (
+                <div className="reports-error">
+                    <FaExclamationTriangle /> {getCurrentError()}
+                    <button className="reports-btn reports-btn-primary reports-retry-btn" onClick={retryLoading}>
+                        {t("try_again")}
+                    </button>
+                </div>
+            )}
+
+            {isLoading() ? (
+                <div className="reports-loading">
+                    <div className="reports-spinner"></div>
+                    <p>{t("loading")}...</p>
+                </div>
+            ) : (
+                <div className="reports-content">
                     {/* Financial Report */}
-                    {reportType === "financial" && (
+                    {reportType === "financial" && financialData && (
                         <>
-                            <div className="dashboard-card chart-card">
-                                <div className="card-header">
+                            <div className="reports-stats-grid">
+                                <div className="reports-stat-card reports-income">
+                                    <div className="reports-stat-icon">
+                                        <FaMoneyBillWave />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">{formatCurrency(financialData.total_income)}</div>
+                                        <div className="reports-stat-label">{t("total_income")}</div>
+                                    </div>
+                                </div>
+
+                                <div className="reports-stat-card reports-expense">
+                                    <div className="reports-stat-icon">
+                                        <FaMoneyBillWave />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">{formatCurrency(financialData.total_expenses)}</div>
+                                        <div className="reports-stat-label">{t("total_expenses")}</div>
+                                    </div>
+                                </div>
+
+                                <div className="reports-stat-card reports-profit">
+                                    <div className="reports-stat-icon">
+                                        <FaMoneyBillWave />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">{formatCurrency(financialData.net_profit)}</div>
+                                        <div className="reports-stat-label">{t("net_profit")}</div>
+                                    </div>
+                                </div>
+
+                                <div className="reports-stat-card">
+                                    <div className="reports-stat-icon">
+                                        <FaChartPie />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">
+                                            {financialData.profitability !== undefined ? formatPercentage(financialData.profitability) : "0%"}
+                                        </div>
+                                        <div className="reports-stat-label">{t("profitability")}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="reports-card">
+                                <div className="reports-card-header">
                                     <h2>
                                         <FaChartBar /> {t("financial_indicators")}
                                         {dateRange === "month" && ` (${t("month")})`}
-                                        {dateRange === "quarter" && ` (${t("quarter")})`}
+                                        {dateRange === "quarter" && ` (${t("quarter")} ${quarter})`}
                                         {dateRange === "year" && ` (${t("year")})`}
                                     </h2>
                                 </div>
-                                <div className="chart-container">
-                                    <Bar
-                                        data={reportData}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            scales: {
-                                                y: {
-                                                    beginAtZero: true,
-                                                },
-                                            },
-                                        }}
-                                    />
+                                <div className="reports-chart-container">
+                                    <Bar data={prepareFinancialChartData()} options={chartOptions} />
                                 </div>
                             </div>
 
-                            <div className="stats-grid">
-                                <div className="stat-card income">
-                                    <FaMoneyBillWave className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.totalIncome.toLocaleString()} {t("currency")}</div>
-                                    <div className="stat-label">{t("total_income")}</div>
+                            {financialData.detailed_stats && financialData.detailed_stats.length > 0 && (
+                                <div className="reports-card">
+                                    <div className="reports-card-header">
+                                        <h2>{t("financial_details")}</h2>
+                                    </div>
+                                    <div className="reports-table-container">
+                                        <table className="reports-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>{t("period")}</th>
+                                                    <th>{t("income")}</th>
+                                                    <th>{t("expenses")}</th>
+                                                    <th>{t("profit")}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {financialData.detailed_stats.map((item, index) => (
+                                                    <tr key={index}>
+                                                        <td>{item.label}</td>
+                                                        <td className="reports-income-cell">{formatCurrency(item.income)}</td>
+                                                        <td className="reports-expense-cell">{formatCurrency(item.expenses)}</td>
+                                                        <td
+                                                            className={item.income - item.expenses >= 0 ? "reports-profit-cell" : "reports-loss-cell"}
+                                                        >
+                                                            {formatCurrency(item.income - item.expenses)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-
-                                <div className="stat-card expense">
-                                    <FaMoneyBillWave className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.totalExpenses.toLocaleString()} {t("currency")}</div>
-                                    <div className="stat-label">{t("total_expenses")}</div>
-                                </div>
-
-                                <div className="stat-card profit">
-                                    <FaMoneyBillWave className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.profit.toLocaleString()} {t("currency")}</div>
-                                    <div className="stat-label">{t("net_profit")}</div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <FaChartPie className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.profitMargin}%</div>
-                                    <div className="stat-label">{t("profitability")}</div>
-                                </div>
-                            </div>
-
-                            <div className="dashboard-card">
-                                <div className="card-header">
-                                    <h2>{t("financial_report_details")}</h2>
-                                </div>
-                                <div className="report-details">
-                                    <p>
-                                        <strong>{t("report_period")}:</strong> {dateRange === "month" && t("month")}{" "}
-                                        {dateRange === "quarter" && t("quarter")} {dateRange === "year" && t("year")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("branch")}:</strong>{" "}
-                                        {selectedBranch === "all"
-                                            ? t("all_branches")
-                                            : selectedBranch === "branch1"
-                                                ? t("branch1")
-                                                : selectedBranch === "branch2"
-                                                    ? t("branch2")
-                                                    : t("branch3")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("total_income")}:</strong> {reportData.summary.totalIncome.toLocaleString()} {t("currency")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("total_expenses")}:</strong> {reportData.summary.totalExpenses.toLocaleString()} {t("currency")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("net_profit")}:</strong> {reportData.summary.profit.toLocaleString()} {t("currency")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("profitability")}:</strong> {reportData.summary.profitMargin}%
-                                    </p>
-                                </div>
-                            </div>
+                            )}
                         </>
                     )}
 
                     {/* Patients Report */}
-                    {reportType === "patients" && (
+                    {reportType === "patients" && patientData && (
                         <>
-                            <div className="dashboard-card chart-card">
-                                <div className="card-header">
+                            <div className="reports-stats-grid">
+                                <div className="reports-stat-card">
+                                    <div className="reports-stat-icon">
+                                        <FaUsers />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">{patientData.total_patients || 0}</div>
+                                        <div className="reports-stat-label">{t("total_patients")}</div>
+                                    </div>
+                                </div>
+
+                                {patientData.avg_weekly_patients !== undefined && (
+                                    <div className="reports-stat-card">
+                                        <div className="reports-stat-icon">
+                                            <FaChartBar />
+                                        </div>
+                                        <div className="reports-stat-info">
+                                            <div className="reports-stat-value">{patientData.avg_weekly_patients || 0}</div>
+                                            <div className="reports-stat-label">{t("average_weekly")}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {patientData.avg_monthly_patients !== undefined && (
+                                    <div className="reports-stat-card">
+                                        <div className="reports-stat-icon">
+                                            <FaChartBar />
+                                        </div>
+                                        <div className="reports-stat-info">
+                                            <div className="reports-stat-value">{patientData.avg_monthly_patients || 0}</div>
+                                            <div className="reports-stat-label">{t("average_monthly")}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="reports-stat-card">
+                                    <div className="reports-stat-icon">
+                                        <FaChartLine />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">
+                                            {patientData.growth_rate !== undefined ? formatPercentage(patientData.growth_rate) : "0%"}
+                                        </div>
+                                        <div className="reports-stat-label">{t("growth")}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="reports-card">
+                                <div className="reports-card-header">
                                     <h2>
                                         <FaChartLine /> {t("patient_dynamics")}
                                         {dateRange === "month" && ` (${t("month")})`}
-                                        {dateRange === "quarter" && ` (${t("quarter")})`}
+                                        {dateRange === "quarter" && ` (${t("quarter")} ${quarter})`}
                                         {dateRange === "year" && ` (${t("year")})`}
                                     </h2>
                                 </div>
-                                <div className="chart-container">
-                                    <Line
-                                        data={reportData}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            scales: {
-                                                y: {
-                                                    beginAtZero: true,
-                                                },
-                                            },
-                                        }}
-                                    />
+                                <div className="reports-chart-container">
+                                    <Line data={preparePatientChartData()} options={chartOptions} />
                                 </div>
                             </div>
 
-                            <div className="stats-grid">
-                                <div className="stat-card">
-                                    <FaChartLine className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.totalPatients}</div>
-                                    <div className="stat-label">{t("total_patients")}</div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <FaChartBar className="stat-icon" />
-                                    <div className="stat-value">
-                                        {dateRange === "month" && reportData.summary.averagePerWeek}
-                                        {dateRange === "quarter" && reportData.summary.averagePerMonth}
-                                        {dateRange === "year" && reportData.summary.averagePerQuarter}
+                            {patientData.detailed_stats && patientData.detailed_stats.length > 0 && (
+                                <div className="reports-card">
+                                    <div className="reports-card-header">
+                                        <h2>{t("patient_details")}</h2>
                                     </div>
-                                    <div className="stat-label">
-                                        {dateRange === "month" && t("average_weekly")}
-                                        {dateRange === "quarter" && t("average_monthly")}
-                                        {dateRange === "year" && t("average_quarterly")}
+                                    <div className="reports-table-container">
+                                        <table className="reports-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>{t("period")}</th>
+                                                    <th>{t("patients")}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {patientData.detailed_stats.map((item, index) => (
+                                                    <tr key={index}>
+                                                        <td>{item.label}</td>
+                                                        <td>{item.patients}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-
-                                <div className="stat-card">
-                                    <FaChartPie className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.growth}%</div>
-                                    <div className="stat-label">{t("growth")}</div>
-                                </div>
-                            </div>
-
-                            <div className="dashboard-card">
-                                <div className="card-header">
-                                    <h2>{t("patient_report_details")}</h2>
-                                </div>
-                                <div className="report-details">
-                                    <p>
-                                        <strong>{t("report_period")}:</strong> {dateRange === "month" && t("month")}{" "}
-                                        {dateRange === "quarter" && t("quarter")} {dateRange === "year" && t("year")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("branch")}:</strong>{" "}
-                                        {selectedBranch === "all"
-                                            ? t("all_branches")
-                                            : selectedBranch === "branch1"
-                                                ? t("branch1")
-                                                : selectedBranch === "branch2"
-                                                    ? t("branch2")
-                                                    : t("branch3")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("total_patients")}:</strong> {reportData.summary.totalPatients}
-                                    </p>
-                                    <p>
-                                        <strong>
-                                            {dateRange === "month" && t("average_weekly_patients")}
-                                            {dateRange === "quarter" && t("average_monthly_patients")}
-                                            {dateRange === "year" && t("average_quarterly_patients")}
-                                        </strong>
-                                        {dateRange === "month" && reportData.summary.averagePerWeek}
-                                        {dateRange === "quarter" && reportData.summary.averagePerMonth}
-                                        {dateRange === "year" && reportData.summary.averagePerQuarter}
-                                    </p>
-                                    <p>
-                                        <strong>{t("growth")}:</strong> {reportData.summary.growth}%
-                                    </p>
-                                </div>
-                            </div>
+                            )}
                         </>
                     )}
 
-                    {/* Staff Performance Report */}
-                    {reportType === "staff" && (
+                    {/* Staff Report */}
+                    {reportType === "staff" && doctorData && (
                         <>
-                            <div className="dashboard-card chart-card">
-                                <div className="card-header">
+                            <div className="reports-stats-grid">
+                                {doctorData.most_effective_doctor && (
+                                    <div className="reports-stat-card reports-top-performer">
+                                        <div className="reports-stat-icon">
+                                            <FaUserMd />
+                                        </div>
+                                        <div className="reports-stat-info">
+                                            <div className="reports-stat-value">{doctorData.most_effective_doctor.doctor_name}</div>
+                                            <div className="reports-stat-label">{t("top_performing_doctor")}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="reports-stat-card">
+                                    <div className="reports-stat-icon">
+                                        <FaUsers />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">
+                                            {doctorData.doctor_stats
+                                                ? doctorData.doctor_stats.reduce((sum, doctor) => sum + doctor.total_patients, 0)
+                                                : 0}
+                                        </div>
+                                        <div className="reports-stat-label">{t("total_patients")}</div>
+                                    </div>
+                                </div>
+
+                                <div className="reports-stat-card">
+                                    <div className="reports-stat-icon">
+                                        <FaChartPie />
+                                    </div>
+                                    <div className="reports-stat-info">
+                                        <div className="reports-stat-value">
+                                            {doctorData.doctor_stats && doctorData.doctor_stats.length > 0
+                                                ? Math.round(
+                                                    doctorData.doctor_stats.reduce((sum, doctor) => sum + doctor.total_patients, 0) /
+                                                    doctorData.doctor_stats.length,
+                                                )
+                                                : 0}
+                                        </div>
+                                        <div className="reports-stat-label">{t("average_patients_per_doctor")}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="reports-card">
+                                <div className="reports-card-header">
                                     <h2>
                                         <FaChartPie /> {t("doctor_efficiency")}
                                         {dateRange === "month" && ` (${t("month")})`}
-                                        {dateRange === "quarter" && ` (${t("quarter")})`}
+                                        {dateRange === "quarter" && ` (${t("quarter")} ${quarter})`}
                                         {dateRange === "year" && ` (${t("year")})`}
                                     </h2>
                                 </div>
-                                <div className="chart-container">
-                                    <Pie
-                                        data={reportData}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                        }}
-                                    />
+                                <div className="reports-chart-container">
+                                    <Pie data={prepareDoctorChartData()} options={chartOptions} />
                                 </div>
                             </div>
 
-                            <div className="stats-grid">
-                                <div className="stat-card">
-                                    <FaChartBar className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.topPerformer}</div>
-                                    <div className="stat-label">{t("top_performing_doctor")}</div>
+                            {doctorData.doctor_stats && doctorData.doctor_stats.length > 0 && (
+                                <div className="reports-card">
+                                    <div className="reports-card-header">
+                                        <h2>{t("doctor_details")}</h2>
+                                    </div>
+                                    <div className="reports-table-container">
+                                        <table className="reports-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>{t("doctor")}</th>
+                                                    <th>{t("patients")}</th>
+                                                    <th>{t("income")}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {doctorData.doctor_stats.map((doctor, index) => (
+                                                    <tr key={index}>
+                                                        <td>{doctor.doctor_name}</td>
+                                                        <td>{doctor.total_patients}</td>
+                                                        <td className="reports-income-cell">{formatCurrency(doctor.total_income)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-
-                                <div className="stat-card">
-                                    <FaChartLine className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.totalPatients}</div>
-                                    <div className="stat-label">{t("total_patients")}</div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <FaChartPie className="stat-icon" />
-                                    <div className="stat-value">{reportData.summary.averagePerDoctor}</div>
-                                    <div className="stat-label">{t("average_patients_per_doctor")}</div>
-                                </div>
-                            </div>
-
-                            <div className="dashboard-card">
-                                <div className="card-header">
-                                    <h2>{t("staff_performance_report")}</h2>
-                                </div>
-                                <div className="report-details">
-                                    <p>
-                                        <strong>{t("report_period")}:</strong> {dateRange === "month" && t("month")}{" "}
-                                        {dateRange === "quarter" && t("quarter")} {dateRange === "year" && t("year")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("branch")}:</strong>{" "}
-                                        {selectedBranch === "all"
-                                            ? t("all_branches")
-                                            : selectedBranch === "branch1"
-                                                ? t("branch1")
-                                                : selectedBranch === "branch2"
-                                                    ? t("branch2")
-                                                    : t("branch3")}
-                                    </p>
-                                    <p>
-                                        <strong>{t("top_performing_doctor")}:</strong> {reportData.summary.topPerformer}
-                                    </p>
-                                    <p>
-                                        <strong>{t("total_patients")}:</strong> {reportData.summary.totalPatients}
-                                    </p>
-                                    <p>
-                                        <strong>{t("average_patients_per_doctor")}:</strong> {reportData.summary.averagePerDoctor}
-                                    </p>
-                                </div>
-                            </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -1399,18 +871,32 @@ export default function Reports() {
 
             {/* Withdrawal Modal */}
             {showWithdrawalModal && (
-                <div className="modal-overlay">
-                    <div className="modal-container">
-                        <div className="modal-header">
+                <div className="reports-modal-overlay">
+                    <div className="reports-modal">
+                        <div className="reports-modal-header">
                             <h2>{t("withdraw_cash")}</h2>
-                            <button className="close-button" onClick={() => setShowWithdrawalModal(false)}>
+                            <button className="reports-close-btn" onClick={() => setShowWithdrawalModal(false)}>
                                 <FaTimes />
                             </button>
                         </div>
-                        <div className="modal-content">
-                            <form onSubmit={handleWithdrawalSubmit}>
-                                <div className="form-group">
-                                    <label>{t("amount")} ({t("currency")})</label>
+                        <div className="reports-modal-content">
+                            <form onSubmit={handleWithdrawalSubmit} className="reports-form">
+                                <div className="reports-form-group">
+                                    <label>{t("branch")}</label>
+                                    <select name="branch" value={withdrawalData.branch} onChange={handleWithdrawalChange} required>
+                                        <option value="">{t("select_branch")}</option>
+                                        {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                                {branch.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="reports-form-group">
+                                    <label>
+                                        {t("amount")} ({t("currency")})
+                                    </label>
                                     <input
                                         type="number"
                                         name="amount"
@@ -1418,17 +904,13 @@ export default function Reports() {
                                         onChange={handleWithdrawalChange}
                                         placeholder={t("enter_amount")}
                                         required
+                                        min="1"
                                     />
                                 </div>
 
-                                <div className="form-group">
+                                <div className="reports-form-group">
                                     <label>{t("reason")}</label>
-                                    <select
-                                        name="reason"
-                                        value={withdrawalData.reason}
-                                        onChange={handleWithdrawalChange}
-                                        required
-                                    >
+                                    <select name="reason" value={withdrawalData.reason} onChange={handleWithdrawalChange} required>
                                         <option value="">{t("select_reason")}</option>
                                         {withdrawalReasons.map((reason) => (
                                             <option key={reason.id} value={reason.id}>
@@ -1438,28 +920,28 @@ export default function Reports() {
                                     </select>
                                 </div>
 
-                                <div className="form-group">
+                                <div className="reports-form-group">
                                     <label>{t("description")}</label>
                                     <textarea
                                         name="description"
                                         value={withdrawalData.description}
                                         onChange={handleWithdrawalChange}
-                                        placeholder={t("enter_additional_description")}
+                                        placeholder={t("enter_description")}
                                         rows={3}
                                         required
                                     ></textarea>
                                 </div>
 
-                                <div className="form-actions">
-                                    <button type="submit" className="btn btn-primary">
-                                        {t("confirm")}
-                                    </button>
+                                <div className="reports-form-actions">
                                     <button
                                         type="button"
-                                        className="btn btn-secondary"
+                                        className="reports-btn reports-btn-secondary"
                                         onClick={() => setShowWithdrawalModal(false)}
                                     >
                                         {t("cancel")}
+                                    </button>
+                                    <button type="submit" className="reports-btn reports-btn-primary">
+                                        {t("confirm")}
                                     </button>
                                 </div>
                             </form>
@@ -1470,27 +952,27 @@ export default function Reports() {
 
             {/* History Modal */}
             {showHistoryModal && (
-                <div className="modal-overlay">
-                    <div className="modal-container history-modal">
-                        <div className="modal-header">
+                <div className="reports-modal-overlay">
+                    <div className="reports-modal reports-history-modal">
+                        <div className="reports-modal-header">
                             <h2>{t("expense_history")}</h2>
-                            <button className="close-button" onClick={() => setShowHistoryModal(false)}>
+                            <button className="reports-close-btn" onClick={() => setShowHistoryModal(false)}>
                                 <FaTimes />
                             </button>
                         </div>
-                        <div className="modal-content">
-                            <div className="history-controls">
-                                <div className="year-selector">
+                        <div className="reports-modal-content">
+                            <div className="reports-history-controls">
+                                <div className="reports-year-selector">
                                     <button
-                                        className="btn btn-icon year-nav"
+                                        className="reports-btn reports-btn-icon reports-year-nav"
                                         onClick={() => setHistoryYear(historyYear - 1)}
                                         disabled={historyYear <= 2019}
                                     >
                                         <FaArrowLeft />
                                     </button>
-                                    <span className="year-display">{historyYear}</span>
+                                    <span className="reports-year-display">{historyYear}</span>
                                     <button
-                                        className="btn btn-icon year-nav"
+                                        className="reports-btn reports-btn-icon reports-year-nav"
                                         onClick={() => setHistoryYear(historyYear + 1)}
                                         disabled={historyYear >= new Date().getFullYear()}
                                     >
@@ -1498,9 +980,9 @@ export default function Reports() {
                                     </button>
                                 </div>
 
-                                <div className="search-filter">
-                                    <div className="search-input">
-                                        <FaSearch className="search-icon" />
+                                <div className="reports-search-filter">
+                                    <div className="reports-search-input">
+                                        <FaSearch className="reports-search-icon" />
                                         <input
                                             type="text"
                                             placeholder={t("search")}
@@ -1508,33 +990,26 @@ export default function Reports() {
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                         />
                                     </div>
-                                    <button
-                                        className={`filter-toggle-btn ${showFilters ? "active" : ""}`}
-                                        onClick={toggleFilters}
-                                    >
+                                    <button className={`reports-filter-toggle ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
                                         <FaFilter /> {t("filters")}
                                     </button>
                                 </div>
 
                                 {showFilters && (
-                                    <div className="history-filters">
-                                        <div className="filter-group">
+                                    <div className="reports-history-filters">
+                                        <div className="reports-filter-group">
                                             <label>{t("category")}:</label>
                                             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
                                                 <option value="all">{t("all")}</option>
-                                                <option value="salary">{t("salary")}</option>
-                                                <option value="utilities">{t("utilities")}</option>
-                                                <option value="rent">{t("rent")}</option>
-                                                <option value="supplies">{t("supplies")}</option>
-                                                <option value="medicine">{t("medicine")}</option>
-                                                <option value="repairs">{t("repairs")}</option>
-                                                <option value="marketing">{t("marketing")}</option>
-                                                <option value="taxes">{t("taxes")}</option>
-                                                <option value="other">{t("other")}</option>
+                                                {withdrawalReasons.map((reason) => (
+                                                    <option key={reason.id} value={reason.id}>
+                                                        {reason.name}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
 
-                                        <div className="filter-group">
+                                        <div className="reports-filter-group">
                                             <label>{t("amount")}:</label>
                                             <select value={filterAmount} onChange={(e) => setFilterAmount(e.target.value)}>
                                                 <option value="all">{t("all")}</option>
@@ -1547,39 +1022,37 @@ export default function Reports() {
                                 )}
                             </div>
 
-                            <div className="history-table-container">
-                                <table className="history-table">
+                            <div className="reports-table-container">
+                                <table className="reports-table">
                                     <thead>
                                         <tr>
                                             <th>{t("date")}</th>
                                             <th>{t("amount")}</th>
                                             <th>{t("reason")}</th>
                                             <th>{t("description")}</th>
-                                            {selectedBranch === "all" && <th>{t("branch")}</th>}
+                                            <th>{t("branch")}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {getFilteredWithdrawalHistory().length > 0 ? (
                                             getFilteredWithdrawalHistory().map((item) => (
                                                 <tr key={item.id}>
-                                                    <td>{item.date}</td>
-                                                    <td className="amount-cell">{item.amount.toLocaleString()} {t("currency")}</td>
-                                                    <td>
-                                                        {withdrawalReasons.find(reason => reason.id === item.reason)?.name || item.reason}
-                                                    </td>
+                                                    <td>{formatDate(item.created_at)}</td>
+                                                    <td className="reports-amount-cell">{formatCurrency(Number.parseFloat(item.amount))}</td>
+                                                    <td>{item.reason}</td>
                                                     <td>{item.description}</td>
-                                                    {selectedBranch === "all" && (
-                                                        <td>
-                                                            {item.branch === "branch1" && t("branch1")}
-                                                            {item.branch === "branch2" && t("branch2")}
-                                                            {item.branch === "branch3" && t("branch3")}
-                                                        </td>
-                                                    )}
+                                                    <td>
+                                                        {item.branch ? (
+                                                            <span className="reports-branch-name">{getBranchNameById(item.branch)}</span>
+                                                        ) : (
+                                                            <span className="reports-clinic-name">{item.clinic || "-"}</span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={selectedBranch === "all" ? 5 : 4} className="no-data">
+                                                <td colSpan={5} className="reports-no-data">
                                                     {t("no_data_found")}
                                                 </td>
                                             </tr>
@@ -1591,6 +1064,16 @@ export default function Reports() {
                     </div>
                 </div>
             )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <SuccessModal
+                    isOpen={showSuccessModal}
+                    message={successMessage}
+                    buttonText={t("ok")}
+                    onClose={() => setShowSuccessModal(false)}
+                />
+            )}
         </div>
     )
-};
+}

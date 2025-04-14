@@ -1,4 +1,6 @@
-import React, { useState } from "react"
+"use client"
+
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -60,4 +62,4 @@ export default function Header() {
             </div>
         </header>
     )
-};
+}

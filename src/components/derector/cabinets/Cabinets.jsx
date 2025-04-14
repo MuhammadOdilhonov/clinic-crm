@@ -1,11 +1,67 @@
-import React , { useState, useEffect } from "react"
-import { FaPlus, FaSearch, FaTimes, FaDoorOpen, FaEdit, FaTrash, FaFilter } from "react-icons/fa"
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import { useAuth } from "../../../contexts/AuthContext"
+import {
+    FaPlus,
+    FaSearch,
+    FaTimes,
+    FaDoorOpen,
+    FaEdit,
+    FaTrash,
+    FaFilter,
+    FaUserMd,
+    FaUserNurse,
+    FaExclamationTriangle,
+    FaCheckCircle,
+    FaTools,
+    FaBuilding,
+    FaInfoCircle,
+} from "react-icons/fa"
+import { getCabinets, createCabinet, updateCabinet, deleteCabinet } from "../../../api/apiCabinets"
+import { getCabinetStatistics } from "../../../api/apiCabinetsStatistic"
+import Pagination from "../../pagination/Pagination"
+import ConfirmModal from "../../modal/ConfirmModal"
+import SuccessModal from "../../modal/SuccessModal"
+import apiUsers from "../../../api/apiUsers" // Fixed import
+import apiBranches from "../../../api/apiBranches"
 
 export default function Cabinets() {
     const { t } = useLanguage()
+    const { user, selectedBranch } = useAuth()
+
+    // State for cabinets data
     const [cabinetsData, setCabinetsData] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [totalItems, setTotalItems] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
+    const [pageCount, setPageCount] = useState(0)
+
+    // State for branches
+    const [branches, setBranches] = useState([])
+    const [isLoadingBranches, setIsLoadingBranches] = useState(false)
+    const [branchError, setBranchError] = useState(null)
+
+    // State for staff
+    const [doctors, setDoctors] = useState([])
+    const [nurses, setNurses] = useState([])
+    const [isLoadingStaff, setIsLoadingStaff] = useState(false)
+    const [staffError, setStaffError] = useState(null)
+
+    // State for statistics
+    const [statistics, setStatistics] = useState({
+        total_cabinets: 0,
+        available_cabinets: 0,
+        occupied_cabinets: 0,
+        repair_cabinets: 0,
+        type_distribution: [],
+    })
+    const [isLoadingStats, setIsLoadingStats] = useState(false)
+
+    // UI state
     const [searchTerm, setSearchTerm] = useState("")
     const [showAddModal, setShowAddModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
@@ -14,93 +70,145 @@ export default function Cabinets() {
     const [filterType, setFilterType] = useState("all")
     const [filterFloor, setFilterFloor] = useState("all")
     const [filterStatus, setFilterStatus] = useState("all")
+    const [filterBranch, setFilterBranch] = useState("")
     const [currentCabinet, setCurrentCabinet] = useState(null)
+    const [showDoctorWarning, setShowDoctorWarning] = useState(false)
+    const [showNurseWarning, setShowNurseWarning] = useState(false)
+
+    // Modal state
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [successMessage, setSuccessMessage] = useState("")
+    const [cabinetToDelete, setCabinetToDelete] = useState(null)
+
+    // Form data
     const [newCabinet, setNewCabinet] = useState({
         name: "",
-        type: "examination",
+        type: "",
         floor: "1",
         status: "available",
-        equipment: "",
+        description: "",
+        branch: selectedBranch?.id || "",
+        userDoctor: "",
+        userNurses: [],
     })
 
-    // Stats data
-    const stats = {
-        totalCabinets: 12,
-        availableCabinets: 8,
-        occupiedCabinets: 3,
-        maintenanceCabinets: 1,
-    }
+    // Fetch branches
+    const fetchBranchData = useCallback(async () => {
+        setIsLoadingBranches(true)
+        setBranchError(null)
+        try {
+            const branchData = await apiBranches.fetchBranches()
+            // Check if branchData has results property
+            if (branchData && branchData.results) {
+                setBranches(branchData.results)
+            } else {
+                // Ensure branchData is an array
+                setBranches(Array.isArray(branchData) ? branchData : [])
+            }
+        } catch (error) {
+            console.error("Error fetching branches:", error)
+            setBranchError(t("error_fetching_branches"))
+            setBranches([]) // Set to empty array on error
+        } finally {
+            setIsLoadingBranches(false)
+        }
+    }, [t])
 
-    // Cabinet types distribution
-    const typeDistribution = [
-        { type: "Examination", count: 5 },
-        { type: "Procedure", count: 3 },
-        { type: "Surgery", count: 2 },
-        { type: "Laboratory", count: 1 },
-        { type: "X-ray", count: 1 },
-    ]
-
-    // Fetch cabinets data
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            setCabinetsData([
-                {
-                    id: 1,
-                    name: "Cabinet 101",
-                    type: "examination",
-                    floor: "1",
-                    status: "available",
-                    equipment: "Basic examination equipment",
-                },
-                {
-                    id: 2,
-                    name: "Cabinet 102",
-                    type: "procedure",
-                    floor: "1",
-                    status: "occupied",
-                    equipment: "Procedure tools, medical supplies",
-                },
-                {
-                    id: 3,
-                    name: "Cabinet 201",
-                    type: "surgery",
-                    floor: "2",
-                    status: "available",
-                    equipment: "Surgical equipment, anesthesia machine",
-                },
-                {
-                    id: 4,
-                    name: "Cabinet 202",
-                    type: "examination",
-                    floor: "2",
-                    status: "occupied",
-                    equipment: "Basic examination equipment",
-                },
-                {
-                    id: 5,
-                    name: "Cabinet 301",
-                    type: "laboratory",
-                    floor: "3",
-                    status: "available",
-                    equipment: "Lab equipment, microscopes, centrifuge",
-                },
-                {
-                    id: 6,
-                    name: "Cabinet 302",
-                    type: "x-ray",
-                    floor: "3",
-                    status: "maintenance",
-                    equipment: "X-ray machine, protective gear",
-                },
-            ])
+        fetchBranchData()
+    }, [fetchBranchData])
+
+    // Fetch staff (doctors and nurses)
+    const fetchStaffData = useCallback(async () => {
+        setIsLoadingStaff(true)
+        setStaffError(null)
+        try {
+            // Fetch doctors (position = doctor)
+            const doctorsFilters = { position: "doctor" }
+            const doctorsData = await apiUsers.fetchUsers(1, 100, doctorsFilters)
+            console.log("Doctors data:", doctorsData)
+            setDoctors(doctorsData.results || [])
+
+            // Fetch nurses (position = nurse)
+            const nursesFilters = { position: "nurse" }
+            const nursesData = await apiUsers.fetchUsers(1, 100, nursesFilters)
+            console.log("Nurses data:", nursesData)
+            setNurses(nursesData.results || [])
+        } catch (error) {
+            console.error("Error fetching staff:", error)
+            setStaffError(t("error_fetching_staff"))
+            setDoctors([])
+            setNurses([])
+        } finally {
+            setIsLoadingStaff(false)
+        }
+    }, [t])
+
+    useEffect(() => {
+        fetchStaffData()
+    }, [fetchStaffData])
+
+    // Fetch cabinets when dependencies change
+    const fetchCabinetsData = useCallback(async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            // Use filterBranch if set, otherwise use selectedBranch if not "all"
+            const branchId = filterBranch || (selectedBranch && selectedBranch !== "all" ? selectedBranch : null)
+            const data = await getCabinets(currentPage, branchId, searchTerm)
+
+            setCabinetsData(data.results || [])
+            setTotalItems(data.count || 0)
+            setPageCount(Math.ceil((data.count || 0) / itemsPerPage))
+        } catch (err) {
+            console.error("Error fetching cabinets:", err)
+            setError(err.message || t("error_fetching_cabinets"))
+            setCabinetsData([])
+        } finally {
             setIsLoading(false)
-        }, 1000)
-    }, [])
+        }
+    }, [currentPage, itemsPerPage, filterBranch, selectedBranch, searchTerm, t])
+
+    useEffect(() => {
+        fetchCabinetsData()
+    }, [fetchCabinetsData])
+
+    // Fetch statistics
+    const fetchStatisticsData = useCallback(async () => {
+        setIsLoadingStats(true)
+        try {
+            // Use filterBranch if set, otherwise use selectedBranch if not "all"
+            const branchId = filterBranch || (selectedBranch && selectedBranch !== "all" ? selectedBranch : null)
+            let url = ""
+            if (branchId) {
+                url = `?branch_id=${branchId}`
+            }
+            const data = await getCabinetStatistics(url)
+            setStatistics(
+                data || {
+                    total_cabinets: 0,
+                    available_cabinets: 0,
+                    occupied_cabinets: 0,
+                    repair_cabinets: 0,
+                    type_distribution: [],
+                },
+            )
+        } catch (err) {
+            console.error("Error fetching statistics:", err)
+        } finally {
+            setIsLoadingStats(false)
+        }
+    }, [filterBranch, selectedBranch])
+
+    useEffect(() => {
+        fetchStatisticsData()
+    }, [fetchStatisticsData])
 
     // Handle search
     const handleSearch = (e) => {
         setSearchTerm(e.target.value)
+        setCurrentPage(1) // Reset to first page on new search
     }
 
     // Toggle filters
@@ -108,15 +216,28 @@ export default function Cabinets() {
         setShowFilters(!showFilters)
     }
 
-    // Filter cabinets based on search term and filters
-    const filteredCabinets = cabinetsData.filter((cabinet) => {
-        // Search term filter
-        const matchesSearch =
-            cabinet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cabinet.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cabinet.floor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cabinet.equipment.toLowerCase().includes(searchTerm.toLowerCase())
+    // Apply filters
+    const applyFilters = () => {
+        setCurrentPage(1) // Reset to first page when applying filters
+    }
 
+    // Reset filters
+    const resetFilters = () => {
+        setFilterType("all")
+        setFilterFloor("all")
+        setFilterStatus("all")
+        // Only reset filterBranch if selectedBranch is "all"
+        if (!selectedBranch || selectedBranch === "all") {
+            setFilterBranch("")
+        } else {
+            setFilterBranch(selectedBranch)
+        }
+        setSearchTerm("")
+        setCurrentPage(1) // Reset to first page
+    }
+
+    // Filter cabinets based on local filters (type, floor, status)
+    const filteredCabinets = cabinetsData.filter((cabinet) => {
         // Type filter
         const matchesType = filterType === "all" || cabinet.type === filterType
 
@@ -126,7 +247,7 @@ export default function Cabinets() {
         // Status filter
         const matchesStatus = filterStatus === "all" || cabinet.status === filterStatus
 
-        return matchesSearch && matchesType && matchesFloor && matchesStatus
+        return matchesType && matchesFloor && matchesStatus
     })
 
     // Handle input change for new cabinet
@@ -135,6 +256,43 @@ export default function Cabinets() {
         setNewCabinet({
             ...newCabinet,
             [name]: value,
+        })
+
+        // Check if doctor is already assigned to another cabinet
+        if (name === "userDoctor" && value) {
+            const doctorId = Number.parseInt(value)
+            const isAssigned = doctors.some((doctor) => doctor.id === doctorId && doctor.has_cabinet)
+            setShowDoctorWarning(isAssigned)
+        }
+    }
+
+    // Handle nurse selection
+    const handleNurseSelection = (e) => {
+        const nurseId = Number.parseInt(e.target.value)
+
+        if (nurseId) {
+            // Check if nurse is already in the list
+            if (newCabinet.userNurses.includes(nurseId)) {
+                return
+            }
+
+            // Check if nurse is already assigned to another cabinet
+            const isAssigned = nurses.some((nurse) => nurse.id === nurseId && nurse.has_cabinet)
+            setShowNurseWarning(isAssigned)
+
+            // Add nurse to the list
+            setNewCabinet({
+                ...newCabinet,
+                userNurses: [...newCabinet.userNurses, nurseId],
+            })
+        }
+    }
+
+    // Remove nurse from selection
+    const removeNurse = (nurseId) => {
+        setNewCabinet({
+            ...newCabinet,
+            userNurses: newCabinet.userNurses.filter((id) => id !== nurseId),
         })
     }
 
@@ -145,58 +303,357 @@ export default function Cabinets() {
             ...currentCabinet,
             [name]: value,
         })
+
+        // Check if doctor is already assigned to another cabinet
+        if (name === "userDoctor" && value) {
+            const doctorId = Number.parseInt(value)
+            const currentDoctorId =
+                currentCabinet.useruser_doctor && currentCabinet.useruser_doctor.length > 0
+                    ? currentCabinet.useruser_doctor[0]
+                    : null
+
+            const isAssigned = doctors.some(
+                (doctor) => doctor.id === doctorId && doctor.has_cabinet && doctorId !== currentDoctorId,
+            )
+            setShowDoctorWarning(isAssigned)
+        }
+    }
+
+    // Handle edit nurse selection
+    const handleEditNurseSelection = (e) => {
+        const nurseId = Number.parseInt(e.target.value)
+
+        if (nurseId) {
+            // Check if nurse is already in the list
+            const currentNurseIds = (currentCabinet.selectedNurses || []).map((nurse) => nurse.id)
+
+            if (currentNurseIds.includes(nurseId)) {
+                return
+            }
+
+            // Find the nurse object
+            const selectedNurse = nurses.find((nurse) => nurse.id === nurseId)
+            if (!selectedNurse) return
+
+            // Check if nurse is already assigned to another cabinet
+            const isAssigned = nurses.some(
+                (nurse) => nurse.id === nurseId && nurse.has_cabinet && !currentNurseIds.includes(nurseId),
+            )
+            setShowNurseWarning(isAssigned)
+
+            // Add nurse to the list
+            setCurrentCabinet({
+                ...currentCabinet,
+                selectedNurses: [...(currentCabinet.selectedNurses || []), selectedNurse],
+            })
+        }
+    }
+
+    // Remove nurse from edit selection
+    const removeEditNurse = (nurseId) => {
+        setCurrentCabinet({
+            ...currentCabinet,
+            selectedNurses: (currentCabinet.selectedNurses || []).filter((nurse) => nurse.id !== nurseId),
+        })
+    }
+
+    // Open add modal
+    const openAddModal = () => {
+        // Reset form and fetch fresh data
+        setNewCabinet({
+            name: "",
+            type: "",
+            floor: "1",
+            status: "available",
+            description: "",
+            branch: selectedBranch?.id || "",
+            userDoctor: "",
+            userNurses: [],
+        })
+
+        // Make sure we have the latest staff data
+        fetchStaffData()
+
+        // Show the modal
+        setShowAddModal(true)
     }
 
     // Handle add cabinet
-    const handleAddCabinet = (e) => {
+    const handleAddCabinet = async (e) => {
         e.preventDefault()
-        const newCabinetItem = {
-            id: cabinetsData.length + 1,
-            ...newCabinet,
+        try {
+            setIsLoading(true)
+
+            // Get selected doctor name for alert
+            let doctorName = ""
+            if (newCabinet.userDoctor) {
+                const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(newCabinet.userDoctor))
+                if (selectedDoctor) {
+                    doctorName = `${selectedDoctor.first_name} ${selectedDoctor.last_name}`
+                }
+            }
+
+            // Prepare data for API
+            const cabinetData = {
+                ...newCabinet,
+                branch: Number.parseInt(newCabinet.branch),
+                user_doctor: newCabinet.userDoctor ? [Number.parseInt(newCabinet.userDoctor)] : [],
+                user_nurse: newCabinet.userNurses.map((id) => Number.parseInt(id)),
+            }
+
+            await createCabinet(cabinetData)
+            setShowAddModal(false)
+
+            // Set success message with doctor name if available
+            let message = t("cabinet_added_successfully")
+            if (doctorName) {
+                message += `. ${t("doctor_assigned")}: ${doctorName}`
+            }
+
+            setSuccessMessage(message)
+            setShowSuccessModal(true)
+
+            // Reset form
+            setNewCabinet({
+                name: "",
+                type: "",
+                floor: "1",
+                status: "available",
+                description: "",
+                branch: selectedBranch?.id || "",
+                userDoctor: "",
+                userNurses: [],
+            })
+
+            // Refresh data
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            setError(err.message || t("error_adding_cabinet"))
+        } finally {
+            setIsLoading(false)
         }
-        setCabinetsData([...cabinetsData, newCabinetItem])
-        setNewCabinet({
-            name: "",
-            type: "examination",
-            floor: "1",
-            status: "available",
-            equipment: "",
-        })
-        setShowAddModal(false)
     }
 
     // Open edit modal
     const openEditModal = (cabinet) => {
-        setCurrentCabinet({ ...cabinet })
+        // Make sure we have the latest staff data
+        fetchStaffData()
+
+        setCurrentCabinet({
+            ...cabinet,
+            // Extract doctor ID if available
+            userDoctor: cabinet.user_doctor && cabinet.user_doctor.length > 0 ? cabinet.user_doctor[0].id : "",
+            // Keep the original user_nurse array for display
+            selectedNurses: cabinet.user_nurse || [],
+        })
         setShowEditModal(true)
     }
 
     // Handle update cabinet
-    const handleUpdateCabinet = (e) => {
+    const handleUpdateCabinet = async (e) => {
         e.preventDefault()
-        const updatedCabinets = cabinetsData.map((cabinet) => (cabinet.id === currentCabinet.id ? currentCabinet : cabinet))
-        setCabinetsData(updatedCabinets)
-        setShowEditModal(false)
-        setCurrentCabinet(null)
+        try {
+            setIsLoading(true)
+
+            // Get selected doctor name for alert
+            let doctorName = ""
+            if (currentCabinet.userDoctor) {
+                const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(currentCabinet.userDoctor))
+                if (selectedDoctor) {
+                    doctorName = `${selectedDoctor.first_name} ${selectedDoctor.last_name}`
+                }
+            }
+
+            // Prepare data for API
+            const cabinetData = {
+                id: currentCabinet.id,
+                name: currentCabinet.name,
+                type: currentCabinet.type,
+                floor: currentCabinet.floor,
+                status: currentCabinet.status,
+                description: currentCabinet.description,
+                branch: Number.parseInt(currentCabinet.branch),
+                user_doctor: currentCabinet.userDoctor ? [Number.parseInt(currentCabinet.userDoctor)] : [],
+                user_nurse: (currentCabinet.selectedNurses || []).map((nurse) => nurse.id),
+            }
+
+            await updateCabinet(currentCabinet.id, cabinetData)
+            setShowEditModal(false)
+
+            // Set success message with doctor name if available
+            let message = t("cabinet_updated_successfully")
+            if (doctorName) {
+                message += `. ${t("doctor_assigned")}: ${doctorName}`
+            }
+
+            setSuccessMessage(message)
+            setShowSuccessModal(true)
+
+            // Refresh data
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            setError(err.message || t("error_updating_cabinet"))
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Open delete confirmation
+    const openDeleteConfirmation = (cabinet) => {
+        setCabinetToDelete(cabinet)
+        setShowConfirmModal(true)
     }
 
     // Handle delete cabinet
-    const handleDeleteCabinet = (id) => {
-        if (window.confirm(t("confirm_delete_cabinet"))) {
-            const updatedCabinets = cabinetsData.filter((cabinet) => cabinet.id !== id)
-            setCabinetsData(updatedCabinets)
+    const handleDeleteCabinet = async () => {
+        try {
+            setIsLoading(true)
+
+            // Make sure we have a valid cabinet ID
+            if (!cabinetToDelete || !cabinetToDelete.id) {
+                setError(t("invalid_cabinet_id"))
+                setShowConfirmModal(false)
+                setIsLoading(false)
+                return
+            }
+
+            // Log the cabinet ID being deleted for debugging
+            console.log("Deleting cabinet with ID:", cabinetToDelete.id)
+
+            // Call the API to delete the cabinet
+            await deleteCabinet(cabinetToDelete.id)
+
+            // Close the modal and show success message
+            setShowConfirmModal(false)
+            setSuccessMessage(t("cabinet_deleted_successfully"))
+            setShowSuccessModal(true)
+
+            // Refresh data after successful deletion
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            console.error("Error deleting cabinet:", err)
+            setError(err.message || t("error_deleting_cabinet"))
+            setShowConfirmModal(false) // Close the modal even on error
+        } finally {
+            setIsLoading(false)
+            setCabinetToDelete(null)
         }
+    }
+
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page + 1) // API uses 1-based indexing
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(1) // Reset to first page when changing items per page
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : t("unknown_branch")
+    }
+
+    // Get status label
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case "available":
+                return t("available")
+            case "occupied":
+                return t("occupied")
+            case "repair":
+                return t("repair")
+            default:
+                return status
+        }
+    }
+
+    // Get status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "available":
+                return <FaCheckCircle className="status-icon available" />
+            case "occupied":
+                return <FaUserMd className="status-icon occupied" />
+            case "repair":
+                return <FaTools className="status-icon repair" />
+            default:
+                return <FaExclamationTriangle className="status-icon" />
+        }
+    }
+
+    // Get nurse name by ID
+    const getNurseName = (nurseId) => {
+        const nurse = nurses.find((n) => n.id === nurseId)
+        return nurse ? `${nurse.first_name} ${nurse.last_name}` : t("unknown_nurse")
+    }
+
+    // Get doctor name by ID
+    const getDoctorName = (doctorId) => {
+        const doctor = doctors.find((d) => d.id === doctorId)
+        return doctor ? `${doctor.first_name} ${doctor.last_name}` : t("unknown_doctor")
+    }
+
+    const [initialSelectedBranch, setInitialSelectedBranch] = useState(selectedBranch)
+
+    useEffect(() => {
+        setInitialSelectedBranch(selectedBranch)
+    }, [selectedBranch])
+
+    useEffect(() => {
+        if (initialSelectedBranch && initialSelectedBranch !== "all") {
+            setFilterBranch(initialSelectedBranch)
+        } else {
+            setFilterBranch("")
+        }
+    }, [initialSelectedBranch])
+
+    // Loading state
+    if (isLoading && !cabinetsData.length) {
+        return (
+            <div className="cab-loading-container">
+                <div className="cab-loading-spinner"></div>
+                <p>{t("loading")}...</p>
+            </div>
+        )
+    }
+
+    // Error state
+    if (error && !cabinetsData.length) {
+        return (
+            <div className="cab-error-container">
+                <FaExclamationTriangle className="cab-error-icon" />
+                <h2>{t("error_occurred")}</h2>
+                <p>{error}</p>
+                <button
+                    className="cab-btn cab-btn-primary"
+                    onClick={() => {
+                        fetchCabinetsData()
+                    }}
+                >
+                    {t("try_again")}
+                </button>
+            </div>
+        )
     }
 
     return (
         <div className="cab-page">
             <div className="cab-page-header">
-                <h1 className="cab-page-title">{t("cabinets")}</h1>
+                <h1 className="cab-page-title">
+                    <FaDoorOpen className="cab-title-icon" /> {t("cabinets")}
+                </h1>
                 <div className="cab-page-actions">
                     <button className="cab-action-button close-stats" onClick={() => setShowStatsModal(!showStatsModal)}>
                         {showStatsModal ? <FaTimes /> : t("show_stats")}
                     </button>
-                    <button className="cab-action-button add-cabinet" onClick={() => setShowAddModal(true)}>
+                    <button className="cab-action-button add-cabinet" onClick={openAddModal}>
                         <FaPlus /> {t("add_new_cabinet")}
                     </button>
                 </div>
@@ -210,38 +667,38 @@ export default function Cabinets() {
                                 <FaDoorOpen />
                             </div>
                             <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{stats.totalCabinets}</h3>
+                                <h3 className="cab-stat-value">{statistics.total_cabinets}</h3>
                                 <p className="cab-stat-label">{t("total_cabinets")}</p>
                             </div>
                         </div>
 
                         <div className="cab-stat-card">
                             <div className="cab-stat-icon available">
-                                <FaDoorOpen />
+                                <FaCheckCircle />
                             </div>
                             <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{stats.availableCabinets}</h3>
+                                <h3 className="cab-stat-value">{statistics.available_cabinets}</h3>
                                 <p className="cab-stat-label">{t("available_cabinets")}</p>
                             </div>
                         </div>
 
                         <div className="cab-stat-card">
                             <div className="cab-stat-icon occupied">
-                                <FaDoorOpen />
+                                <FaUserMd />
                             </div>
                             <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{stats.occupiedCabinets}</h3>
+                                <h3 className="cab-stat-value">{statistics.occupied_cabinets}</h3>
                                 <p className="cab-stat-label">{t("occupied_cabinets")}</p>
                             </div>
                         </div>
 
                         <div className="cab-stat-card">
-                            <div className="cab-stat-icon maintenance">
-                                <FaDoorOpen />
+                            <div className="cab-stat-icon repair">
+                                <FaTools />
                             </div>
                             <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{stats.maintenanceCabinets}</h3>
-                                <p className="cab-stat-label">{t("maintenance_cabinets")}</p>
+                                <h3 className="cab-stat-value">{statistics.repair_cabinets}</h3>
+                                <p className="cab-stat-label">{t("repair_cabinets")}</p>
                             </div>
                         </div>
                     </div>
@@ -249,22 +706,23 @@ export default function Cabinets() {
                     <div className="cab-type-distribution">
                         <h3 className="cab-section-title">{t("type_distribution")}</h3>
                         <div className="cab-type-bars">
-                            {typeDistribution.map((type, index) => (
-                                <div className="cab-type-bar-container" key={index}>
-                                    <div className="cab-type-bar-header">
-                                        <span className="cab-type-name">{type.type}</span>
-                                        <span className="cab-type-count">{type.count}</span>
+                            {statistics.type_distribution &&
+                                statistics.type_distribution.map((type, index) => (
+                                    <div className="cab-type-bar-container" key={index}>
+                                        <div className="cab-type-bar-header">
+                                            <span className="cab-type-name">{type.type}</span>
+                                            <span className="cab-type-count">{type.count}</span>
+                                        </div>
+                                        <div className="cab-type-bar-wrapper">
+                                            <div
+                                                className="cab-type-bar"
+                                                style={{
+                                                    width: `${(type.count / (statistics.total_cabinets || 1)) * 100}%`,
+                                                }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="cab-type-bar-wrapper">
-                                        <div
-                                            className="cab-type-bar"
-                                            style={{
-                                                width: `${(type.count / stats.totalCabinets) * 100}%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     </div>
                 </div>
@@ -289,15 +747,28 @@ export default function Cabinets() {
 
                 {showFilters && (
                     <div className="cab-filters">
+                        {(!selectedBranch || selectedBranch === "all") && (
+                            <div className="cab-filter-group">
+                                <label>{t("branch")}:</label>
+                                <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
+                                    <option value="">{t("all_branches")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div className="cab-filter-group">
                             <label>{t("type")}:</label>
                             <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
                                 <option value="all">{t("all")}</option>
-                                <option value="examination">{t("examination")}</option>
-                                <option value="procedure">{t("procedure")}</option>
-                                <option value="surgery">{t("surgery")}</option>
-                                <option value="laboratory">{t("laboratory")}</option>
-                                <option value="x-ray">{t("x-ray")}</option>
+                                <option value="jarrohlik">{t("surgery")}</option>
+                                <option value="terapevt">{t("therapy")}</option>
+                                <option value="stomatologiya">{t("dental")}</option>
+                                <option value="kardiologiya">{t("cardiology")}</option>
+                                <option value="nevrologiya">{t("neurology")}</option>
                             </select>
                         </div>
                         <div className="cab-filter-group">
@@ -307,6 +778,7 @@ export default function Cabinets() {
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
+                                <option value="4">4</option>
                             </select>
                         </div>
                         <div className="cab-filter-group">
@@ -315,59 +787,132 @@ export default function Cabinets() {
                                 <option value="all">{t("all")}</option>
                                 <option value="available">{t("available")}</option>
                                 <option value="occupied">{t("occupied")}</option>
-                                <option value="maintenance">{t("maintenance")}</option>
+                                <option value="repair">{t("repair")}</option>
                             </select>
+                        </div>
+                        <div className="cab-filter-actions">
+                            <button className="cab-btn cab-btn-outline" onClick={resetFilters}>
+                                {t("reset")}
+                            </button>
+                            <button className="cab-btn cab-btn-primary" onClick={applyFilters}>
+                                {t("apply")}
+                            </button>
                         </div>
                     </div>
                 )}
 
                 <div className="cab-table-container">
-                    {isLoading ? (
-                        <div className="cab-loading">{t("loading")}</div>
-                    ) : (
-                        <table className="cab-table">
-                            <thead>
-                                <tr>
-                                    <th>{t("name")}</th>
-                                    <th>{t("type")}</th>
-                                    <th>{t("floor")}</th>
-                                    <th>{t("status")}</th>
-                                    <th>{t("equipment")}</th>
-                                    <th>{t("actions")}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCabinets.length > 0 ? (
-                                    filteredCabinets.map((cabinet) => (
+                    {isLoading && cabinetsData.length > 0 ? (
+                        <div className="cab-loading-overlay">
+                            <div className="cab-loading-spinner"></div>
+                        </div>
+                    ) : null}
+
+                    {filteredCabinets.length > 0 ? (
+                        <>
+                            <table className="cab-table">
+                                <thead>
+                                    <tr>
+                                        <th>{t("name")}</th>
+                                        <th>{t("type")}</th>
+                                        <th>{t("floor")}</th>
+                                        <th>{t("status")}</th>
+                                        <th>{t("branch")}</th>
+                                        <th>{t("doctor")}</th>
+                                        <th>{t("nurse")}</th>
+                                        <th>{t("equipment")}</th>
+                                        <th>{t("actions")}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredCabinets.map((cabinet) => (
                                         <tr key={cabinet.id}>
                                             <td>{cabinet.name}</td>
-                                            <td>{t(cabinet.type)}</td>
+                                            <td>{cabinet.type}</td>
                                             <td>{cabinet.floor}</td>
                                             <td>
-                                                <span className={`cab-status-badge ${cabinet.status}`}>{t(cabinet.status)}</span>
+                                                <div className="cab-status">
+                                                    {getStatusIcon(cabinet.status)}
+                                                    <span className={`cab-status-badge ${cabinet.status}`}>{getStatusLabel(cabinet.status)}</span>
+                                                </div>
                                             </td>
-                                            <td>{cabinet.equipment}</td>
+                                            <td>
+                                                <div className="cab-branch">
+                                                    <FaBuilding className="cab-branch-icon" />
+                                                    {getBranchName(cabinet.branch)}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {cabinet.user_doctor && cabinet.user_doctor.length > 0 ? (
+                                                    <div className="cab-staff">
+                                                        {cabinet.user_doctor.map((doctor) => (
+                                                            <div key={doctor.id} className="cab-staff-item">
+                                                                <FaUserMd className="cab-staff-icon" />
+                                                                {`${doctor.first_name} ${doctor.last_name}`}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="cab-no-staff">{t("no_doctor_assigned")}</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                {cabinet.user_nurse && cabinet.user_nurse.length > 0 ? (
+                                                    <div className="cab-staff">
+                                                        {cabinet.user_nurse.map((nurse) => (
+                                                            <div key={nurse.id} className="cab-staff-item">
+                                                                <FaUserNurse className="cab-staff-icon" />
+                                                                {`${nurse.first_name} ${nurse.last_name}`}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="cab-no-staff">{t("no_nurse_assigned")}</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="cab-equipment">{cabinet.description || t("no_equipment")}</div>
+                                            </td>
                                             <td>
                                                 <div className="cab-actions">
-                                                    <button className="cab-action-btn edit" onClick={() => openEditModal(cabinet)}>
+                                                    <button
+                                                        className="cab-action-btn edit"
+                                                        onClick={() => openEditModal(cabinet)}
+                                                        title={t("edit")}
+                                                    >
                                                         <FaEdit />
                                                     </button>
-                                                    <button className="cab-action-btn delete" onClick={() => handleDeleteCabinet(cabinet.id)}>
+                                                    <button
+                                                        className="cab-action-btn delete"
+                                                        onClick={() => openDeleteConfirmation(cabinet)}
+                                                        title={t("delete")}
+                                                    >
                                                         <FaTrash />
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="cab-no-data">
-                                            {t("no_data_found")}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            <div className="cab-pagination-container">
+                                <Pagination
+                                    pageCount={pageCount}
+                                    currentPage={currentPage - 1} // Convert to 0-based for component
+                                    onPageChange={handlePageChange}
+                                    itemsPerPage={itemsPerPage}
+                                    totalItems={totalItems}
+                                    onItemsPerPageChange={handleItemsPerPageChange}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="cab-no-data">
+                            <FaExclamationTriangle className="cab-no-data-icon" />
+                            <p>{t("no_cabinets_found")}</p>
+                            {error && <p className="cab-error-message">{error}</p>}
+                        </div>
                     )}
                 </div>
             </div>
@@ -394,48 +939,125 @@ export default function Cabinets() {
                                     required
                                 />
                             </div>
+
                             <div className="cab-form-group">
-                                <label htmlFor="type">{t("type")}</label>
-                                <select id="type" name="type" value={newCabinet.type} onChange={handleInputChange} required>
-                                    <option value="examination">{t("examination")}</option>
-                                    <option value="procedure">{t("procedure")}</option>
-                                    <option value="surgery">{t("surgery")}</option>
-                                    <option value="laboratory">{t("laboratory")}</option>
-                                    <option value="x-ray">{t("x-ray")}</option>
+                                <label htmlFor="branch">{t("branch")}</label>
+                                <select id="branch" name="branch" value={newCabinet.branch} onChange={handleInputChange} required>
+                                    <option value="">{t("select_branch")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
-                            <div className="cab-form-group">
-                                <label htmlFor="floor">{t("floor")}</label>
-                                <select id="floor" name="floor" value={newCabinet.floor} onChange={handleInputChange} required>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                </select>
+
+                            <div className="cab-form-row">
+                                <div className="cab-form-group">
+                                    <label htmlFor="type">{t("type")}</label>
+                                    <select id="type" name="type" value={newCabinet.type} onChange={handleInputChange} required>
+                                        <option value="">{t("select_type")}</option>
+                                        <option value="jarrohlik">{t("surgery")}</option>
+                                        <option value="terapevt">{t("therapy")}</option>
+                                        <option value="stomatologiya">{t("dental")}</option>
+                                        <option value="kardiologiya">{t("cardiology")}</option>
+                                        <option value="nevrologiya">{t("neurology")}</option>
+                                    </select>
+                                </div>
+
+                                <div className="cab-form-group">
+                                    <label htmlFor="floor">{t("floor")}</label>
+                                    <select id="floor" name="floor" value={newCabinet.floor} onChange={handleInputChange} required>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
                             </div>
+
                             <div className="cab-form-group">
                                 <label htmlFor="status">{t("status")}</label>
                                 <select id="status" name="status" value={newCabinet.status} onChange={handleInputChange} required>
                                     <option value="available">{t("available")}</option>
                                     <option value="occupied">{t("occupied")}</option>
-                                    <option value="maintenance">{t("maintenance")}</option>
+                                    <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
+
                             <div className="cab-form-group">
-                                <label htmlFor="equipment">{t("equipment")}</label>
+                                <label htmlFor="userDoctor">{t("doctor")}</label>
+                                <select
+                                    id="userDoctor"
+                                    name="userDoctor"
+                                    value={newCabinet.userDoctor || ""}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="">{t("select_doctor")}</option>
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showDoctorWarning && (
+                                    <div className="cab-warning">
+                                        <FaInfoCircle /> {t("doctor_already_assigned_warning")}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="cab-form-group">
+                                <label htmlFor="userNurses">{t("nurses")}</label>
+                                <select id="userNurses" name="userNurses" value="" onChange={handleNurseSelection}>
+                                    <option value="">{t("select_nurse")}</option>
+                                    {nurses.map((nurse) => (
+                                        <option key={nurse.id} value={nurse.id}>
+                                            {nurse.first_name} {nurse.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showNurseWarning && (
+                                    <div className="cab-warning">
+                                        <FaInfoCircle /> {t("nurse_already_assigned_warning")}
+                                    </div>
+                                )}
+
+                                {newCabinet.userNurses.length > 0 && (
+                                    <div className="cab-selected-items">
+                                        <h4>{t("selected_nurses")}</h4>
+                                        <ul>
+                                            {newCabinet.userNurses.map((nurseId) => (
+                                                <li key={nurseId}>
+                                                    {getNurseName(nurseId)}
+                                                    <button type="button" className="cab-remove-item" onClick={() => removeNurse(nurseId)}>
+                                                        <FaTimes />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="cab-form-group">
+                                <label htmlFor="description">{t("equipment")}</label>
                                 <textarea
-                                    id="equipment"
-                                    name="equipment"
-                                    value={newCabinet.equipment}
+                                    id="description"
+                                    name="description"
+                                    value={newCabinet.description}
                                     onChange={handleInputChange}
                                     rows={3}
+                                    placeholder={t("enter_equipment_details")}
                                 ></textarea>
                             </div>
+
                             <div className="cab-form-actions">
                                 <button type="button" className="cab-form-cancel" onClick={() => setShowAddModal(false)}>
                                     {t("cancel")}
                                 </button>
-                                <button type="submit" className="cab-form-submit">
-                                    {t("add")}
+                                <button type="submit" className="cab-form-submit" disabled={isLoading}>
+                                    {isLoading ? t("adding") : t("add")}
                                 </button>
                             </div>
                         </form>
@@ -465,36 +1087,61 @@ export default function Cabinets() {
                                     required
                                 />
                             </div>
+
                             <div className="cab-form-group">
-                                <label htmlFor="edit-type">{t("type")}</label>
+                                <label htmlFor="edit-branch">{t("branch")}</label>
                                 <select
-                                    id="edit-type"
-                                    name="type"
-                                    value={currentCabinet.type}
+                                    id="edit-branch"
+                                    name="branch"
+                                    value={currentCabinet.branch}
                                     onChange={handleEditInputChange}
                                     required
                                 >
-                                    <option value="examination">{t("examination")}</option>
-                                    <option value="procedure">{t("procedure")}</option>
-                                    <option value="surgery">{t("surgery")}</option>
-                                    <option value="laboratory">{t("laboratory")}</option>
-                                    <option value="x-ray">{t("x-ray")}</option>
+                                    <option value="">{t("select_branch")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
-                            <div className="cab-form-group">
-                                <label htmlFor="edit-floor">{t("floor")}</label>
-                                <select
-                                    id="edit-floor"
-                                    name="floor"
-                                    value={currentCabinet.floor}
-                                    onChange={handleEditInputChange}
-                                    required
-                                >
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                </select>
+
+                            <div className="cab-form-row">
+                                <div className="cab-form-group">
+                                    <label htmlFor="edit-type">{t("type")}</label>
+                                    <select
+                                        id="edit-type"
+                                        name="type"
+                                        value={currentCabinet.type}
+                                        onChange={handleEditInputChange}
+                                        required
+                                    >
+                                        <option value="">{t("select_type")}</option>
+                                        <option value="jarrohlik">{t("surgery")}</option>
+                                        <option value="terapevt">{t("therapy")}</option>
+                                        <option value="stomatologiya">{t("dental")}</option>
+                                        <option value="kardiologiya">{t("cardiology")}</option>
+                                        <option value="nevrologiya">{t("neurology")}</option>
+                                    </select>
+                                </div>
+
+                                <div className="cab-form-group">
+                                    <label htmlFor="edit-floor">{t("floor")}</label>
+                                    <select
+                                        id="edit-floor"
+                                        name="floor"
+                                        value={currentCabinet.floor}
+                                        onChange={handleEditInputChange}
+                                        required
+                                    >
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
                             </div>
+
                             <div className="cab-form-group">
                                 <label htmlFor="edit-status">{t("status")}</label>
                                 <select
@@ -506,31 +1153,114 @@ export default function Cabinets() {
                                 >
                                     <option value="available">{t("available")}</option>
                                     <option value="occupied">{t("occupied")}</option>
-                                    <option value="maintenance">{t("maintenance")}</option>
+                                    <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
+
                             <div className="cab-form-group">
-                                <label htmlFor="edit-equipment">{t("equipment")}</label>
+                                <label htmlFor="edit-userDoctor">{t("doctor")}</label>
+                                <select
+                                    id="edit-userDoctor"
+                                    name="userDoctor"
+                                    value={currentCabinet.userDoctor || ""}
+                                    onChange={handleEditInputChange}
+                                >
+                                    <option value="">{t("select_doctor")}</option>
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showDoctorWarning && (
+                                    <div className="cab-warning">
+                                        <FaInfoCircle /> {t("doctor_already_assigned_warning")}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="cab-form-group">
+                                <label htmlFor="edit-userNurses">{t("nurses")}</label>
+                                <select id="edit-userNurses" name="userNurses" value="" onChange={handleEditNurseSelection}>
+                                    <option value="">{t("select_nurse")}</option>
+                                    {nurses.map((nurse) => (
+                                        <option key={nurse.id} value={nurse.id}>
+                                            {nurse.first_name} {nurse.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showNurseWarning && (
+                                    <div className="cab-warning">
+                                        <FaInfoCircle /> {t("nurse_already_assigned_warning")}
+                                    </div>
+                                )}
+
+                                {currentCabinet.selectedNurses && currentCabinet.selectedNurses.length > 0 && (
+                                    <div className="cab-selected-items">
+                                        <h4>{t("selected_nurses")}</h4>
+                                        <ul>
+                                            {currentCabinet.selectedNurses.map((nurse) => (
+                                                <li key={nurse.id}>
+                                                    {`${nurse.first_name} ${nurse.last_name}`}
+                                                    <button type="button" className="cab-remove-item" onClick={() => removeEditNurse(nurse.id)}>
+                                                        <FaTimes />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="cab-form-group">
+                                <label htmlFor="edit-description">{t("equipment")}</label>
                                 <textarea
-                                    id="edit-equipment"
-                                    name="equipment"
-                                    value={currentCabinet.equipment}
+                                    id="edit-description"
+                                    name="description"
+                                    value={currentCabinet.description}
                                     onChange={handleEditInputChange}
                                     rows={3}
+                                    placeholder={t("enter_equipment_details")}
                                 ></textarea>
                             </div>
+
                             <div className="cab-form-actions">
                                 <button type="button" className="cab-form-cancel" onClick={() => setShowEditModal(false)}>
                                     {t("cancel")}
                                 </button>
-                                <button type="submit" className="cab-form-submit">
-                                    {t("save")}
+                                <button type="submit" className="cab-form-submit" disabled={isLoading}>
+                                    {isLoading ? t("saving") : t("save")}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* Confirm Delete Modal */}
+            {showConfirmModal && (
+                <ConfirmModal
+                    isOpen={showConfirmModal}
+                    title={t("confirm_delete")}
+                    message={t("confirm_delete_cabinet_message", { name: cabinetToDelete?.name })}
+                    confirmText={t("delete")}
+                    cancelText={t("cancel")}
+                    onConfirm={handleDeleteCabinet}
+                    onCancel={() => setShowConfirmModal(false)}
+                    isLoading={isLoading}
+                    type="danger"
+                />
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <SuccessModal
+                    isOpen={showSuccessModal}
+                    message={successMessage}
+                    buttonText={t("ok")}
+                    onClose={() => setShowSuccessModal(false)}
+                />
+            )}
         </div>
     )
-};
+}

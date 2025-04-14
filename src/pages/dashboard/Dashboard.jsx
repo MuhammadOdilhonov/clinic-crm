@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
@@ -43,9 +45,11 @@ import NurseVitalSigns from "../../components/nurse/nurseVitalSigns/NurseVitalSi
 import NurseMedications from "../../components/nurse/nurseMedications/NurseMedications"
 import NurseSchedule from "../../components/nurse/nurseSchedule/NurseSchedule"
 import Lid from "../../components/derector/Lid/Lid"
+// Import ApiBranches
+import ApiBranches from "../../api/apiBranches"
 
 export default function Dashboard() {
-    const { user, hasRole, selectedBranch, changeBranch } = useAuth()
+    const { user, hasRole, selectedBranch, changeBranch, branchesData } = useAuth()
     const { t } = useLanguage()
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -61,106 +65,137 @@ export default function Dashboard() {
     const [weatherData, setWeatherData] = useState(null)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-    const branches = [
-        { id: "all", name: t("allBranches") },
-        { id: "branch1", name: t("branch1") },
-        { id: "branch2", name: t("branch2") },
-        { id: "branch3", name: t("branch3") },
-    ]
+    // State for branches from API
+    const [branches, setBranches] = useState([{ id: "all", name: t("allBranches") }])
+    const [branchesLoading, setBranchesLoading] = useState(true)
+    const [branchesError, setBranchesError] = useState(null)
 
-    // Fetch initial data
+    // Fetch branches from API
     useEffect(() => {
-        const fetchData = async () => {
+        const getBranches = async () => {
             try {
-                setLoading(true)
+                setBranchesLoading(true)
+                setBranchesError(null)
 
-                // In a real app, these would be API calls
-                // Simulating API calls with setTimeout
-                setTimeout(() => {
-                    // Mock notifications data
-                    setNotifications([
-                        {
-                            id: 1,
-                            type: "patient",
-                            message: t("new_patient_added"),
-                            time: "10 " + t("minutesAgo"),
-                            read: false,
-                            priority: "medium",
-                        },
-                        {
-                            id: 2,
-                            type: "appointment",
-                            message: t("appointment_reminder"),
-                            time: "30 " + t("minutesAgo"),
-                            read: false,
-                            priority: "high",
-                        },
-                        {
-                            id: 3,
-                            type: "system",
-                            message: t("system_updated"),
-                            time: "2 " + t("hoursAgo"),
-                            read: true,
-                            priority: "low",
-                        },
-                        {
-                            id: 4,
-                            type: "room",
-                            message: t("room_maintenance_completed"),
-                            time: "3 " + t("hoursAgo"),
-                            read: true,
-                            priority: "medium",
-                        },
-                    ])
+                // Call the fetchBranches method from ApiBranches class
+                const branchesData = await ApiBranches.fetchBranches()
 
-                    // Mock stats data based on branch
-                    if (selectedBranch === "branch1") {
-                        setStats({
-                            patientsToday: 24,
-                            appointmentsToday: 18,
-                            occupiedRooms: 5,
-                            totalIncome: 7500000,
-                        })
-                    } else if (selectedBranch === "branch2") {
-                        setStats({
-                            patientsToday: 18,
-                            appointmentsToday: 14,
-                            occupiedRooms: 3,
-                            totalIncome: 5200000,
-                        })
-                    } else if (selectedBranch === "branch3") {
-                        setStats({
-                            patientsToday: 12,
-                            appointmentsToday: 10,
-                            occupiedRooms: 2,
-                            totalIncome: 3800000,
-                        })
-                    } else {
-                        // All branches
-                        setStats({
-                            patientsToday: 54,
-                            appointmentsToday: 42,
-                            occupiedRooms: 10,
-                            totalIncome: 16500000,
-                        })
-                    }
+                // Add the "all" option to the beginning of the array
+                setBranches([
+                    { id: "all", name: t("allBranches") },
+                    ...branchesData.map((branch) => ({
+                        id: branch.id.toString(),
+                        name: branch.name,
+                        address: branch.address,
+                        phone_number: branch.phone_number,
+                        email: branch.email,
+                        clinic: branch.clinic,
+                    })),
+                ])
 
-                    // Mock weather data
-                    setWeatherData({
-                        temperature: 28,
-                        condition: "sunny",
-                        humidity: 45,
-                        location: "Tashkent",
-                    })
-
-                    setLoading(false)
-                }, 800)
+                setBranchesLoading(false)
             } catch (err) {
-                setError(err.message || "An error occurred")
-                setLoading(false)
+                console.error("Failed to fetch branches:", err)
+                setBranchesError(err.message || "Failed to load branches")
+                setBranchesLoading(false)
             }
         }
 
+        getBranches()
+    }, [t])
+
+    // Fetch initial data
+    const fetchData = async () => {
+        try {
+            setLoading(true)
+
+            // In a real app, these would be API calls with the selected branch ID
+            // Example API call with branch ID:
+            // const statsResponse = await fetch(`${BaseUrl}/stats?branchId=${selectedBranch === "all" ? "" : selectedBranch}`);
+
+            // Simulating API calls with setTimeout
+            setTimeout(() => {
+                // Mock notifications data
+                setNotifications([
+                    {
+                        id: 1,
+                        type: "patient",
+                        message: t("new_patient_added"),
+                        time: "10 " + t("minutesAgo"),
+                        read: false,
+                        priority: "medium",
+                    },
+                    {
+                        id: 2,
+                        type: "appointment",
+                        message: t("appointment_reminder"),
+                        time: "30 " + t("minutesAgo"),
+                        read: false,
+                        priority: "high",
+                    },
+                    {
+                        id: 3,
+                        type: "system",
+                        message: t("system_updated"),
+                        time: "2 " + t("hoursAgo"),
+                        read: true,
+                        priority: "low",
+                    },
+                    {
+                        id: 4,
+                        type: "room",
+                        message: t("room_maintenance_completed"),
+                        time: "3 " + t("hoursAgo"),
+                        read: true,
+                        priority: "medium",
+                    },
+                ])
+
+                // Mock stats data based on branch
+                // In a real implementation, this would come from the API
+                if (selectedBranch === "3") {
+                    // 1-Filial
+                    setStats({
+                        patientsToday: 24,
+                        appointmentsToday: 18,
+                        occupiedRooms: 5,
+                        totalIncome: 7500000,
+                    })
+                } else if (selectedBranch === "6") {
+                    // 2-Filial
+                    setStats({
+                        patientsToday: 18,
+                        appointmentsToday: 14,
+                        occupiedRooms: 3,
+                        totalIncome: 5200000,
+                    })
+                } else {
+                    // All branches or any other branch
+                    setStats({
+                        patientsToday: 54,
+                        appointmentsToday: 42,
+                        occupiedRooms: 10,
+                        totalIncome: 16500000,
+                    })
+                }
+
+                // Mock weather data
+                setWeatherData({
+                    temperature: 28,
+                    condition: "sunny",
+                    humidity: 45,
+                    location: "Tashkent",
+                })
+
+                setLoading(false)
+            }, 800)
+        } catch (err) {
+            setError(err.message || "An error occurred")
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
         fetchData()
     }, [selectedBranch, t])
 
@@ -181,9 +216,18 @@ export default function Dashboard() {
     const toggleBranchSelector = () => {
         setShowBranchSelector(!showBranchSelector)
     }
+
+    // Update the handleBranchChange function to work with API data
     const handleBranchChange = (branchId) => {
         changeBranch(branchId)
         setShowBranchSelector(false)
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        if (branchId === "all") return t("allBranches")
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : t("unknownBranch")
     }
 
     // Loading state
@@ -266,20 +310,27 @@ export default function Dashboard() {
                         <div className="branch-selector-container">
                             <button className="branch-selector-button" onClick={toggleBranchSelector}>
                                 <FaBuilding className="branch-icon" />
-                                <span>{branches.find((b) => b.id === selectedBranch)?.name || t("allBranches")}</span>
+                                <span>{branchesLoading ? t("loading") : getBranchName(selectedBranch)}</span>
                             </button>
 
                             {showBranchSelector && (
                                 <div className="branch-dropdown">
-                                    {branches.map((branch) => (
-                                        <button
-                                            key={branch.id}
-                                            className={`branch-option ${selectedBranch === branch.id ? "active" : ""}`}
-                                            onClick={() => handleBranchChange(branch.id)}
-                                        >
-                                            {branch.name}
-                                        </button>
-                                    ))}
+                                    {branchesLoading ? (
+                                        <div className="branch-loading">{t("loading")}...</div>
+                                    ) : branchesError ? (
+                                        <div className="branch-error">{branchesError}</div>
+                                    ) : (
+                                        branches.map((branch) => (
+                                            <button
+                                                key={branch.id}
+                                                className={`branch-option ${selectedBranch === branch.id ? "active" : ""}`}
+                                                onClick={() => handleBranchChange(branch.id)}
+                                                title={branch.id !== "all" ? branch.address : ""}
+                                            >
+                                                <span className="branch-name">{branch.name}</span>
+                                            </button>
+                                        ))
+                                    )}
                                 </div>
                             )}
                         </div>

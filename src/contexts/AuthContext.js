@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react"
 import ApiLogin from "../api/apiLogin"
+import ApiBranches from "../api/apiBranches"
 
 // Create auth context
 const AuthContext = createContext()
@@ -10,9 +11,24 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [selectedBranch, setSelectedBranch] = useState("all")
+    const [selectedBranch, setSelectedBranch] = useState(localStorage.getItem("selectedBranch") || "all-filial")
+    const [branchesData, setBranchesData] = useState([])
     const [token, setToken] = useState(null)
     const [loginInProgress, setLoginInProgress] = useState(false) // Login jarayoni holati
+
+    // Fetch branches when component mounts
+    useEffect(() => {
+        const fetchBranches = async () => {
+            try {
+                const branches = await ApiBranches.fetchBranches()
+                setBranchesData(branches)
+            } catch (error) {
+                console.error("Error fetching branches in AuthContext:", error)
+            }
+        }
+
+        fetchBranches()
+    }, [])
 
     useEffect(() => {
         // Set loading to true at the beginning
@@ -100,9 +116,20 @@ export function AuthProvider({ children }) {
     }
 
     // Change branch
-    const changeBranch = (branch) => {
-        setSelectedBranch(branch)
-        localStorage.setItem("selectedBranch", branch)
+    const changeBranch = (branchId) => {
+        setSelectedBranch(branchId)
+        localStorage.setItem("selectedBranch", branchId)
+        // You might want to refresh data or perform other actions when branch changes
+    }
+
+    // Get current branch name
+    const getCurrentBranchName = () => {
+        if (selectedBranch === "all-filial") {
+            return "Barcha filiallar"
+        }
+
+        const branch = branchesData.find((b) => b.id.toString() === selectedBranch)
+        return branch ? branch.name : "Filial tanlanmagan"
     }
 
     // Check if user is authenticated
@@ -121,6 +148,8 @@ export function AuthProvider({ children }) {
         selectedBranch,
         changeBranch,
         isAuthenticated,
+        branchesData,
+        getCurrentBranchName,
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -130,4 +159,3 @@ export function AuthProvider({ children }) {
 export function useAuth() {
     return useContext(AuthContext)
 }
-
