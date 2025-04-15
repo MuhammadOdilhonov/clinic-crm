@@ -14,6 +14,13 @@ $available-color: #28a745;
 $occupied-color: #ffc107;
 $repair-color: #dc3545;
 
+// Type colors
+$surgery-color: #4a6cf7;
+$laboratory-color: #17a2b8;
+$emergency-color: #dc3545;
+$dental-color: #6f42c1;
+$reception-color: #fd7e14;
+
 $border-radius: 0.25rem;
 $box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 $transition-duration: 0.3s;
@@ -99,6 +106,29 @@ $transition-duration: 0.3s;
         box-shadow: $box-shadow;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
+        position: relative;
+        min-height: 200px;
+
+        .cab-stats-loading {
+            @include flex(column, center, center);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba($white-color, 0.8);
+            z-index: 5;
+
+            .cab-loading-spinner {
+                width: 2.5rem;
+                height: 2.5rem;
+                border: 0.25rem solid rgba($primary-color, 0.3);
+                border-radius: 50%;
+                border-top-color: $primary-color;
+                animation: spin 1s linear infinite;
+                margin-bottom: 1rem;
+            }
+        }
 
         .cab-stats-grid {
             @include flex(row, space-between, stretch, wrap);
@@ -114,6 +144,28 @@ $transition-duration: 0.3s;
                 box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
                 @include flex(row, flex-start, center);
                 gap: 1rem;
+                transition: transform $transition-duration ease, box-shadow $transition-duration ease;
+                
+                &:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+                }
+
+                &.total-card {
+                    border-left: 4px solid $primary-color;
+                }
+
+                &.available-card {
+                    border-left: 4px solid $available-color;
+                }
+
+                &.occupied-card {
+                    border-left: 4px solid $occupied-color;
+                }
+
+                &.repair-card {
+                    border-left: 4px solid $repair-color;
+                }
 
                 .cab-stat-icon {
                     width: 3rem;
@@ -145,7 +197,7 @@ $transition-duration: 0.3s;
 
                 .cab-stat-content {
                     .cab-stat-value {
-                        font-size: 1.5rem;
+                        font-size: 1.75rem;
                         font-weight: 700;
                         margin: 0;
                         line-height: 1.2;
@@ -165,6 +217,12 @@ $transition-duration: 0.3s;
                 font-size: 1.25rem;
                 font-weight: 600;
                 margin-bottom: 1rem;
+                @include flex(row, flex-start, center);
+                
+                .cab-section-icon {
+                    margin-right: 0.5rem;
+                    color: $primary-color;
+                }
             }
 
             .cab-type-bars {
@@ -176,28 +234,63 @@ $transition-duration: 0.3s;
                         @include flex(row, space-between, center);
                         margin-bottom: 0.25rem;
 
-                        .cab-type-name {
-                            font-weight: 500;
+                        .cab-type-name-container {
+                            @include flex(row, flex-start, center);
+                            gap: 0.5rem;
+                            
+                            .cab-type-icon {
+                                color: $primary-color;
+                            }
+
+                            .cab-type-name {
+                                font-weight: 500;
+                            }
                         }
 
                         .cab-type-count {
                             font-weight: 600;
                             color: $primary-color;
+                            background-color: rgba($primary-color, 0.1);
+                            padding: 0.25rem 0.5rem;
+                            border-radius: 1rem;
                         }
                     }
 
                     .cab-type-bar-wrapper {
                         width: 100%;
-                        height: 0.5rem;
+                        height: 0.75rem;
                         background-color: rgba($primary-color, 0.1);
                         border-radius: $border-radius;
                         overflow: hidden;
 
                         .cab-type-bar {
                             height: 100%;
-                            background-color: $primary-color;
                             border-radius: $border-radius;
                             transition: width $transition-duration ease;
+                            
+                            &.cab-type-jarrohlik {
+                                background-color: $surgery-color;
+                            }
+                            
+                            &.cab-type-laboratoriya {
+                                background-color: $laboratory-color;
+                            }
+                            
+                            &.cab-type-tezyordam {
+                                background-color: $emergency-color;
+                            }
+                            
+                            &.cab-type-stomatalogiya {
+                                background-color: $dental-color;
+                            }
+                            
+                            &.cab-type-qabulxona {
+                                background-color: $reception-color;
+                            }
+                            
+                            &:not(.cab-type-jarrohlik):not(.cab-type-laboratoriya):not(.cab-type-tezyordam):not(.cab-type-stomatalogiya):not(.cab-type-qabulxona) {
+                                background-color: $primary-color;
+                            }
                         }
                     }
                 }
@@ -372,6 +465,15 @@ $transition-duration: 0.3s;
                     }
                 }
 
+                .cab-type {
+                    @include flex(row, flex-start, center);
+                    gap: 0.5rem;
+                    
+                    .cab-type-icon {
+                        color: $primary-color;
+                    }
+                }
+
                 .cab-status {
                     @include flex(row, flex-start, center);
                     gap: 0.5rem;
@@ -403,7 +505,7 @@ $transition-duration: 0.3s;
                             color: $available-color;
                         }
 
-                        &.occupied {
+                        &.creating {
                             background-color: rgba($occupied-color, 0.1);
                             color: $occupied-color;
                         }

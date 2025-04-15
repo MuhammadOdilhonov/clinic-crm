@@ -51,7 +51,6 @@ export default function Staff() {
         { value: "dermatology", label: t("dermatology") },
         { value: "pediatrics", label: t("pediatrics") },
         { value: "neurology", label: t("neurology") },
-        { value: "director", label: t("director") },
         { value: "other", label: t("other") },
     ]
 
@@ -80,6 +79,7 @@ export default function Staff() {
         active_users: 0,
         on_leave_users: 0,
         total_salary: 0,
+        inactive_users:0,
         role_distribution: [],
     })
     const [isLoadingStats, setIsLoadingStats] = useState(true)
@@ -111,7 +111,6 @@ export default function Staff() {
         phone_number: "",
         specialization: "general",
         status: "faol",
-        clinic: selectedBranch === "all" ? "" : selectedBranch,
         branch: selectedBranch === "all" ? "" : selectedBranch,
         salary: "",
         reason_holiday: "",
@@ -179,6 +178,7 @@ export default function Staff() {
                     active_users: 0,
                     on_leave_users: 0,
                     total_salary: 0,
+                    inactive_users:0,
                     role_distribution: [],
                 })
             } finally {
@@ -338,7 +338,6 @@ export default function Staff() {
             phone_number: "",
             specialization: "general",
             status: "faol",
-            clinic: selectedBranch === "all" ? (branches.length > 0 ? branches[0].id.toString() : "") : selectedBranch,
             branch: selectedBranch === "all" ? (branches.length > 0 ? branches[0].id.toString() : "") : selectedBranch,
             salary: "",
             reason_holiday: "",
@@ -455,9 +454,35 @@ export default function Staff() {
             setIsLoadingStaff(true)
 
             // Prepare data for API
-            const staffData = {
-                ...newStaff,
-                // Add any additional formatting or transformations needed for the API
+            const staffData = { ...newStaff }
+
+            // Handle conditional fields based on status
+            if (staffData.status !== "tatilda") {
+                // Remove vacation-related fields if status is not "tatilda"
+                delete staffData.start_holiday
+                delete staffData.end_holiday
+            } else {
+                // Ensure dates are in YYYY-MM-DD format for "tatilda" status
+                if (staffData.start_holiday) {
+                    // Make sure the date is in YYYY-MM-DD format
+                    const startDate = new Date(staffData.start_holiday)
+                    if (!isNaN(startDate.getTime())) {
+                        staffData.start_holiday = startDate.toISOString().split("T")[0]
+                    }
+                }
+
+                if (staffData.end_holiday) {
+                    // Make sure the date is in YYYY-MM-DD format
+                    const endDate = new Date(staffData.end_holiday)
+                    if (!isNaN(endDate.getTime())) {
+                        staffData.end_holiday = endDate.toISOString().split("T")[0]
+                    }
+                }
+            }
+
+            // Remove reason_holiday if status is "faol" (active)
+            if (staffData.status === "faol") {
+                delete staffData.reason_holiday
             }
 
             await apiUsers.createUser(staffData)
@@ -491,10 +516,38 @@ export default function Staff() {
             setIsLoadingStaff(true)
 
             // Prepare data for API
-            const staffData = {
-                ...currentStaffMember,
-                // Remove any fields that shouldn't be sent to the API
-                _prevBranch: undefined,
+            const staffData = { ...currentStaffMember }
+
+            // Remove fields that shouldn't be sent to the API
+            delete staffData._prevBranch
+
+            // Handle conditional fields based on status
+            if (staffData.status !== "tatilda") {
+                // Remove vacation-related fields if status is not "tatilda"
+                delete staffData.start_holiday
+                delete staffData.end_holiday
+            } else {
+                // Ensure dates are in YYYY-MM-DD format for "tatilda" status
+                if (staffData.start_holiday) {
+                    // Make sure the date is in YYYY-MM-DD format
+                    const startDate = new Date(staffData.start_holiday)
+                    if (!isNaN(startDate.getTime())) {
+                        staffData.start_holiday = startDate.toISOString().split("T")[0]
+                    }
+                }
+
+                if (staffData.end_holiday) {
+                    // Make sure the date is in YYYY-MM-DD format
+                    const endDate = new Date(staffData.end_holiday)
+                    if (!isNaN(endDate.getTime())) {
+                        staffData.end_holiday = endDate.toISOString().split("T")[0]
+                    }
+                }
+            }
+
+            // Remove reason_holiday if status is "faol" (active)
+            if (staffData.status === "faol") {
+                delete staffData.reason_holiday
             }
 
             await apiUsers.updateUser(currentStaffMember.id, staffData)
@@ -593,11 +646,7 @@ export default function Staff() {
             <div className="xodim-header">
                 <h1 className="xodim-title">{t("staff")}</h1>
                 <div className="xodim-actions">
-                    <button
-                        className="xodim-btn xodim-btn-outline "
-                        onClick={handleRefreshData}
-                        title={t("refresh_data")}
-                    >
+                    <button className="xodim-btn xodim-btn-outline " onClick={handleRefreshData} title={t("refresh_data")}>
                         <FaSync className={isLoadingStaff ? "xodim-spinner" : ""} />
                     </button>
                     <button className="xodim-btn xodim-btn-primary " onClick={openAddSidebar}>
@@ -648,6 +697,17 @@ export default function Staff() {
                                     {isLoadingStats ? <FaSpinner className="xodim-spinner" /> : staffStats.on_leave_users}
                                 </div>
                                 <div className="xodim-stat-label">{t("staff_on_leave")}</div>
+                            </div>
+                        </div>
+                        <div className="xodim-stat-card">
+                            <div className="xodim-stat-icon-wrapper">
+                                <FaCalendarAlt className="xodim-stat-icon" />
+                            </div>
+                            <div className="xodim-stat-content">
+                                <div className="xodim-stat-value">
+                                    {isLoadingStats ? <FaSpinner className="xodim-spinner" /> : staffStats.inactive_users}
+                                </div>
+                                <div className="xodim-stat-label">{t("inactive_employee")}</div>
                             </div>
                         </div>
                         <div className="xodim-stat-card">

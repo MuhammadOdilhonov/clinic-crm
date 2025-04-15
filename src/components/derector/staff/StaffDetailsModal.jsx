@@ -42,8 +42,33 @@ const StaffDetailsModal = ({ isOpen, onClose, user, staffPositions, specializati
         setScheduleError(null)
 
         try {
-            const fetchedSchedules = await apiSchedules.fetchUserSchedules(user.id)
-            setSchedules(Array.isArray(fetchedSchedules) ? fetchedSchedules : [])
+            const response = await apiSchedules.fetchUserSchedules(user.id)
+            console.log("Raw API response:", response)
+
+            // Check if the response has a results array (paginated response)
+            let schedulesData = []
+            if (response && response.results && Array.isArray(response.results)) {
+                schedulesData = response.results
+                console.log("Extracted schedules from results:", schedulesData)
+            } else if (Array.isArray(response)) {
+                schedulesData = response
+                console.log("Response is already an array:", schedulesData)
+            } else {
+                console.error("Unexpected response format:", response)
+                setScheduleError(t("error_fetching_schedules"))
+                setSchedules([])
+                setIsLoadingSchedules(false)
+                return
+            }
+
+            // Process the schedules to ensure is_working is a boolean
+            const processedSchedules = schedulesData.map((schedule) => ({
+                ...schedule,
+                is_working: schedule.is_working === true || schedule.is_working === "true" || schedule.is_working === 1,
+            }))
+
+            setSchedules(processedSchedules)
+            console.log("Processed schedules:", processedSchedules)
         } catch (error) {
             console.error("Error fetching user schedules:", error)
             setScheduleError(t("error_fetching_schedules"))
@@ -120,11 +145,13 @@ const StaffDetailsModal = ({ isOpen, onClose, user, staffPositions, specializati
             if (existingScheduleId) {
                 // Update existing schedule
                 updatedSchedule = await apiSchedules.updateSchedule(existingScheduleId, scheduleData)
-                setSchedules(schedules.map((s) => (s.id === existingScheduleId ? updatedSchedule : s)))
+                // Ensure is_working is properly set in the state
+                setSchedules(schedules.map((s) => (s.id === existingScheduleId ? { ...updatedSchedule, is_working: true } : s)))
             } else {
                 // Create new schedule
                 updatedSchedule = await apiSchedules.createSchedule(scheduleData)
-                setSchedules([...schedules, updatedSchedule])
+                // Ensure is_working is properly set in the state
+                setSchedules([...schedules, { ...updatedSchedule, is_working: true }])
             }
 
             setEditingDay(null)
@@ -293,12 +320,15 @@ const StaffDetailsModal = ({ isOpen, onClose, user, staffPositions, specializati
                                                 sunday: t("sunday"),
                                             }[day]
 
+                                            // Debug log for each day's schedule
+                                            console.log(`Day ${day} schedule:`, daySchedule)
+
                                             return (
                                                 <div
                                                     key={day}
                                                     className={`xodim-day-schedule ${editingDay === day
                                                             ? "editing"
-                                                            : daySchedule?.is_working
+                                                            : daySchedule?.is_working === true
                                                                 ? "working"
                                                                 : daySchedule
                                                                     ? "not-working"
@@ -538,17 +568,25 @@ const FullScheduleModal = ({ isOpen, onClose, userId, userName, initialSchedules
             const scheduleData = {
                 ...formData,
                 user: userId,
+                // Ensure is_working is a boolean
+                is_working: Boolean(formData.is_working),
             }
 
             let updatedSchedule
             if (editingSchedule === "new") {
                 // Create new schedule
                 updatedSchedule = await apiSchedules.createSchedule(scheduleData)
-                setSchedules([...schedules, updatedSchedule])
+                // Ensure is_working is properly set in the state
+                setSchedules([...schedules, { ...updatedSchedule, is_working: Boolean(formData.is_working) }])
             } else {
                 // Update existing schedule
                 updatedSchedule = await apiSchedules.updateSchedule(editingSchedule, scheduleData)
-                setSchedules(schedules.map((s) => (s.id === editingSchedule ? updatedSchedule : s)))
+                // Ensure is_working is properly set in the state
+                setSchedules(
+                    schedules.map((s) =>
+                        s.id === editingSchedule ? { ...updatedSchedule, is_working: Boolean(formData.is_working) } : s,
+                    ),
+                )
             }
 
             setEditingSchedule(null)
@@ -580,8 +618,13 @@ const FullScheduleModal = ({ isOpen, onClose, userId, userName, initialSchedules
     const handleToggleStatus = async (scheduleId, currentStatus) => {
         try {
             setIsLoading(true)
-            await apiSchedules.updateScheduleStatus(scheduleId, !currentStatus)
-            setSchedules(schedules.map((s) => (s.id === scheduleId ? { ...s, is_working: !currentStatus } : s)))
+            // Convert currentStatus to boolean if it's not already
+            const isCurrentlyWorking = Boolean(currentStatus)
+            await apiSchedules.updateScheduleStatus(scheduleId, !isCurrentlyWorking)
+
+            // Update the local state with the new status
+            setSchedules(schedules.map((s) => (s.id === scheduleId ? { ...s, is_working: !isCurrentlyWorking } : s)))
+
             setError(null)
         } catch (error) {
             console.error("Error toggling schedule status:", error)

@@ -17,8 +17,9 @@ const fetchUserSchedules = async (userId) => {
 // Update schedule status (toggle working/not working)
 const updateScheduleStatus = async (scheduleId, isWorking) => {
     try {
+        // Ensure isWorking is sent as a boolean
         const response = await client.patch(`${SCHEDULES_ENDPOINT}${scheduleId}/`, {
-            is_working: isWorking,
+            is_working: Boolean(isWorking),
         })
         return response.data
     } catch (error) {
@@ -30,7 +31,13 @@ const updateScheduleStatus = async (scheduleId, isWorking) => {
 // Update full schedule
 const updateSchedule = async (scheduleId, scheduleData) => {
     try {
-        const response = await client.patch(`${SCHEDULES_ENDPOINT}${scheduleId}/`, scheduleData)
+        // Ensure is_working is sent as a boolean if it exists in the data
+        const dataToSend = {
+            ...scheduleData,
+            is_working: scheduleData.is_working !== undefined ? Boolean(scheduleData.is_working) : undefined,
+        }
+
+        const response = await client.patch(`${SCHEDULES_ENDPOINT}${scheduleId}/`, dataToSend)
         return response.data
     } catch (error) {
         console.error(`Error updating schedule for ID ${scheduleId}:`, error)
@@ -41,7 +48,13 @@ const updateSchedule = async (scheduleId, scheduleData) => {
 // Create new schedule
 const createSchedule = async (scheduleData) => {
     try {
-        const response = await client.post(SCHEDULES_ENDPOINT, scheduleData)
+        // Ensure is_working is sent as a boolean if it exists in the data
+        const dataToSend = {
+            ...scheduleData,
+            is_working: scheduleData.is_working !== undefined ? Boolean(scheduleData.is_working) : true,
+        }
+
+        const response = await client.post(SCHEDULES_ENDPOINT, dataToSend)
         return response.data
     } catch (error) {
         console.error("Error creating schedule:", error)

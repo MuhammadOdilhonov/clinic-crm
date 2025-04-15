@@ -18,13 +18,18 @@ import {
     FaTools,
     FaBuilding,
     FaInfoCircle,
+    FaChartBar,
+    FaFlask,
+    FaAmbulance,
+    FaTooth,
+    FaHospital,
 } from "react-icons/fa"
 import { getCabinets, createCabinet, updateCabinet, deleteCabinet } from "../../../api/apiCabinets"
 import { getCabinetStatistics } from "../../../api/apiCabinetsStatistic"
 import Pagination from "../../pagination/Pagination"
 import ConfirmModal from "../../modal/ConfirmModal"
 import SuccessModal from "../../modal/SuccessModal"
-import apiUsers from "../../../api/apiUsers" // Fixed import
+import apiUsers from "../../../api/apiUsers"
 import apiBranches from "../../../api/apiBranches"
 
 export default function Cabinets() {
@@ -127,13 +132,11 @@ export default function Cabinets() {
             // Fetch doctors (position = doctor)
             const doctorsFilters = { position: "doctor" }
             const doctorsData = await apiUsers.fetchUsers(1, 100, doctorsFilters)
-            console.log("Doctors data:", doctorsData)
             setDoctors(doctorsData.results || [])
 
             // Fetch nurses (position = nurse)
             const nursesFilters = { position: "nurse" }
             const nursesData = await apiUsers.fetchUsers(1, 100, nursesFilters)
-            console.log("Nurses data:", nursesData)
             setNurses(nursesData.results || [])
         } catch (error) {
             console.error("Error fetching staff:", error)
@@ -205,6 +208,42 @@ export default function Cabinets() {
         fetchStatisticsData()
     }, [fetchStatisticsData])
 
+    // Get cabinet type icon
+    const getCabinetTypeIcon = (type) => {
+        switch (type) {
+            case "jarrohlik":
+                return <FaUserMd className="cab-type-icon" />
+            case "laboratoriya":
+                return <FaFlask className="cab-type-icon" />
+            case "tezyordam":
+                return <FaAmbulance className="cab-type-icon" />
+            case "stomatalogiya":
+                return <FaTooth className="cab-type-icon" />
+            case "qabulxona":
+                return <FaHospital className="cab-type-icon" />
+            default:
+                return <FaDoorOpen className="cab-type-icon" />
+        }
+    }
+
+    // Get cabinet type label
+    const getCabinetTypeLabel = (type) => {
+        switch (type) {
+            case "jarrohlik":
+                return t("surgery")
+            case "laboratoriya":
+                return t("laboratoriya")
+            case "tezyordam":
+                return t("tezyordam")
+            case "stomatalogiya":
+                return t("stomatalogiya")
+            case "qabulxona":
+                return t("qabulxona")
+            default:
+                return type
+        }
+    }
+
     // Handle search
     const handleSearch = (e) => {
         setSearchTerm(e.target.value)
@@ -219,6 +258,7 @@ export default function Cabinets() {
     // Apply filters
     const applyFilters = () => {
         setCurrentPage(1) // Reset to first page when applying filters
+        fetchCabinetsData()
     }
 
     // Reset filters
@@ -519,9 +559,6 @@ export default function Cabinets() {
                 return
             }
 
-            // Log the cabinet ID being deleted for debugging
-            console.log("Deleting cabinet with ID:", cabinetToDelete.id)
-
             // Call the API to delete the cabinet
             await deleteCabinet(cabinetToDelete.id)
 
@@ -564,9 +601,9 @@ export default function Cabinets() {
     const getStatusLabel = (status) => {
         switch (status) {
             case "available":
-                return t("available")
-            case "occupied":
-                return t("occupied")
+                return t("there_is")
+            case "creating":
+                return t("creating")
             case "repair":
                 return t("repair")
             default:
@@ -579,7 +616,7 @@ export default function Cabinets() {
         switch (status) {
             case "available":
                 return <FaCheckCircle className="status-icon available" />
-            case "occupied":
+            case "creating":
                 return <FaUserMd className="status-icon occupied" />
             case "repair":
                 return <FaTools className="status-icon repair" />
@@ -651,7 +688,13 @@ export default function Cabinets() {
                 </h1>
                 <div className="cab-page-actions">
                     <button className="cab-action-button close-stats" onClick={() => setShowStatsModal(!showStatsModal)}>
-                        {showStatsModal ? <FaTimes /> : t("show_stats")}
+                        {showStatsModal ? (
+                            <FaTimes />
+                        ) : (
+                            <>
+                                <FaChartBar /> {t("show_stats")}
+                            </>
+                        )}
                     </button>
                     <button className="cab-action-button add-cabinet" onClick={openAddModal}>
                         <FaPlus /> {t("add_new_cabinet")}
@@ -661,70 +704,85 @@ export default function Cabinets() {
 
             {showStatsModal && (
                 <div className="cab-stats-container">
-                    <div className="cab-stats-grid">
-                        <div className="cab-stat-card">
-                            <div className="cab-stat-icon total">
-                                <FaDoorOpen />
-                            </div>
-                            <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{statistics.total_cabinets}</h3>
-                                <p className="cab-stat-label">{t("total_cabinets")}</p>
-                            </div>
+                    {isLoadingStats ? (
+                        <div className="cab-stats-loading">
+                            <div className="cab-loading-spinner"></div>
+                            <p>{t("loading_statistics")}...</p>
                         </div>
-
-                        <div className="cab-stat-card">
-                            <div className="cab-stat-icon available">
-                                <FaCheckCircle />
-                            </div>
-                            <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{statistics.available_cabinets}</h3>
-                                <p className="cab-stat-label">{t("available_cabinets")}</p>
-                            </div>
-                        </div>
-
-                        <div className="cab-stat-card">
-                            <div className="cab-stat-icon occupied">
-                                <FaUserMd />
-                            </div>
-                            <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{statistics.occupied_cabinets}</h3>
-                                <p className="cab-stat-label">{t("occupied_cabinets")}</p>
-                            </div>
-                        </div>
-
-                        <div className="cab-stat-card">
-                            <div className="cab-stat-icon repair">
-                                <FaTools />
-                            </div>
-                            <div className="cab-stat-content">
-                                <h3 className="cab-stat-value">{statistics.repair_cabinets}</h3>
-                                <p className="cab-stat-label">{t("repair_cabinets")}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="cab-type-distribution">
-                        <h3 className="cab-section-title">{t("type_distribution")}</h3>
-                        <div className="cab-type-bars">
-                            {statistics.type_distribution &&
-                                statistics.type_distribution.map((type, index) => (
-                                    <div className="cab-type-bar-container" key={index}>
-                                        <div className="cab-type-bar-header">
-                                            <span className="cab-type-name">{type.type}</span>
-                                            <span className="cab-type-count">{type.count}</span>
-                                        </div>
-                                        <div className="cab-type-bar-wrapper">
-                                            <div
-                                                className="cab-type-bar"
-                                                style={{
-                                                    width: `${(type.count / (statistics.total_cabinets || 1)) * 100}%`,
-                                                }}
-                                            ></div>
-                                        </div>
+                    ) : (
+                        <>
+                            <div className="cab-stats-grid">
+                                <div className="cab-stat-card total-card">
+                                    <div className="cab-stat-icon total">
+                                        <FaDoorOpen />
                                     </div>
-                                ))}
-                        </div>
-                    </div>
+                                    <div className="cab-stat-content">
+                                        <h3 className="cab-stat-value">{statistics.total_cabinets}</h3>
+                                        <p className="cab-stat-label">{t("total_cabinets")}</p>
+                                    </div>
+                                </div>
+
+                                <div className="cab-stat-card available-card">
+                                    <div className="cab-stat-icon available">
+                                        <FaCheckCircle />
+                                    </div>
+                                    <div className="cab-stat-content">
+                                        <h3 className="cab-stat-value">{statistics.available_cabinets}</h3>
+                                        <p className="cab-stat-label">{t("available_cabinets")}</p>
+                                    </div>
+                                </div>
+
+                                <div className="cab-stat-card occupied-card">
+                                    <div className="cab-stat-icon occupied">
+                                        <FaUserMd />
+                                    </div>
+                                    <div className="cab-stat-content">
+                                        <h3 className="cab-stat-value">{statistics.occupied_cabinets}</h3>
+                                            <p className="cab-stat-label">{t("create_cabinet")}</p>
+                                    </div>
+                                </div>
+
+                                <div className="cab-stat-card repair-card">
+                                    <div className="cab-stat-icon repair">
+                                        <FaTools />
+                                    </div>
+                                    <div className="cab-stat-content">
+                                        <h3 className="cab-stat-value">{statistics.repair_cabinets}</h3>
+                                        <p className="cab-stat-label">{t("repair_cabinets")}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {statistics.type_distribution && statistics.type_distribution.length > 0 && (
+                                <div className="cab-type-distribution">
+                                    <h3 className="cab-section-title">
+                                        <FaChartBar className="cab-section-icon" /> {t("type_distribution")}
+                                    </h3>
+                                    <div className="cab-type-bars">
+                                        {statistics.type_distribution.map((type, index) => (
+                                            <div className="cab-type-bar-container" key={index}>
+                                                <div className="cab-type-bar-header">
+                                                    <div className="cab-type-name-container">
+                                                        {getCabinetTypeIcon(type.type)}
+                                                        <span className="cab-type-name">{getCabinetTypeLabel(type.type)}</span>
+                                                    </div>
+                                                    <span className="cab-type-count">{type.count}</span>
+                                                </div>
+                                                <div className="cab-type-bar-wrapper">
+                                                    <div
+                                                        className={`cab-type-bar cab-type-${type.type}`}
+                                                        style={{
+                                                            width: `${(type.count / (statistics.total_cabinets || 1)) * 100}%`,
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
 
@@ -765,10 +823,10 @@ export default function Cabinets() {
                             <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
                                 <option value="all">{t("all")}</option>
                                 <option value="jarrohlik">{t("surgery")}</option>
-                                <option value="terapevt">{t("therapy")}</option>
-                                <option value="stomatologiya">{t("dental")}</option>
-                                <option value="kardiologiya">{t("cardiology")}</option>
-                                <option value="nevrologiya">{t("neurology")}</option>
+                                <option value="laboratoriya">{t("laboratoriya")}</option>
+                                <option value="tezyordam">{t("tezyordam")}</option>
+                                <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                                <option value="qabulxona">{t("qabulxona")}</option>
                             </select>
                         </div>
                         <div className="cab-filter-group">
@@ -785,8 +843,8 @@ export default function Cabinets() {
                             <label>{t("status")}:</label>
                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                 <option value="all">{t("all")}</option>
-                                <option value="available">{t("available")}</option>
-                                <option value="occupied">{t("occupied")}</option>
+                                <option value="available">{t("there_is")}</option>
+                                <option value="creating">{t("creating")}</option>
                                 <option value="repair">{t("repair")}</option>
                             </select>
                         </div>
@@ -828,7 +886,12 @@ export default function Cabinets() {
                                     {filteredCabinets.map((cabinet) => (
                                         <tr key={cabinet.id}>
                                             <td>{cabinet.name}</td>
-                                            <td>{cabinet.type}</td>
+                                            <td>
+                                                <div className="cab-type">
+                                                    {getCabinetTypeIcon(cabinet.type)}
+                                                    <span>{getCabinetTypeLabel(cabinet.type)}</span>
+                                                </div>
+                                            </td>
                                             <td>{cabinet.floor}</td>
                                             <td>
                                                 <div className="cab-status">
@@ -958,10 +1021,10 @@ export default function Cabinets() {
                                     <select id="type" name="type" value={newCabinet.type} onChange={handleInputChange} required>
                                         <option value="">{t("select_type")}</option>
                                         <option value="jarrohlik">{t("surgery")}</option>
-                                        <option value="terapevt">{t("therapy")}</option>
-                                        <option value="stomatologiya">{t("dental")}</option>
-                                        <option value="kardiologiya">{t("cardiology")}</option>
-                                        <option value="nevrologiya">{t("neurology")}</option>
+                                        <option value="laboratoriya">{t("laboratoriya")}</option>
+                                        <option value="tezyordam">{t("tezyordam")}</option>
+                                        <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                                        <option value="qabulxona">{t("qabulxona")}</option>
                                     </select>
                                 </div>
 
@@ -979,8 +1042,8 @@ export default function Cabinets() {
                             <div className="cab-form-group">
                                 <label htmlFor="status">{t("status")}</label>
                                 <select id="status" name="status" value={newCabinet.status} onChange={handleInputChange} required>
-                                    <option value="available">{t("available")}</option>
-                                    <option value="occupied">{t("occupied")}</option>
+                                    <option value="available">{t("there_is")}</option>
+                                    <option value="creating">{t("creating")}</option>
                                     <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
@@ -1118,10 +1181,10 @@ export default function Cabinets() {
                                     >
                                         <option value="">{t("select_type")}</option>
                                         <option value="jarrohlik">{t("surgery")}</option>
-                                        <option value="terapevt">{t("therapy")}</option>
-                                        <option value="stomatologiya">{t("dental")}</option>
-                                        <option value="kardiologiya">{t("cardiology")}</option>
-                                        <option value="nevrologiya">{t("neurology")}</option>
+                                        <option value="laboratoriya">{t("laboratoriya")}</option>
+                                        <option value="tezyordam">{t("tezyordam")}</option>
+                                        <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                                        <option value="qabulxona">{t("qabulxona")}</option>
                                     </select>
                                 </div>
 
@@ -1151,8 +1214,8 @@ export default function Cabinets() {
                                     onChange={handleEditInputChange}
                                     required
                                 >
-                                    <option value="available">{t("available")}</option>
-                                    <option value="occupied">{t("occupied")}</option>
+                                    <option value="available">{t("there_is")}</option>
+                                    <option value="creating">{t("creating")}</option>
                                     <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
