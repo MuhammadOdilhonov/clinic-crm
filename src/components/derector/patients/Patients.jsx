@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import {
     FaSearch,
     FaEdit,
@@ -14,215 +16,36 @@ import {
     FaCalendarAlt,
     FaStethoscope,
     FaUserMd,
+    FaExclamationTriangle,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import { useNavigate } from "react-router-dom"
+import apiPatients from "../../../api/apiPatients"
+import apiBranches from "../../../api/apiBranches"
+import Pagination from "../../pagination/Pagination"
+import ConfirmModal from "../../modal/ConfirmModal"
+import SuccessModal from "../../modal/SuccessModal"
 
 export default function Patients() {
     const { selectedBranch } = useAuth()
     const navigate = useNavigate()
     const { t } = useLanguage()
 
-    // Mock data for patients
-    const initialPatientsData = {
-        all: [
-            {
-                id: 1,
-                name: "Alisher Karimov",
-                age: 45,
-                gender: "male",
-                phone: "+998 90 123 45 67",
-                email: "alisher@example.com",
-                address: "Toshkent sh., Chilonzor tumani",
-                lastVisit: "2023-05-15",
-                diagnosis: "Yurak kasalligi",
-                doctor: "Dr. Aziz Karimov",
-                branch: "branch1",
-                status: "active",
-            },
-            {
-                id: 2,
-                name: "Nilufar Rahimova",
-                age: 32,
-                gender: "female",
-                phone: "+998 90 234 56 78",
-                email: "nilufar@example.com",
-                address: "Toshkent sh., Yunusobod tumani",
-                lastVisit: "2023-05-14",
-                diagnosis: "Bosh og'rig'i",
-                doctor: "Dr. Jasur Toshmatov",
-                branch: "branch1",
-                status: "active",
-            },
-            {
-                id: 3,
-                name: "Sardor Aliyev",
-                age: 28,
-                gender: "male",
-                phone: "+998 90 345 67 89",
-                email: "sardor@example.com",
-                address: "Toshkent sh., Mirzo Ulug'bek tumani",
-                lastVisit: "2023-05-13",
-                diagnosis: "Yurak ritmi buzilishi",
-                doctor: "Dr. Aziz Karimov",
-                branch: "branch2",
-                status: "inactive",
-            },
-            {
-                id: 4,
-                name: "Malika Umarova",
-                age: 35,
-                gender: "female",
-                phone: "+998 90 456 78 90",
-                email: "malika@example.com",
-                address: "Toshkent sh., Shayxontohur tumani",
-                lastVisit: "2023-05-12",
-                diagnosis: "Allergiya",
-                doctor: "Dr. Nilufar Rahimova",
-                branch: "branch2",
-                status: "active",
-            },
-            {
-                id: 5,
-                name: "Jasur Toshmatov",
-                age: 50,
-                gender: "male",
-                phone: "+998 90 567 89 01",
-                email: "jasur@example.com",
-                address: "Toshkent sh., Olmazor tumani",
-                lastVisit: "2023-05-11",
-                diagnosis: "Qon bosimi",
-                doctor: "Dr. Sardor Aliyev",
-                branch: "branch3",
-                status: "active",
-            },
-            {
-                id: 6,
-                name: "Kamola Yusupova",
-                age: 27,
-                gender: "female",
-                phone: "+998 90 678 90 12",
-                email: "kamola@example.com",
-                address: "Toshkent sh., Bektemir tumani",
-                lastVisit: "2023-05-10",
-                diagnosis: "Gripp",
-                doctor: "Dr. Malika Umarova",
-                branch: "branch3",
-                status: "inactive",
-            },
-        ],
-        branch1: [
-            {
-                id: 1,
-                name: "Alisher Karimov",
-                age: 45,
-                gender: "male",
-                phone: "+998 90 123 45 67",
-                email: "alisher@example.com",
-                address: "Toshkent sh., Chilonzor tumani",
-                lastVisit: "2023-05-15",
-                diagnosis: "Yurak kasalligi",
-                doctor: "Dr. Aziz Karimov",
-                branch: "branch1",
-                status: "active",
-            },
-            {
-                id: 2,
-                name: "Nilufar Rahimova",
-                age: 32,
-                gender: "female",
-                phone: "+998 90 234 56 78",
-                email: "nilufar@example.com",
-                address: "Toshkent sh., Yunusobod tumani",
-                lastVisit: "2023-05-14",
-                diagnosis: "Bosh og'rig'i",
-                doctor: "Dr. Jasur Toshmatov",
-                branch: "branch1",
-                status: "active",
-            },
-        ],
-        branch2: [
-            {
-                id: 3,
-                name: "Sardor Aliyev",
-                age: 28,
-                gender: "male",
-                phone: "+998 90 345 67 89",
-                email: "sardor@example.com",
-                address: "Toshkent sh., Mirzo Ulug'bek tumani",
-                lastVisit: "2023-05-13",
-                diagnosis: "Yurak ritmi buzilishi",
-                doctor: "Dr. Aziz Karimov",
-                branch: "branch2",
-                status: "inactive",
-            },
-            {
-                id: 4,
-                name: "Malika Umarova",
-                age: 35,
-                gender: "female",
-                phone: "+998 90 456 78 90",
-                email: "malika@example.com",
-                address: "Toshkent sh., Shayxontohur tumani",
-                lastVisit: "2023-05-12",
-                diagnosis: "Allergiya",
-                doctor: "Dr. Nilufar Rahimova",
-                branch: "branch2",
-                status: "active",
-            },
-        ],
-        branch3: [
-            {
-                id: 5,
-                name: "Jasur Toshmatov",
-                age: 50,
-                gender: "male",
-                phone: "+998 90 567 89 01",
-                email: "jasur@example.com",
-                address: "Toshkent sh., Olmazor tumani",
-                lastVisit: "2023-05-11",
-                diagnosis: "Qon bosimi",
-                doctor: "Dr. Sardor Aliyev",
-                branch: "branch3",
-                status: "active",
-            },
-            {
-                id: 6,
-                name: "Kamola Yusupova",
-                age: 27,
-                gender: "female",
-                phone: "+998 90 678 90 12",
-                email: "kamola@example.com",
-                address: "Toshkent sh., Bektemir tumani",
-                lastVisit: "2023-05-10",
-                diagnosis: "Gripp",
-                doctor: "Dr. Malika Umarova",
-                branch: "branch3",
-                status: "inactive",
-            },
-        ],
-    }
-
-    const [initialPatients, setInitialPatients] = useState(
-        selectedBranch === "all" ? initialPatientsData.all : initialPatientsData[selectedBranch],
-    )
-    const [patients, setPatients] = useState(initialPatients)
+    const [patients, setPatients] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
     const [showSidebar, setShowSidebar] = useState(false)
     const [showEditSidebar, setShowEditSidebar] = useState(false)
     const [currentPatient, setCurrentPatient] = useState(null)
     const [newPatient, setNewPatient] = useState({
-        name: "",
-        age: "",
+        full_name: "",
+        age: 18,
         gender: "male",
-        phone: "",
-        email: "",
-        address: "",
-        diagnosis: "",
-        doctor: "",
-        branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        status: "active",
+        phone_number: "",
+        email: "user@example.com",
+        location: "",
+        status: "faol",
+        branch: 1,
     })
     const [filterGender, setFilterGender] = useState("all")
     const [filterAge, setFilterAge] = useState("all")
@@ -230,74 +53,117 @@ export default function Patients() {
     const [filterStatus, setFilterStatus] = useState("all")
     const [showFilters, setShowFilters] = useState(false)
     const [viewMode, setViewMode] = useState("table") // table or grid
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
 
-    // Update patients when branch changes
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(0)
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [confirmModalProps, setConfirmModalProps] = useState({
+        title: "",
+        message: "",
+        confirmText: "",
+        cancelText: "",
+        type: "warning",
+        onConfirm: () => { },
+    })
+    const [successModalProps, setSuccessModalProps] = useState({
+        title: "",
+        message: "",
+    })
+
+    // Branches state
+    const [branches, setBranches] = useState([])
+    const [branchesLoading, setBranchesLoading] = useState(true)
+
+    // Fetch branches from API
     useEffect(() => {
-        if (selectedBranch === "all") {
-            setInitialPatients(initialPatientsData.all)
-            setPatients(initialPatientsData.all)
-        } else {
-            setInitialPatients(initialPatientsData[selectedBranch])
-            setPatients(initialPatientsData[selectedBranch])
+        const fetchBranches = async () => {
+            try {
+                setBranchesLoading(true)
+                const branchesData = await apiBranches.fetchBranches()
+                setBranches(branchesData)
+                setBranchesLoading(false)
+            } catch (err) {
+                console.error("Error fetching branches:", err)
+                setBranchesLoading(false)
+            }
         }
 
+        fetchBranches()
+    }, [])
+
+    // Fetch patients data from API
+    const fetchPatients = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            // Convert currentPage from 0-based to 1-based for API
+            const apiPage = currentPage + 1
+
+            // Get branch ID for filtering
+            const branchId = selectedBranch === "all" ? null : selectedBranch
+
+            const response = await apiPatients.fetchPatients(apiPage, itemsPerPage, searchTerm, branchId)
+
+            // Transform API data to match component structure
+            const transformedPatients = response.results.map((patient) => ({
+                id: patient.id,
+                name: patient.full_name,
+                age: patient.age,
+                gender: patient.gender,
+                phone: patient.phone_number,
+                email: patient.email || "",
+                address: patient.location || "",
+                lastVisit: patient.updated_at ? new Date(patient.updated_at).toISOString().split("T")[0] : "",
+                diagnosis: patient.diagnosis || "",
+                doctor: patient.doctor || "",
+                branch: patient.branch,
+                status: patient.status || "faol",
+            }))
+
+            setPatients(transformedPatients)
+            setTotalItems(response.count)
+            setTotalPages(Math.ceil(response.count / itemsPerPage))
+            setLoading(false)
+        } catch (err) {
+            console.error("Error fetching patients:", err)
+            setError(err.message || "An error occurred while fetching patients")
+            setLoading(false)
+        }
+    }
+
+    // Fetch patients when dependencies change
+    useEffect(() => {
+        fetchPatients()
+    }, [currentPage, itemsPerPage, searchTerm, selectedBranch])
+
+    // Update branch in new patient form when selected branch changes
+    useEffect(() => {
         setNewPatient({
             ...newPatient,
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
+            branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
         })
 
         setFilterBranch(selectedBranch)
     }, [selectedBranch])
 
-    // Filter patients based on search term, gender, age, status and branch
-    useEffect(() => {
-        let filteredPatients = [...initialPatients]
-
-        // Filter by search term
-        if (searchTerm) {
-            filteredPatients = filteredPatients.filter(
-                (patient) =>
-                    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    patient.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    patient.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    patient.email.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-        }
-
-        // Filter by gender
-        if (filterGender !== "all") {
-            filteredPatients = filteredPatients.filter((patient) => patient.gender === filterGender)
-        }
-
-        // Filter by age
-        if (filterAge !== "all") {
-            if (filterAge === "0-18") {
-                filteredPatients = filteredPatients.filter((patient) => patient.age <= 18)
-            } else if (filterAge === "19-35") {
-                filteredPatients = filteredPatients.filter((patient) => patient.age > 18 && patient.age <= 35)
-            } else if (filterAge === "36-50") {
-                filteredPatients = filteredPatients.filter((patient) => patient.age > 35 && patient.age <= 50)
-            } else if (filterAge === "51+") {
-                filteredPatients = filteredPatients.filter((patient) => patient.age > 50)
-            }
-        }
-
-        // Filter by status
-        if (filterStatus !== "all") {
-            filteredPatients = filteredPatients.filter((patient) => patient.status === filterStatus)
-        }
-
-        // Filter by branch (if viewing all branches)
-        if (selectedBranch === "all" && filterBranch !== "all") {
-            filteredPatients = filteredPatients.filter((patient) => patient.branch === filterBranch)
-        }
-
-        setPatients(filteredPatients)
-    }, [searchTerm, filterGender, filterAge, filterStatus, filterBranch, initialPatients])
+    // Apply filters to patients
+    const applyFilters = () => {
+        fetchPatients()
+    }
 
     // Handle search input change
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value)
+        setCurrentPage(0) // Reset to first page when searching
     }
 
     // Handle new patient input change
@@ -305,7 +171,7 @@ export default function Patients() {
         const { name, value } = e.target
         setNewPatient({
             ...newPatient,
-            [name]: name === "age" ? (value === "" ? "" : Number.parseInt(value)) : value,
+            [name]: name === "age" || name === "branch" ? (value === "" ? "" : Number.parseInt(value)) : value,
         })
     }
 
@@ -314,7 +180,7 @@ export default function Patients() {
         const { name, value } = e.target
         setCurrentPatient({
             ...currentPatient,
-            [name]: name === "age" ? Number.parseInt(value) : value,
+            [name]: name === "age" || name === "branch" ? Number.parseInt(value) : value,
         })
     }
 
@@ -327,22 +193,35 @@ export default function Patients() {
     const closeAddSidebar = () => {
         setShowSidebar(false)
         setNewPatient({
-            name: "",
-            age: "",
+            full_name: "",
+            age: 18,
             gender: "male",
-            phone: "",
-            email: "",
-            address: "",
-            diagnosis: "",
-            doctor: "",
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-            status: "active",
+            phone_number: "",
+            email: "user@example.com",
+            location: "",
+            status: "faol",
+            branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
         })
     }
 
     // Open edit sidebar
     const openEditSidebar = (patient) => {
-        setCurrentPatient({ ...patient, _prevBranch: patient.branch })
+        // Transform patient data to match API format
+        const apiPatient = {
+            id: patient.id,
+            full_name: patient.name,
+            age: patient.age,
+            gender: patient.gender,
+            phone_number: patient.phone,
+            email: patient.email,
+            location: patient.address,
+            status: patient.status,
+            branch: patient.branch,
+            diagnosis: patient.diagnosis,
+            doctor: patient.doctor,
+        }
+
+        setCurrentPatient(apiPatient)
         setShowEditSidebar(true)
     }
 
@@ -367,88 +246,114 @@ export default function Patients() {
     }
 
     // Add new patient
-    const addPatient = (e) => {
+    const addPatient = async (e) => {
         e.preventDefault()
-        const id = Math.max(...initialPatientsData.all.map((p) => p.id)) + 1
-        const today = new Date().toISOString().split("T")[0]
-        const newPatientItem = {
-            ...newPatient,
-            id,
-            lastVisit: today,
+        try {
+            setLoading(true)
+
+            // Create patient using API
+            await apiPatients.createPatient(newPatient)
+
+            // Close the sidebar and reset form
+            closeAddSidebar()
+            setLoading(false)
+
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_added_successfully"),
+            })
+            setShowSuccessModal(true)
+
+            // Refresh the patient list
+            fetchPatients()
+        } catch (err) {
+            console.error("Error adding patient:", err)
+            setError(err.message || "An error occurred while adding the patient")
+            setLoading(false)
         }
-
-        // Update all patients data
-        const updatedAllPatients = [...initialPatientsData.all, newPatientItem]
-        initialPatientsData.all = updatedAllPatients
-
-        // Update branch-specific patients data
-        initialPatientsData[newPatientItem.branch] = [...initialPatientsData[newPatientItem.branch], newPatientItem]
-
-        // Update current view
-        if (selectedBranch === "all" || selectedBranch === newPatientItem.branch) {
-            setInitialPatients((prev) => [...prev, newPatientItem])
-        }
-
-        closeAddSidebar()
     }
 
     // Update patient
-    const updatePatient = (e) => {
+    const updatePatient = async (e) => {
         e.preventDefault()
+        try {
+            setLoading(true)
 
-        // Update in all patients data
-        const updatedAllPatients = initialPatientsData.all.map((patient) =>
-            patient.id === currentPatient.id ? currentPatient : patient,
-        )
-        initialPatientsData.all = updatedAllPatients
+            // Extract ID and remove it from the data to send
+            const { id, ...patientData } = currentPatient
 
-        // Update in branch-specific data
-        // First remove from old branch if branch changed
-        if (currentPatient.branch !== currentPatient._prevBranch && currentPatient._prevBranch) {
-            initialPatientsData[currentPatient._prevBranch] = initialPatientsData[currentPatient._prevBranch].filter(
-                (patient) => patient.id !== currentPatient.id,
-            )
+            // Update patient using API
+            await apiPatients.updatePatient(id, patientData)
+
+            // Close the sidebar
+            closeEditSidebar()
+            setLoading(false)
+
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_updated_successfully"),
+            })
+            setShowSuccessModal(true)
+
+            // Refresh the patient list
+            fetchPatients()
+        } catch (err) {
+            console.error("Error updating patient:", err)
+            setError(err.message || "An error occurred while updating the patient")
+            setLoading(false)
         }
+    }
 
-        // Then add to new branch
-        if (initialPatientsData[currentPatient.branch]) {
-            initialPatientsData[currentPatient.branch] = initialPatientsData[currentPatient.branch].filter(
-                (patient) => patient.id !== currentPatient.id,
-            )
-            initialPatientsData[currentPatient.branch].push(currentPatient)
-        }
-
-        // Update current view
-        if (selectedBranch === "all") {
-            setInitialPatients(updatedAllPatients)
-        } else if (selectedBranch === currentPatient.branch) {
-            setInitialPatients(initialPatientsData[selectedBranch])
-        } else {
-            setInitialPatients(initialPatients.filter((patient) => patient.id !== currentPatient.id))
-        }
-
-        closeEditSidebar()
+    // Confirm delete patient
+    const confirmDeletePatient = (id, name) => {
+        setConfirmModalProps({
+            title: t("confirm_delete"),
+            message: t("confirm_delete_patient_message", { name }),
+            confirmText: t("delete"),
+            cancelText: t("cancel"),
+            type: "danger",
+            onConfirm: () => deletePatient(id),
+        })
+        setShowConfirmModal(true)
     }
 
     // Delete patient
-    const deletePatient = (id) => {
-        if (window.confirm(t("confirm_delete_patient"))) {
-            // Find the patient to get their branch
-            const patientToDelete = initialPatientsData.all.find((patient) => patient.id === id)
+    const deletePatient = async (id) => {
+        try {
+            setLoading(true)
+            setShowConfirmModal(false)
 
-            // Remove from all patients data
-            initialPatientsData.all = initialPatientsData.all.filter((patient) => patient.id !== id)
+            // Delete patient using API
+            await apiPatients.deletePatient(id)
 
-            // Remove from branch-specific data
-            if (patientToDelete && patientToDelete.branch) {
-                initialPatientsData[patientToDelete.branch] = initialPatientsData[patientToDelete.branch].filter(
-                    (patient) => patient.id !== id,
-                )
-            }
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_deleted_successfully"),
+            })
+            setShowSuccessModal(true)
 
-            // Update current view
-            setInitialPatients((prev) => prev.filter((patient) => patient.id !== id))
+            // Refresh the patient list
+            fetchPatients()
+            setLoading(false)
+        } catch (err) {
+            console.error("Error deleting patient:", err)
+            setError(err.message || "An error occurred while deleting the patient")
+            setLoading(false)
         }
+    }
+
+    // Handle pagination page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page when changing items per page
     }
 
     // Export to PDF
@@ -468,6 +373,36 @@ export default function Patients() {
             .map((n) => n[0])
             .join("")
             .toUpperCase()
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : t("unknown_branch")
+    }
+
+    // Loading state
+    if (loading && patients.length === 0) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>{t("loading")}...</p>
+            </div>
+        )
+    }
+
+    // Error state
+    if (error && patients.length === 0) {
+        return (
+            <div className="error-container">
+                <FaExclamationTriangle className="error-icon" />
+                <h2>{t("error_occurred")}</h2>
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={fetchPatients}>
+                    {t("try_again")}
+                </button>
+            </div>
+        )
     }
 
     return (
@@ -494,7 +429,13 @@ export default function Patients() {
                 <div className="mijoz-search-filter">
                     <div className="mijoz-search-input">
                         <FaSearch className="mijoz-search-icon" />
-                        <input type="text" placeholder={t("search")} value={searchTerm} onChange={handleSearchChange} />
+                        <input
+                            type="text"
+                            placeholder={t("search")}
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            onKeyPress={(e) => e.key === "Enter" && applyFilters()}
+                        />
                     </div>
                     <button className={`mijoz-filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
                         <FaFilter /> {t("filters")}
@@ -527,22 +468,28 @@ export default function Patients() {
                             <label>{t("status")}:</label>
                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                 <option value="all">{t("all")}</option>
-                                <option value="active">{t("active")}</option>
-                                <option value="inactive">{t("inactive")}</option>
+                                <option value="faol">{t("active")}</option>
+                                <option value="nofaol">{t("inactive")}</option>
                             </select>
                         </div>
 
-                        {selectedBranch === "all" && (
+                        {selectedBranch === "all" && !branchesLoading && (
                             <div className="mijoz-filter-group">
                                 <label>{t("branch")}:</label>
                                 <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
                                     <option value="all">{t("all")}</option>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id.toString()}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         )}
+
+                        <button className="mijoz-btn mijoz-btn-primary" onClick={applyFilters}>
+                            {t("apply_filters")}
+                        </button>
                     </div>
                 )}
             </div>
@@ -559,6 +506,7 @@ export default function Patients() {
                                     <th>{t("phone")}</th>
                                     <th>{t("diagnosis")}</th>
                                     <th>{t("doctor")}</th>
+                                    <th>{t("branch")}</th>
                                     <th>{t("last_visit")}</th>
                                     <th>{t("status")}</th>
                                     <th>{t("actions")}</th>
@@ -567,25 +515,38 @@ export default function Patients() {
                             <tbody>
                                 {patients.length > 0 ? (
                                     patients.map((patient) => (
-                                        <tr key={patient.id} onClick={() => handleViewPatientDetails(patient.id)} >
+                                        <tr key={patient.id} onClick={() => handleViewPatientDetails(patient.id)}>
                                             <td>{patient.name}</td>
                                             <td>{patient.age}</td>
                                             <td>{patient.gender === "male" ? t("male") : t("female")}</td>
                                             <td>{patient.phone}</td>
-                                            <td>{patient.diagnosis}</td>
-                                            <td>{patient.doctor}</td>
+                                            <td>{patient.diagnosis || "-"}</td>
+                                            <td>{patient.doctor || "-"}</td>
+                                            <td>{getBranchName(patient.branch)}</td>
                                             <td>{patient.lastVisit}</td>
                                             <td>
                                                 <span className={`mijoz-status-badge ${patient.status}`}>
-                                                    {patient.status === "active" ? t("active") : t("inactive")}
+                                                    {patient.status === "faol" ? t("active") : t("inactive")}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="mijoz-action-buttons">
-                                                    <button className="mijoz-btn-icon edit" onClick={() => openEditSidebar(patient)}>
+                                                    <button
+                                                        className="mijoz-btn-icon edit"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            openEditSidebar(patient)
+                                                        }}
+                                                    >
                                                         <FaEdit />
                                                     </button>
-                                                    <button className="mijoz-btn-icon delete" onClick={() => deletePatient(patient.id)}>
+                                                    <button
+                                                        className="mijoz-btn-icon delete"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            confirmDeletePatient(patient.id, patient.name)
+                                                        }}
+                                                    >
                                                         <FaTrash />
                                                     </button>
                                                 </div>
@@ -594,7 +555,7 @@ export default function Patients() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="9" className="mijoz-no-data">
+                                        <td colSpan="10" className="mijoz-no-data">
                                             {t("no_data_found")}
                                         </td>
                                     </tr>
@@ -602,19 +563,31 @@ export default function Patients() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination */}
+                    {patients.length > 0 && (
+                        <Pagination
+                            pageCount={totalPages}
+                            currentPage={currentPage}
+                            onPageChange={handlePageChange}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={totalItems}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                        />
+                    )}
                 </div>
             ) : (
                 <div className="mijoz-grid">
                     {patients.length > 0 ? (
                         patients.map((patient) => (
-                            <div className="mijoz-patient-card" key={patient.id}>
+                            <div className="mijoz-patient-card" key={patient.id} onClick={() => handleViewPatientDetails(patient.id)}>
                                 <div className="mijoz-patient-header">
                                     <div className="mijoz-patient-avatar">{getInitials(patient.name)}</div>
                                     <div className="mijoz-patient-info">
                                         <h3 className="mijoz-patient-name">{patient.name}</h3>
                                         <p className="mijoz-patient-id">ID: {patient.id}</p>
                                         <span className={`mijoz-status-badge ${patient.status}`}>
-                                            {patient.status === "active" ? t("active") : t("inactive")}
+                                            {patient.status === "faol" ? t("active") : t("inactive")}
                                         </span>
                                     </div>
                                 </div>
@@ -634,7 +607,7 @@ export default function Patients() {
                                         </div>
                                         <div className="mijoz-detail-content">
                                             <div className="mijoz-detail-label">{t("email")}</div>
-                                            <div className="mijoz-detail-value">{patient.email}</div>
+                                            <div className="mijoz-detail-value">{patient.email || "-"}</div>
                                         </div>
                                     </div>
                                     <div className="mijoz-patient-detail">
@@ -643,7 +616,7 @@ export default function Patients() {
                                         </div>
                                         <div className="mijoz-detail-content">
                                             <div className="mijoz-detail-label">{t("address")}</div>
-                                            <div className="mijoz-detail-value">{patient.address}</div>
+                                            <div className="mijoz-detail-value">{patient.address || "-"}</div>
                                         </div>
                                     </div>
                                     <div className="mijoz-patient-detail">
@@ -661,7 +634,7 @@ export default function Patients() {
                                         </div>
                                         <div className="mijoz-detail-content">
                                             <div className="mijoz-detail-label">{t("diagnosis")}</div>
-                                            <div className="mijoz-detail-value">{patient.diagnosis}</div>
+                                            <div className="mijoz-detail-value">{patient.diagnosis || t("no_diagnosis")}</div>
                                         </div>
                                     </div>
                                     <div className="mijoz-patient-detail">
@@ -670,16 +643,28 @@ export default function Patients() {
                                         </div>
                                         <div className="mijoz-detail-content">
                                             <div className="mijoz-detail-label">{t("doctor")}</div>
-                                            <div className="mijoz-detail-value">{patient.doctor}</div>
+                                            <div className="mijoz-detail-value">{patient.doctor || t("no_doctor")}</div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="mijoz-patient-footer">
                                     <div className="mijoz-action-buttons">
-                                        <button className="mijoz-btn-icon edit" onClick={() => openEditSidebar(patient)}>
+                                        <button
+                                            className="mijoz-btn-icon edit"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                openEditSidebar(patient)
+                                            }}
+                                        >
                                             <FaEdit />
                                         </button>
-                                        <button className="mijoz-btn-icon delete" onClick={() => deletePatient(patient.id)}>
+                                        <button
+                                            className="mijoz-btn-icon delete"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                confirmDeletePatient(patient.id, patient.name)
+                                            }}
+                                        >
                                             <FaTrash />
                                         </button>
                                     </div>
@@ -688,6 +673,20 @@ export default function Patients() {
                         ))
                     ) : (
                         <div className="mijoz-no-data-grid">{t("no_data_found")}</div>
+                    )}
+
+                    {/* Pagination for grid view */}
+                    {patients.length > 0 && (
+                        <div className="mijoz-grid-pagination" >
+                            <Pagination
+                                pageCount={totalPages}
+                                currentPage={currentPage}
+                                onPageChange={handlePageChange}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={totalItems}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
+                        </div>
                     )}
                 </div>
             )}
@@ -705,7 +704,13 @@ export default function Patients() {
                     <form onSubmit={addPatient}>
                         <div className="mijoz-form-group">
                             <label>{t("full_name")}</label>
-                            <input type="text" name="name" value={newPatient.name} onChange={handleNewPatientChange} required />
+                            <input
+                                type="text"
+                                name="full_name"
+                                value={newPatient.full_name}
+                                onChange={handleNewPatientChange}
+                                required
+                            />
                         </div>
 
                         <div className="mijoz-form-row">
@@ -725,7 +730,13 @@ export default function Patients() {
 
                         <div className="mijoz-form-group">
                             <label>{t("phone")}</label>
-                            <input type="text" name="phone" value={newPatient.phone} onChange={handleNewPatientChange} required />
+                            <input
+                                type="text"
+                                name="phone_number"
+                                value={newPatient.phone_number}
+                                onChange={handleNewPatientChange}
+                                required
+                            />
                         </div>
 
                         <div className="mijoz-form-group">
@@ -735,51 +746,44 @@ export default function Patients() {
 
                         <div className="mijoz-form-group">
                             <label>{t("address")}</label>
-                            <input type="text" name="address" value={newPatient.address} onChange={handleNewPatientChange} />
-                        </div>
-
-                        <div className="mijoz-form-group">
-                            <label>{t("diagnosis")}</label>
-                            <input
-                                type="text"
-                                name="diagnosis"
-                                value={newPatient.diagnosis}
-                                onChange={handleNewPatientChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="mijoz-form-group">
-                            <label>{t("doctor")}</label>
-                            <input type="text" name="doctor" value={newPatient.doctor} onChange={handleNewPatientChange} required />
+                            <input type="text" name="location" value={newPatient.location} onChange={handleNewPatientChange} />
                         </div>
 
                         <div className="mijoz-form-row">
-                            {selectedBranch === "all" && (
-                                <div className="mijoz-form-group">
-                                    <label>{t("branch")}</label>
-                                    <select name="branch" value={newPatient.branch} onChange={handleNewPatientChange}>
-                                        <option value="branch1">{t("branch1")}</option>
-                                        <option value="branch2">{t("branch2")}</option>
-                                        <option value="branch3">{t("branch3")}</option>
-                                    </select>
-                                </div>
-                            )}
+                            <div className="mijoz-form-group">
+                                <label>{t("branch")}</label>
+                                <select name="branch" value={newPatient.branch} onChange={handleNewPatientChange}>
+                                    {branchesLoading ? (
+                                        <option value="">{t("loading")}</option>
+                                    ) : (
+                                        branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                                {branch.name}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
 
                             <div className="mijoz-form-group">
                                 <label>{t("status")}</label>
                                 <select name="status" value={newPatient.status} onChange={handleNewPatientChange}>
-                                    <option value="active">{t("active")}</option>
-                                    <option value="inactive">{t("inactive")}</option>
+                                    <option value="faol">{t("active")}</option>
+                                    <option value="nofaol">{t("inactive")}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="mijoz-form-actions">
                             <button type="submit" className="mijoz-btn mijoz-btn-primary">
-                                {t("add")}
+                                {loading ? `${t("adding")}...` : t("add")}
                             </button>
-                            <button type="button" className="mijoz-btn mijoz-btn-secondary" onClick={closeAddSidebar}>
+                            <button
+                                type="button"
+                                className="mijoz-btn mijoz-btn-secondary"
+                                onClick={closeAddSidebar}
+                                disabled={loading}
+                            >
                                 {t("cancel")}
                             </button>
                         </div>
@@ -804,8 +808,8 @@ export default function Patients() {
                                     <label>{t("full_name")}</label>
                                     <input
                                         type="text"
-                                        name="name"
-                                        value={currentPatient.name}
+                                        name="full_name"
+                                        value={currentPatient.full_name}
                                         onChange={handleEditPatientChange}
                                         required
                                     />
@@ -836,8 +840,8 @@ export default function Patients() {
                                     <label>{t("phone")}</label>
                                     <input
                                         type="text"
-                                        name="phone"
-                                        value={currentPatient.phone}
+                                        name="phone_number"
+                                        value={currentPatient.phone_number}
                                         onChange={handleEditPatientChange}
                                         required
                                     />
@@ -850,68 +854,49 @@ export default function Patients() {
 
                                 <div className="mijoz-form-group">
                                     <label>{t("address")}</label>
-                                    <input type="text" name="address" value={currentPatient.address} onChange={handleEditPatientChange} />
-                                </div>
-
-                                <div className="mijoz-form-group">
-                                    <label>{t("diagnosis")}</label>
                                     <input
                                         type="text"
-                                        name="diagnosis"
-                                        value={currentPatient.diagnosis}
+                                        name="location"
+                                        value={currentPatient.location}
                                         onChange={handleEditPatientChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="mijoz-form-group">
-                                    <label>{t("doctor")}</label>
-                                    <input
-                                        type="text"
-                                        name="doctor"
-                                        value={currentPatient.doctor}
-                                        onChange={handleEditPatientChange}
-                                        required
                                     />
                                 </div>
 
                                 <div className="mijoz-form-row">
-                                    {selectedBranch === "all" && (
-                                        <div className="mijoz-form-group">
-                                            <label>{t("branch")}</label>
-                                            <select
-                                                name="branch"
-                                                value={currentPatient.branch}
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value
-                                                    setCurrentPatient((prev) => ({
-                                                        ...prev,
-                                                        _prevBranch: prev.branch,
-                                                        branch: newValue,
-                                                    }))
-                                                }}
-                                            >
-                                                <option value="branch1">{t("branch1")}</option>
-                                                <option value="branch2">{t("branch2")}</option>
-                                                <option value="branch3">{t("branch3")}</option>
-                                            </select>
-                                        </div>
-                                    )}
+                                    <div className="mijoz-form-group">
+                                        <label>{t("branch")}</label>
+                                        <select name="branch" value={currentPatient.branch} onChange={handleEditPatientChange}>
+                                            {branchesLoading ? (
+                                                <option value="">{t("loading")}</option>
+                                            ) : (
+                                                branches.map((branch) => (
+                                                    <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))
+                                            )}
+                                        </select>
+                                    </div>
 
                                     <div className="mijoz-form-group">
                                         <label>{t("status")}</label>
                                         <select name="status" value={currentPatient.status} onChange={handleEditPatientChange}>
-                                            <option value="active">{t("active")}</option>
-                                            <option value="inactive">{t("inactive")}</option>
+                                            <option value="faol">{t("active")}</option>
+                                            <option value="nofaol">{t("inactive")}</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div className="mijoz-form-actions">
                                     <button type="submit" className="mijoz-btn mijoz-btn-primary">
-                                        {t("save")}
+                                        {loading ? `${t("saving")}...` : t("save")}
                                     </button>
-                                    <button type="button" className="mijoz-btn mijoz-btn-secondary" onClick={closeEditSidebar}>
+                                    <button
+                                        type="button"
+                                        className="mijoz-btn mijoz-btn-secondary"
+                                        onClick={closeEditSidebar}
+                                        disabled={loading}
+                                    >
                                         {t("cancel")}
                                     </button>
                                 </div>
@@ -920,6 +905,29 @@ export default function Patients() {
                     </>
                 )}
             </div>
+
+            {/* Confirm Modal for Delete */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={confirmModalProps.onConfirm}
+                title={confirmModalProps.title}
+                message={confirmModalProps.message}
+                confirmText={confirmModalProps.confirmText}
+                cancelText={confirmModalProps.cancelText}
+                type={confirmModalProps.type}
+                isLoading={loading}
+            />
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title={successModalProps.title}
+                message={successModalProps.message}
+                autoClose={true}
+                autoCloseTime={3000}
+            />
         </div>
     )
-};
+}

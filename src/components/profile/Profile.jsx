@@ -1,251 +1,595 @@
-import React, { useState } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
-import { FaUserCircle, FaEnvelope, FaPhone, FaLock, FaIdCard } from "react-icons/fa"
+import apiProfile from "../../api/apiProfile"
+import SuccessModal from "../modal/SuccessModal"
+import ConfirmModal from "../modal/ConfirmModal"
+import {
+    FaUser,
+    FaEnvelope,
+    FaPhone,
+    FaBriefcase,
+    FaClinicMedical,
+    FaMoneyBillWave,
+    FaIdCard,
+    FaUserMd,
+    FaCalendarAlt,
+    FaEdit,
+    FaArrowLeft,
+    FaExclamationTriangle,
+    FaSave,
+    FaTimes,
+    FaLock,
+    FaInfoCircle,
+} from "react-icons/fa"
 
 export default function Profile() {
-    const { user } = useAuth()
-    const { t, language, changeLanguage } = useLanguage()
+    const navigate = useNavigate()
+    const { t } = useLanguage()
+    const { user, logout } = useAuth()
+
+    const [profileData, setProfileData] = useState(null)
+    const [editedProfile, setEditedProfile] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState(null)
     const [isEditing, setIsEditing] = useState(false)
-    const [profileData, setProfileData] = useState({
-        name: user.name || "",
-        email: "user@example.com",
-        phone: "+998 90 123 45 67",
-        position: user.role === "doctor" ? t("doctor") : user.role === "admin" ? t("admin") : t("director"),
-        bio: "Klinika CRM tizimida faoliyat yurituvchi xodim.",
-        language: language,
-    })
+    const [isChangingPassword, setIsChangingPassword] = useState(false)
+    const [usingCachedData, setUsingCachedData] = useState(false)
+
+    // Password change state
     const [passwordData, setPasswordData] = useState({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
+        old_password: "",
+        new_password: "",
+        confirm_password: "",
     })
-    const [passwordError, setPasswordError] = useState("")
-    const [passwordSuccess, setPasswordSuccess] = useState("")
 
-    const handleProfileChange = (e) => {
-        const { name, value } = e.target
+    // Modal states
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [successModalProps, setSuccessModalProps] = useState({
+        title: "",
+        message: "",
+    })
+    const [confirmModalProps, setConfirmModalProps] = useState({
+        title: "",
+        message: "",
+        confirmText: "",
+        cancelText: "",
+        type: "warning",
+        onConfirm: () => { },
+    })
 
-        if (name === "language") {
-            changeLanguage(value)
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                setLoading(true)
+
+                // First, get user data from localStorage as a backup
+                let localUserData = null
+                const storedData = localStorage.getItem("authData")
+
+                if (storedData) {
+                    const parsedData = JSON.parse(storedData)
+                    localUserData = parsedData.user
+                }
+
+                // Try to fetch from API
+                if (localUserData && localUserData.id) {
+                    try {
+                        const apiData = await apiProfile.fetchUserProfile(localUserData.id)
+                        setProfileData(apiData)
+                        setEditedProfile(apiData)
+                        setUsingCachedData(false)
+                    } catch (apiError) {
+                        console.error("Error fetching from API, using cached data:", apiError)
+                        // If API fails, use localStorage data
+                        setProfileData(localUserData)
+                        setEditedProfile(localUserData)
+                        setUsingCachedData(true)
+                    }
+                } else {
+                    // No local data available
+                    setError(t("profile_data_not_found"))
+                }
+            } catch (err) {
+                console.error("Error loading profile data:", err)
+                setError(err.message || t("error_loading_profile"))
+            } finally {
+                setLoading(false)
+            }
         }
 
-        setProfileData({
-            ...profileData,
+        fetchProfileData()
+    }, [t])
+
+    // Handle back button click
+    const handleBack = () => {
+        navigate(-1) // Go back to previous page
+    }
+
+    // Handle edit button click
+    const handleEdit = () => {
+        setIsEditing(true)
+    }
+
+    // Handle cancel edit
+    const handleCancelEdit = () => {
+        setEditedProfile(profileData)
+        setIsEditing(false)
+    }
+
+    // Handle input change in edit form
+    const handleInputChange = (e) => {
+        const { name, value } = e.target
+        setEditedProfile({
+            ...editedProfile,
             [name]: value,
         })
     }
 
+    // Handle password input change
     const handlePasswordChange = (e) => {
         const { name, value } = e.target
         setPasswordData({
             ...passwordData,
             [name]: value,
         })
-
-        // Clear errors when typing
-        if (passwordError) setPasswordError("")
-        if (passwordSuccess) setPasswordSuccess("")
     }
 
-    const handleProfileSubmit = (e) => {
-        e.preventDefault()
-        // Here you would typically send the updated profile to your API
-        console.log("Updated profile:", profileData)
-        setIsEditing(false)
+    // Handle save changes
+    const handleSaveChanges = async () => {
+        try {
+            setSaving(true)
+
+            // Make PATCH request to update user profile using apiProfile
+            const updatedUser = await apiProfile.updateUserProfile(profileData.id, editedProfile)
+
+            // Update local storage with new data
+            const storedData = localStorage.getItem("authData")
+            if (storedData) {
+                const parsedData = JSON.parse(storedData)
+                parsedData.user = updatedUser
+                localStorage.setItem("authData", JSON.stringify(parsedData))
+            }
+
+            // Update state
+            setProfileData(updatedUser)
+            setIsEditing(false)
+            setUsingCachedData(false)
+
+            // Show success message
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("profile_updated_successfully"),
+            })
+            setShowSuccessModal(true)
+        } catch (err) {
+            console.error("Error updating profile:", err)
+
+            // Show error message
+            setConfirmModalProps({
+                title: t("error"),
+                message: err.response?.data?.message || t("error_updating_profile"),
+                confirmText: t("ok"),
+                type: "error",
+                onConfirm: () => setShowConfirmModal(false),
+            })
+            setShowConfirmModal(true)
+        } finally {
+            setSaving(false)
+        }
     }
 
-    const handlePasswordSubmit = (e) => {
-        e.preventDefault()
-
-        // Simple validation
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            setPasswordError(t("passwordMismatch"))
+    // Handle change password button click
+    const handleChangePasswordClick = () => {
+        if (usingCachedData) {
+            // Show warning that password can't be changed while using cached data
+            setConfirmModalProps({
+                title: t("service_unavailable"),
+                message: t("password_change_unavailable_offline"),
+                confirmText: t("ok"),
+                type: "warning",
+                onConfirm: () => setShowConfirmModal(false),
+            })
+            setShowConfirmModal(true)
             return
         }
 
-        if (passwordData.newPassword.length < 6) {
-            setPasswordError(t("passwordLength"))
-            return
-        }
+        setIsChangingPassword(true)
+    }
 
-        // Here you would typically send the password change request to your API
-        console.log("Password change request:", passwordData)
-
-        // Reset form and show success message
+    // Handle cancel password change
+    const handleCancelPasswordChange = () => {
         setPasswordData({
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: "",
+            old_password: "",
+            new_password: "",
+            confirm_password: "",
         })
-        setPasswordSuccess(t("passwordChanged"))
+        setIsChangingPassword(false)
+    }
+
+    // Handle save password
+    const handleSavePassword = async () => {
+        // Validate passwords
+        if (passwordData.new_password !== passwordData.confirm_password) {
+            setConfirmModalProps({
+                title: t("error"),
+                message: t("passwords_do_not_match"),
+                confirmText: t("ok"),
+                type: "error",
+                onConfirm: () => setShowConfirmModal(false),
+            })
+            setShowConfirmModal(true)
+            return
+        }
+
+        try {
+            setSaving(true)
+
+            // Make request to change password using apiProfile
+            await apiProfile.changePassword({
+                old_password: passwordData.old_password,
+                new_password: passwordData.new_password,
+            })
+
+            // Reset form and state
+            setPasswordData({
+                old_password: "",
+                new_password: "",
+                confirm_password: "",
+            })
+            setIsChangingPassword(false)
+
+            // Show success message
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("password_changed_successfully"),
+            })
+            setShowSuccessModal(true)
+        } catch (err) {
+            console.error("Error changing password:", err)
+
+            // Show error message
+            setConfirmModalProps({
+                title: t("error"),
+                message: err.response?.data?.message || t("error_changing_password"),
+                confirmText: t("ok"),
+                type: "error",
+                onConfirm: () => setShowConfirmModal(false),
+            })
+            setShowConfirmModal(true)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // Format value with fallback for empty values
+    const formatValue = (value, fallback = "-") => {
+        if (value === null || value === undefined || value === "") {
+            return fallback
+        }
+        return value
+    }
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>{t("loading")}...</p>
+            </div>
+        )
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="error-container">
+                <FaExclamationTriangle className="error-icon" />
+                <h2>{t("error_occurred")}</h2>
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                    {t("try_again")}
+                </button>
+            </div>
+        )
     }
 
     return (
         <div className="profile-container">
-            <h1 className="page-title">{t("profile")}</h1>
-
-            <div className="profile-content">
-                <div className="profile-card">
-                    <div className="profile-header">
-                        <div className="profile-avatar">{user.name.charAt(0)}</div>
-                        <h2>{user.name}</h2>
-                        <p className={`profile-role ${user.role}`}>{t(user.role)}</p>
-                    </div>
-
-                    <div className="profile-body">
-                        <form onSubmit={handleProfileSubmit}>
-                            <div className="form-group">
-                                <label>
-                                    <FaUserCircle /> {t("fullName")}
-                                </label>
-                                {isEditing ? (
-                                    <input type="text" name="name" value={profileData.name} onChange={handleProfileChange} />
-                                ) : (
-                                    <p>{profileData.name}</p>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    <FaEnvelope /> {t("email")}
-                                </label>
-                                {isEditing ? (
-                                    <input type="email" name="email" value={profileData.email} onChange={handleProfileChange} />
-                                ) : (
-                                    <p>{profileData.email}</p>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    <FaPhone /> {t("phone")}
-                                </label>
-                                {isEditing ? (
-                                    <input type="tel" name="phone" value={profileData.phone} onChange={handleProfileChange} />
-                                ) : (
-                                    <p>{profileData.phone}</p>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    <FaIdCard /> {t("position")}
-                                </label>
-                                {isEditing ? (
-                                    <input type="text" name="position" value={profileData.position} onChange={handleProfileChange} />
-                                ) : (
-                                    <p>{profileData.position}</p>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label>{t("language")}</label>
-                                {isEditing ? (
-                                    <select name="language" value={profileData.language} onChange={handleProfileChange}>
-                                        <option value="uz">O'zbek</option>
-                                        <option value="ru">Русский</option>
-                                        <option value="en">English</option>
-                                        <option value="kz">Қазақша</option>
-                                    </select>
-                                ) : (
-                                    <p>
-                                        {profileData.language === "uz" && "O'zbek"}
-                                        {profileData.language === "ru" && "Русский"}
-                                        {profileData.language === "en" && "English"}
-                                        {profileData.language === "kz" && "Қазақша"}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label>{t("bio")}</label>
-                                {isEditing ? (
-                                    <textarea name="bio" value={profileData.bio} onChange={handleProfileChange} rows={4}></textarea>
-                                ) : (
-                                    <p>{profileData.bio}</p>
-                                )}
-                            </div>
-
-                            <div className="form-actions">
-                                {isEditing ? (
-                                    <>
-                                        <button type="submit" className="btn btn-primary">
-                                            {t("save")}
-                                        </button>
-                                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                                            {t("cancel")}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>
-                                        {t("edit")}
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div className="password-card">
-                    <div className="card-header">
-                        <h2>{t("changePassword")}</h2>
-                    </div>
-
-                    <div className="card-body">
-                        <form onSubmit={handlePasswordSubmit}>
-                            {passwordError && <div className="error-message">{passwordError}</div>}
-
-                            {passwordSuccess && <div className="success-message">{passwordSuccess}</div>}
-
-                            <div className="form-group">
-                                <label>
-                                    <FaLock /> {t("currentPassword")}
-                                </label>
-                                <input
-                                    type="password"
-                                    name="currentPassword"
-                                    value={passwordData.currentPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    <FaLock /> {t("newPassword")}
-                                </label>
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    value={passwordData.newPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    <FaLock /> {t("confirmPassword")}
-                                </label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={passwordData.confirmPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-actions">
-                                <button type="submit" className="btn btn-primary">
-                                    {t("changePassword")}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <div className="profile-header">
+                <button className="btn-back" onClick={handleBack}>
+                    <FaArrowLeft /> {t("back")}
+                </button>
+                <h1 className="profile-title">{t("my_profile")}</h1>
+                <div className="profile-actions">
+                    {!isEditing && !isChangingPassword && (
+                        <>
+                            <button className="btn btn-outline btn-icon" onClick={handleChangePasswordClick}>
+                                <FaLock /> {t("change_password")}
+                            </button>
+                            <button className="btn btn-primary btn-icon" onClick={handleEdit}>
+                                <FaEdit /> {t("edit_profile")}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
+
+            {usingCachedData && (
+                <div className="cached-data-warning">
+                    <FaInfoCircle /> {t("using_cached_data")}
+                    <p>{t("service_error_try_later")}</p>
+                </div>
+            )}
+
+            {profileData && (
+                <div className="profile-content">
+                    {isChangingPassword ? (
+                        <div className="password-change-form">
+                            <h2 className="section-title">{t("change_password")}</h2>
+
+                            <div className="form-group">
+                                <label htmlFor="old_password">{t("current_password")}</label>
+                                <input
+                                    type="password"
+                                    id="old_password"
+                                    name="old_password"
+                                    value={passwordData.old_password}
+                                    onChange={handlePasswordChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="new_password">{t("new_password")}</label>
+                                <input
+                                    type="password"
+                                    id="new_password"
+                                    name="new_password"
+                                    value={passwordData.new_password}
+                                    onChange={handlePasswordChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="confirm_password">{t("confirm_password")}</label>
+                                <input
+                                    type="password"
+                                    id="confirm_password"
+                                    name="confirm_password"
+                                    value={passwordData.confirm_password}
+                                    onChange={handlePasswordChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-actions">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelPasswordChange}
+                                    disabled={saving}
+                                >
+                                    <FaTimes /> {t("cancel")}
+                                </button>
+                                <button type="button" className="btn btn-primary" onClick={handleSavePassword} disabled={saving}>
+                                    <FaSave /> {t("save_changes")}
+                                </button>
+                            </div>
+                        </div>
+                    ) : isEditing ? (
+                        <div className="profile-edit-form">
+                            <h2 className="section-title">{t("edit_profile")}</h2>
+
+                            {usingCachedData && (
+                                <div className="edit-warning">
+                                    <FaInfoCircle /> {t("editing_while_offline")}
+                                </div>
+                            )}
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="first_name">{t("first_name")}</label>
+                                    <input
+                                        type="text"
+                                        id="first_name"
+                                        name="first_name"
+                                        value={editedProfile.first_name || ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="last_name">{t("last_name")}</label>
+                                    <input
+                                        type="text"
+                                        id="last_name"
+                                        name="last_name"
+                                        value={editedProfile.last_name || ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="email">{t("email")}</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        value={editedProfile.email || ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="phone_number">{t("phone")}</label>
+                                    <input
+                                        type="text"
+                                        id="phone_number"
+                                        name="phone_number"
+                                        value={editedProfile.phone_number || ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-actions">
+                                <button type="button" className="btn btn-secondary" onClick={handleCancelEdit} disabled={saving}>
+                                    <FaTimes /> {t("cancel")}
+                                </button>
+                                <button type="button" className="btn btn-primary" onClick={handleSaveChanges} disabled={saving}>
+                                    <FaSave /> {t("save_changes")}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="profile-card">
+                            <div className="profile-card-header">
+                                <div className="profile-avatar">
+                                    <FaUser />
+                                </div>
+                                <div className="profile-basic-info">
+                                    <h2 className="profile-name">
+                                        {formatValue(
+                                            `${profileData.first_name} ${profileData.last_name}`.trim(),
+                                            profileData.email || t("user"),
+                                        )}
+                                    </h2>
+                                    <div className="profile-role">{formatValue(profileData.role_name)}</div>
+                                    <div className={`profile-status ${profileData.status}`}>
+                                        {profileData.status === "faol" ? t("active") : t("inactive")}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="profile-card-body">
+                                <div className="info-section">
+                                    <h3 className="section-title">{t("personal_information")}</h3>
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaIdCard /> {t("id")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.id)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaEnvelope /> {t("email")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.email)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaPhone /> {t("phone")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.phone_number)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="info-section">
+                                    <h3 className="section-title">{t("professional_information")}</h3>
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaBriefcase /> {t("role")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.role_name)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaUserMd /> {t("specialization")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.specialization_name)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaClinicMedical /> {t("clinic")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.clinic_name)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaClinicMedical /> {t("branch")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.branch)}</div>
+                                        </div>
+                                        <div className="info-item">
+                                            <div className="info-label">
+                                                <FaMoneyBillWave /> {t("salary")}
+                                            </div>
+                                            <div className="info-value">{formatValue(profileData.salary)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {(profileData.start_holiday || profileData.end_holiday || profileData.reason_holiday) && (
+                                    <div className="info-section">
+                                        <h3 className="section-title">{t("holiday_information")}</h3>
+                                        <div className="info-grid">
+                                            {profileData.reason_holiday && (
+                                                <div className="info-item">
+                                                    <div className="info-label">
+                                                        <FaCalendarAlt /> {t("reason_holiday")}
+                                                    </div>
+                                                    <div className="info-value">{formatValue(profileData.reason_holiday)}</div>
+                                                </div>
+                                            )}
+                                            {profileData.start_holiday && (
+                                                <div className="info-item">
+                                                    <div className="info-label">
+                                                        <FaCalendarAlt /> {t("start_holiday")}
+                                                    </div>
+                                                    <div className="info-value">{new Date(profileData.start_holiday).toLocaleDateString()}</div>
+                                                </div>
+                                            )}
+                                            {profileData.end_holiday && (
+                                                <div className="info-item">
+                                                    <div className="info-label">
+                                                        <FaCalendarAlt /> {t("end_holiday")}
+                                                    </div>
+                                                    <div className="info-value">{new Date(profileData.end_holiday).toLocaleDateString()}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title={successModalProps.title}
+                message={successModalProps.message}
+                autoClose={true}
+                autoCloseTime={3000}
+            />
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={confirmModalProps.onConfirm}
+                title={confirmModalProps.title}
+                message={confirmModalProps.message}
+                confirmText={confirmModalProps.confirmText}
+                cancelText={confirmModalProps.cancelText}
+                type={confirmModalProps.type}
+                isLoading={saving}
+            />
         </div>
     )
-};
+}

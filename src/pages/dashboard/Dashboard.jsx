@@ -47,6 +47,7 @@ import NurseSchedule from "../../components/nurse/nurseSchedule/NurseSchedule"
 import Lid from "../../components/derector/Lid/Lid"
 // Import ApiBranches
 import ApiBranches from "../../api/apiBranches"
+import Help from "../help/Help"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch, branchesData } = useAuth()
@@ -383,6 +384,7 @@ export default function Dashboard() {
                         {/* Common Routes */}
                         <Route path="/notifications" element={<Notifications />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/help" element={<Help />} />
 
                         {/* Redirect to role-specific dashboard */}
                         <Route

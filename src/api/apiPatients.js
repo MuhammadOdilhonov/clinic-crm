@@ -2,8 +2,8 @@ import client from "./apiService"
 
 const CUSTOMERS_ENDPOINT = "/customers/"
 
-// Get all customers with pagination and search
-const fetchPatients = async (page = 1, limit = 10, search = "") => {
+// Get all customers with pagination, search, and branch filtering
+const fetchPatients = async (page = 1, limit = 10, search = "", branchId = null) => {
     try {
         // Build query parameters
         const queryParams = new URLSearchParams()
@@ -15,6 +15,11 @@ const fetchPatients = async (page = 1, limit = 10, search = "") => {
         // Add search if provided
         if (search) {
             queryParams.append("search", search)
+        }
+
+        // Add branch filter if provided and not "all"
+        if (branchId && branchId !== "all") {
+            queryParams.append("branch", branchId)
         }
 
         const response = await client.get(`${CUSTOMERS_ENDPOINT}?${queryParams.toString()}`)
