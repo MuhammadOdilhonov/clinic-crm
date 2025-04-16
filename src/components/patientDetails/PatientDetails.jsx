@@ -278,7 +278,7 @@ export default function PatientDetails() {
     // Handle appointment card click
     const handleAppointmentClick = (appointmentId) => {
         // Open in a new tab
-        window.open(`/appointment-details-result/${appointmentId}`, "_blank")
+        window.open(`/appointment-details/${appointmentId}`, "_blank")
     }
 
     // Get branch name by ID
@@ -757,7 +757,7 @@ export default function PatientDetails() {
                                                             <div className="appointment-info-label">
                                                                 <FaUserMd /> {t("doctor")}:
                                                             </div>
-                                                            <div className="appointment-info-value">{appointment.doctor}</div>
+                                                            <div className="appointment-info-value">{appointment.doctor_name}</div>
                                                         </div>
 
                                                         <div className="appointment-info-item">
@@ -771,7 +771,7 @@ export default function PatientDetails() {
                                                             <div className="appointment-info-label">
                                                                 <FaDoorOpen /> {t("room")}:
                                                             </div>
-                                                            <div className="appointment-info-value">{appointment.room}</div>
+                                                            <div className="appointment-info-value">{appointment.room_name}</div>
                                                         </div>
 
                                                         <div className="appointment-info-item">

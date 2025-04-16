@@ -2,14 +2,15 @@
 
 import { Suspense, useState, useEffect, useRef } from "react"
 import { Canvas, useThree, useFrame } from "@react-three/fiber"
+import { useParams, useNavigate } from "react-router-dom"
 import { OrbitControls, Html, useGLTF, useProgress } from "@react-three/drei"
 import * as THREE from "three"
 import { FaDownload, FaInfoCircle, FaSearchPlus } from "react-icons/fa"
+import apiPatientDetailReception from "../../api/apiPatientDetailReception"
 
 // Yuklash jarayonini ko'rsatish uchun komponent
 const LoadingIndicator = () => {
     const { progress } = useProgress()
-    // progress qiymatini gradusga aylantiramiz (0–360)
     const angle = progress * 50
 
     return (
@@ -37,21 +38,13 @@ const InitialCameraSetup = ({ modelType }) => {
     useEffect(() => {
         if (!initialSetupDone.current) {
             if (modelType === "dental") {
-                // Tish modeli uchun kamera pozitsiyasi
                 camera.position.set(0, 0.5, 1.5)
-                const targetPosition = new THREE.Vector3(0, 0, 0)
-                camera.lookAt(targetPosition)
+                camera.lookAt(new THREE.Vector3(0, 0, 0))
             } else {
-                // Anatomiya modeli uchun kamera pozitsiyasi
                 camera.position.set(0.24, 1.36, 2.11)
-                const targetPosition = new THREE.Vector3(0.03, 0.81, -0.2)
-                camera.lookAt(targetPosition)
+                camera.lookAt(new THREE.Vector3(0.03, 0.81, -0.2))
             }
-
-            // Kamera matritsa yangilanishi
             camera.updateProjectionMatrix()
-
-            // Boshlang'ich sozlash bajarildi
             initialSetupDone.current = true
         }
     }, [camera, modelType])
@@ -67,7 +60,6 @@ const FocusOnAffectedParts = ({ modelScene, affectedParts, controlsRef, isAutoFo
     const startPosition = useRef(new THREE.Vector3())
     const startTarget = useRef(new THREE.Vector3())
 
-    // Zararlangan qismni topish va fokus nuqtasini aniqlash
     useEffect(() => {
         if (modelScene && affectedParts.length > 0 && isAutoFocus) {
             const affectedMeshes = []
@@ -75,15 +67,11 @@ const FocusOnAffectedParts = ({ modelScene, affectedParts, controlsRef, isAutoFo
 
             modelScene.traverse((child) => {
                 if (child.isMesh) {
-                    // Zararlangan qismlarni tekshirish
                     const isAffected = affectedParts.some(
                         affectedPart => child.name.includes(affectedPart.originalName)
                     )
-
                     if (isAffected) {
                         affectedMeshes.push(child)
-
-                        // Mesh markazini hisoblash
                         const boundingBox = new THREE.Box3().setFromObject(child)
                         const meshCenter = new THREE.Vector3()
                         boundingBox.getCenter(meshCenter)
@@ -92,58 +80,33 @@ const FocusOnAffectedParts = ({ modelScene, affectedParts, controlsRef, isAutoFo
                 }
             })
 
-            // Barcha zararlangan qismlar markazini hisoblash
             if (affectedMeshes.length > 0) {
                 center.divideScalar(affectedMeshes.length)
-
-                // Kamera uchun fokus nuqtasini saqlash
                 setFocusTarget(center)
-
-                // Animatsiya boshlash
                 startPosition.current.copy(camera.position)
                 if (controlsRef.current) {
                     startTarget.current.copy(controlsRef.current.target)
                 }
-
-                animationRef.current = {
-                    active: true,
-                    progress: 0
-                }
+                animationRef.current = { active: true, progress: 0 }
             }
         }
     }, [modelScene, affectedParts, camera, controlsRef, isAutoFocus])
 
-    // Animatsiya kadrini ishlab chiqish
     useFrame(() => {
         if (animationRef.current.active && focusTarget && controlsRef.current) {
-            // Animatsiya davom etishi
             animationRef.current.progress += 0.01
-
             if (animationRef.current.progress >= 1) {
                 animationRef.current.active = false
                 return
             }
-
-            // Easing funksiyasi (yumshoq harakat)
             const eased = easeOutCubic(animationRef.current.progress)
-
-            // Yangi kamera pozitsiyasi hisoblash
-            const targetPosition = focusTarget.clone()
-
-            // Zararlangan qismga qarab kamera pozitsiyasini o'zgartirish
-            const offset = new THREE.Vector3(0, 0.1, 0.6) // Tishdan biroz yuqori va orqaroq
-            targetPosition.add(offset)
-
-            // Kamerani harakatlantirish
+            const targetPosition = focusTarget.clone().add(new THREE.Vector3(0, 0.1, 0.6))
             camera.position.lerpVectors(startPosition.current, targetPosition, eased)
-
-            // OrbitControls targetni harakatlantirish
             controlsRef.current.target.lerpVectors(startTarget.current, focusTarget, eased)
             controlsRef.current.update()
         }
     })
 
-    // Yumshoq animatsiya uchun ease funksiyasi
     const easeOutCubic = (x) => {
         return 1 - Math.pow(1 - x, 3)
     }
@@ -153,9 +116,7 @@ const FocusOnAffectedParts = ({ modelScene, affectedParts, controlsRef, isAutoFo
 
 // Model komponenti
 const Model = ({ gender, affectedParts, onPartsLoaded, modelType, onModelLoaded, isAutoFocus, controlsRef }) => {
-    // Model turini tanlash
     let modelPath = "/models/male_anatomy.glb"
-
     if (modelType === "dental") {
         modelPath = "/models/male_anatomy.glb"
     } else if (gender === "female") {
@@ -164,42 +125,31 @@ const Model = ({ gender, affectedParts, onPartsLoaded, modelType, onModelLoaded,
 
     const { scene } = useGLTF(modelPath)
 
-    // Qismlarni qayta ishlash va ro'yxatini yaratish
     useEffect(() => {
         const parts = []
         scene.traverse((child) => {
             if (child.isMesh) {
-                // Har bir meshga nom berish
                 if (!child.name || child.name === "") {
                     child.name = `part-${parts.length}`
                 }
-
-                // Material yaratish (agar yo'q bo'lsa)
                 if (!child.material) {
                     child.material = new THREE.MeshStandardMaterial({ color: "white" })
                 }
-
-                // Asl materialni saqlash
                 if (!child.userData.originalMaterial) {
                     child.userData.originalMaterial = child.material.clone()
                 }
-
                 child.castShadow = true
                 child.receiveShadow = true
                 parts.push({ name: child.name, mesh: child })
             }
         })
 
-        // Zararlangan qismlarni ajratib ko'rsatish
         parts.forEach((part) => {
             if (part.mesh) {
-                // Qism zararlangan qismlar ro'yxatida bor-yo'qligini tekshirish
                 const isAffected = affectedParts.some(
                     affectedPart => part.name.includes(affectedPart.originalName)
                 )
-
                 if (isAffected) {
-                    // Sariq rang bilan ajratib ko'rsatish
                     const highlightMaterial = new THREE.MeshStandardMaterial({
                         color: new THREE.Color("yellow"),
                         emissive: new THREE.Color("yellow"),
@@ -207,7 +157,6 @@ const Model = ({ gender, affectedParts, onPartsLoaded, modelType, onModelLoaded,
                     })
                     part.mesh.material = highlightMaterial
                 } else {
-                    // Asl materialga qaytarish
                     part.mesh.material = part.mesh.userData.originalMaterial.clone()
                 }
             }
@@ -216,12 +165,10 @@ const Model = ({ gender, affectedParts, onPartsLoaded, modelType, onModelLoaded,
         if (onPartsLoaded) {
             onPartsLoaded(parts)
         }
-
         if (onModelLoaded) {
             onModelLoaded(scene)
         }
 
-        // Tozalash funksiyasi
         return () => {
             parts.forEach((part) => {
                 if (part.mesh && part.mesh.userData.originalMaterial) {
@@ -251,10 +198,8 @@ const CameraController = ({ controlsRef, modelType }) => {
     useEffect(() => {
         if (controlsRef.current) {
             if (modelType === "dental") {
-                // Tish modeli uchun orbit kontrollerini moslash
                 controlsRef.current.target.set(0, 0, 0)
             } else {
-                // Anatomiya modeli uchun orbit kontrollerini moslash
                 controlsRef.current.target.set(0.03, 0.81, -0.2)
             }
             controlsRef.current.update()
@@ -265,54 +210,59 @@ const CameraController = ({ controlsRef, modelType }) => {
 }
 
 // PDF generatsiya qilish funksiyasi
-const generatePDF = (diagnosisData) => {
-    // Haqiqiy loyihada PDF kutubxonasi bilan ishlaydi
-    console.log("PDF ma'lumotlari bilan generatsiya qilinmoqda:", diagnosisData)
-
-    // Haqiqiy loyihada jsPDF yoki pdfmake kutubxonalari ishlatiladi
+const generatePDF = (appointmentData) => {
+    console.log("PDF ma'lumotlari bilan generatsiya qilinmoqda:", appointmentData)
     const content = `
         Tashxis ma'lumotlari
         -------------------
-        Sana: ${diagnosisData.date}
-        
+        Sana: ${new Date(appointmentData.date).toLocaleString()}
+
+        Filial: ${appointmentData.branch_name}
+        Mijoz: ${appointmentData.customer_name}
+        Shifokor: ${appointmentData.doctor_name}
+        Kabinet: ${appointmentData.room_name}
+
         Tanlangan a'zolar:
-        ${diagnosisData.parts.map(part => `- ${part.uzbekName}`).join('\n')}
-        
-        Tashxis: ${diagnosisData.diagnosis}
-        
-        Tuzalish uchun yechim: ${diagnosisData.solution}
+        ${appointmentData.parts.map(part => `- ${part.uzbekName}`).join('\n')}
+
+        Tashxis: ${appointmentData.comment || "Tashxis ma'lumotlari mavjud emas"}
+
+        To'lov miqdori: ${appointmentData.payment_amount}
     `
-
     alert("PDF ma'lumotlari: \n\n" + content)
-
-    // Haqiqiy loyihada PDF faylini yuklab olishni boshlaydi
 }
 
 // AppointmentDetails asosiy komponenti
 const AppointmentDetails = () => {
+    const { id } = useParams()
+    const [appointmentData, setAppointmentData] = useState(null)
     const [partsList, setPartsList] = useState([])
     const controlsRef = useRef()
     const [modelScene, setModelScene] = useState(null)
     const [isAutoFocus, setIsAutoFocus] = useState(true)
-    const modelType = "dental" // Tish modelini tanlash
+    const modelType = "dental" // Tish modeli
 
-    // Berilgan tashxis ma'lumotlari
-    const diagnosisData = {
-        "date": "08.04.2025, 13:41:59",
-        "diagnosis": "tish qurtlagan",
-        "id": 1744101719950,
-        "parts": [
-            {
-                "originalName": "13-Upper_caninel_Generated_Mesh_From_X3D685",
-                "uzbekName": "13-Yuqori qoziq tish"
-            },
-            {
-                "originalName": "14-Upper_first_premolarl_Generated_Mesh_From_X3D670",
-                "uzbekName": "14-Yuqori birinchi premolar"
+    // Masalan, hozirgi appointment ID sini 1 deb belgilaymiz
+    const appointmentId = id
+
+    // API orqali appointment maʼlumotlarini yuklab olish
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await apiPatientDetailReception.fetchAppointmentById(appointmentId)
+                // API dan kelgan "organs" massivini Model kutadigan formatga aylantiramiz:
+                // Har bir element uchun "originalName" va "uzbekName" maydonlarini yarataylik.
+                const parts = data.organs.map(organ => ({
+                    originalName: organ,
+                    uzbekName: organ // Zaruratga qarab tarjima yoki mapping qoʻshish mumkin
+                }))
+                setAppointmentData({ ...data, parts })
+            } catch (error) {
+                console.error("Appointment ma'lumotlarini olishda xatolik:", error)
             }
-        ],
-        "solution": "chiska qilib plomba qvordim 2 3 kunda tuzaladi"
-    }
+        }
+        fetchData()
+    }, [appointmentId])
 
     const handlePartsLoaded = (parts) => {
         setPartsList(parts)
@@ -323,19 +273,20 @@ const AppointmentDetails = () => {
     }
 
     const handleExportPDF = () => {
-        generatePDF(diagnosisData)
+        generatePDF(appointmentData)
     }
 
     const handleFocusToggle = () => {
         setIsAutoFocus(!isAutoFocus)
-
-        // Agar avtofokus o'chirilgan bo'lsa, kamerani boshlang'ich holatga qaytarish
         if (isAutoFocus && controlsRef.current) {
             controlsRef.current.reset()
         } else {
-            // Fokusni qayta faollashtirish
             setIsAutoFocus(true)
         }
+    }
+
+    if (!appointmentData) {
+        return <div>Yuklanmoqda...</div>
     }
 
     return (
@@ -346,8 +297,8 @@ const AppointmentDetails = () => {
                     <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
                     <Suspense fallback={<LoadingIndicator />}>
                         <Model
-                            gender="male"
-                            affectedParts={diagnosisData.parts}
+                            gender={appointmentData.customer_gender}
+                            affectedParts={appointmentData.parts}
                             onPartsLoaded={handlePartsLoaded}
                             onModelLoaded={handleModelLoaded}
                             modelType={modelType}
@@ -367,7 +318,6 @@ const AppointmentDetails = () => {
                     <CameraController controlsRef={controlsRef} modelType={modelType} />
                 </Canvas>
 
-                {/* Fokus tugmasi */}
                 <button className="focus-button" onClick={handleFocusToggle}>
                     <FaSearchPlus /> {isAutoFocus ? "Fokusni bekor qilish" : "Zararlangan joyni fokusga olish"}
                 </button>
@@ -379,13 +329,33 @@ const AppointmentDetails = () => {
 
                     <div className="info-section">
                         <h4>Sana:</h4>
-                        <p>{diagnosisData.date}</p>
+                        <p>{new Date(appointmentData.date).toLocaleString()}</p>
+                    </div>
+
+                    <div className="info-section">
+                        <h4>Filial:</h4>
+                        <p>{appointmentData.branch_name}</p>
+                    </div>
+
+                    <div className="info-section">
+                        <h4>Mijoz:</h4>
+                        <p>{appointmentData.customer_name}</p>
+                    </div>
+
+                    <div className="info-section">
+                        <h4>Shifokor:</h4>
+                        <p>{appointmentData.doctor_name}</p>
+                    </div>
+
+                    <div className="info-section">
+                        <h4>Kabinet:</h4>
+                        <p>{appointmentData.room_name}</p>
                     </div>
 
                     <div className="info-section">
                         <h4>Tanlangan a'zolar:</h4>
                         <div className="selected-parts-list">
-                            {diagnosisData.parts.map((part, index) => (
+                            {appointmentData.parts.map((part, index) => (
                                 <div key={index} className="selected-part-item">
                                     {part.uzbekName}
                                 </div>
@@ -394,13 +364,13 @@ const AppointmentDetails = () => {
                     </div>
 
                     <div className="info-section">
-                        <h4>Tashxis:</h4>
-                        <p>{diagnosisData.diagnosis || "Tashxis ma'lumotlari mavjud emas"}</p>
+                        <h4>Tashxis (Izoh):</h4>
+                        <p>{appointmentData.comment || "Tashxis ma'lumotlari mavjud emas"}</p>
                     </div>
 
                     <div className="info-section">
-                        <h4>Tuzalish uchun yechim:</h4>
-                        <p>{diagnosisData.solution || "Yechim ma'lumotlari mavjud emas"}</p>
+                        <h4>To'lov miqdori:</h4>
+                        <p>{appointmentData.payment_amount}</p>
                     </div>
 
                     <div className="info-note">
@@ -427,4 +397,4 @@ const AppointmentDetails = () => {
     )
 }
 
-export default AppointmentDetails;
+export default AppointmentDetails
