@@ -25,25 +25,44 @@ const updatePatient = async (patientId, patientData) => {
 }
 
 // Export patient data as PDF
+// exportPatientAsPDF - PDF faylni yuklab olish
 const exportPatientAsPDF = async (patientId) => {
     try {
-        const response = await client.get(`${CUSTOMERS_ENDPOINT}${patientId}/export/pdf`, {
-            responseType: "blob",
+        const response = await client.get(`${CUSTOMERS_ENDPOINT}${patientId}/export/pdf/`, {
+            responseType: "blob", // Fayl blob formatida bo'ladi
         })
-        return response.data
+
+        // Faylni yaratish va avtomatik yuklab olish
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `customer_${patientId}.pdf` // Fayl nomi
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url) // URLni tozalash
     } catch (error) {
         console.error(`Error exporting patient with ID ${patientId} as PDF:`, error)
         throw error
     }
 }
 
+
 // Export patient data as Excel
 const exportPatientAsExcel = async (patientId) => {
     try {
-        const response = await client.get(`${CUSTOMERS_ENDPOINT}${patientId}/export/excel`, {
-            responseType: "blob",
+        const response = await client.get(`${CUSTOMERS_ENDPOINT}${patientId}/export/excel/`, {
+            responseType: "blob", // Excel fayl blob shaklida bo'ladi
         })
-        return response.data
+
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `customer_${patientId}.xlsx` // Excel fayl nomi va kengaytmasi
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url) // URLni tozalash
     } catch (error) {
         console.error(`Error exporting patient with ID ${patientId} as Excel:`, error)
         throw error
