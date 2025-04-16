@@ -6,6 +6,8 @@ import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import apiPatientId from "../../api/apiPatientsId"
 import apiBranches from "../../api/apiBranches"
+import apiPatientDetailReception from "../../api/apiPatientDetailReception"
+import Pagination from "../pagination/Pagination"
 import ConfirmModal from "../modal/ConfirmModal"
 import SuccessModal from "../modal/SuccessModal"
 import {
@@ -28,6 +30,17 @@ import {
     FaSave,
     FaTimes,
     FaClinicMedical,
+    FaMoneyBillWave,
+    FaDoorOpen,
+    FaCheckCircle,
+    FaHourglass,
+    FaTimesCircle,
+    FaExternalLinkAlt,
+    FaCommentMedical,
+    FaHospital,
+    FaCalendarCheck,
+    FaIdCard,
+    FaRegClock,
 } from "react-icons/fa"
 
 export default function PatientDetails() {
@@ -44,6 +57,14 @@ export default function PatientDetails() {
     const [editedPatient, setEditedPatient] = useState(null)
     const [branches, setBranches] = useState([])
     const [branchesLoading, setBranchesLoading] = useState(true)
+
+    // Appointments state
+    const [appointments, setAppointments] = useState([])
+    const [appointmentsLoading, setAppointmentsLoading] = useState(true)
+    const [appointmentsError, setAppointmentsError] = useState(null)
+    const [appointmentsTotalCount, setAppointmentsTotalCount] = useState(0)
+    const [appointmentsCurrentPage, setAppointmentsCurrentPage] = useState(0)
+    const [appointmentsItemsPerPage, setAppointmentsItemsPerPage] = useState(6)
 
     // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -97,6 +118,32 @@ export default function PatientDetails() {
 
         fetchBranches()
     }, [])
+
+    // Fetch patient appointments
+    useEffect(() => {
+        const fetchPatientAppointments = async () => {
+            if (!id) return
+
+            try {
+                setAppointmentsLoading(true)
+                setAppointmentsError(null)
+                const data = await apiPatientDetailReception.fetchPatientAppointments(
+                    id,
+                    appointmentsCurrentPage + 1,
+                    appointmentsItemsPerPage,
+                )
+                setAppointments(data.results || [])
+                setAppointmentsTotalCount(data.count || 0)
+                setAppointmentsLoading(false)
+            } catch (err) {
+                console.error("Error fetching patient appointments:", err)
+                setAppointmentsError(err.message || t("error_fetching_appointments"))
+                setAppointmentsLoading(false)
+            }
+        }
+
+        fetchPatientAppointments()
+    }, [id, appointmentsCurrentPage, appointmentsItemsPerPage, t])
 
     // Handle back button click
     const handleBack = () => {
@@ -217,6 +264,23 @@ export default function PatientDetails() {
         }
     }
 
+    // Handle appointment page change
+    const handleAppointmentPageChange = (selectedPage) => {
+        setAppointmentsCurrentPage(selectedPage)
+    }
+
+    // Handle items per page change
+    const handleAppointmentsItemsPerPageChange = (newItemsPerPage) => {
+        setAppointmentsItemsPerPage(newItemsPerPage)
+        setAppointmentsCurrentPage(0) // Reset to first page when changing items per page
+    }
+
+    // Handle appointment card click
+    const handleAppointmentClick = (appointmentId) => {
+        // Open in a new tab
+        window.open(`/appointment-details-result/${appointmentId}`, "_blank")
+    }
+
     // Get branch name by ID
     const getBranchName = (branchId) => {
         if (branchesLoading) return t("loading")
@@ -228,6 +292,60 @@ export default function PatientDetails() {
     const formatDate = (dateString) => {
         if (!dateString) return "-"
         return new Date(dateString).toLocaleDateString()
+    }
+
+    // Format time
+    const formatTime = (dateString) => {
+        if (!dateString) return "-"
+        return new Date(dateString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    }
+
+    // Format datetime
+    const formatDateTime = (dateString) => {
+        if (!dateString) return "-"
+        return `${formatDate(dateString)} ${formatTime(dateString)}`
+    }
+
+    // Get status badge class
+    const getStatusBadgeClass = (status) => {
+        switch (status) {
+            case "completed":
+                return "status-badge completed"
+            case "scheduled":
+                return "status-badge scheduled"
+            case "cancelled":
+                return "status-badge cancelled"
+            default:
+                return "status-badge"
+        }
+    }
+
+    // Get status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "completed":
+                return <FaCheckCircle />
+            case "scheduled":
+                return <FaHourglass />
+            case "cancelled":
+                return <FaTimesCircle />
+            default:
+                return null
+        }
+    }
+
+    // Translate status
+    const translateStatus = (status) => {
+        switch (status) {
+            case "completed":
+                return t("completed")
+            case "scheduled":
+                return t("scheduled")
+            case "cancelled":
+                return t("cancelled")
+            default:
+                return status
+        }
     }
 
     // Loading state
@@ -563,12 +681,138 @@ export default function PatientDetails() {
                                 </div>
                             </div>
 
-                            {/* Preserving space for future appointment functionality */}
+                            {/* Patient Appointments Section */}
                             <div className="patient-appointments-section">
                                 <h3 className="section-title">{t("appointments")}</h3>
-                                <div className="appointments-placeholder">
-                                    <p>{t("appointments_will_be_displayed_here")}</p>
-                                </div>
+
+                                {appointmentsLoading ? (
+                                    <div className="loading-container">
+                                        <div className="loading-spinner"></div>
+                                        <p>{t("loading_appointments")}...</p>
+                                    </div>
+                                ) : appointmentsError ? (
+                                    <div className="error-container">
+                                        <FaExclamationTriangle className="error-icon" />
+                                        <p>{appointmentsError}</p>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={() => {
+                                                setAppointmentsLoading(true)
+                                                setAppointmentsError(null)
+                                                apiPatientDetailReception
+                                                    .fetchPatientAppointments(id, appointmentsCurrentPage + 1, appointmentsItemsPerPage)
+                                                    .then((data) => {
+                                                        setAppointments(data.results || [])
+                                                        setAppointmentsTotalCount(data.count || 0)
+                                                        setAppointmentsLoading(false)
+                                                    })
+                                                    .catch((err) => {
+                                                        console.error("Error fetching patient appointments:", err)
+                                                        setAppointmentsError(err.message || t("error_fetching_appointments"))
+                                                        setAppointmentsLoading(false)
+                                                    })
+                                            }}
+                                        >
+                                            {t("try_again")}
+                                        </button>
+                                    </div>
+                                ) : appointments.length === 0 ? (
+                                    <div className="no-appointments">
+                                        <p>{t("no_appointments_found")}</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="appointments-grid">
+                                            {appointments.map((appointment) => (
+                                                <div
+                                                    key={appointment.id}
+                                                    className={`appointment-card ${appointment.status}`}
+                                                    onClick={() => handleAppointmentClick(appointment.id)}
+                                                >
+                                                    <div className="appointment-card-header">
+                                                        <div className={getStatusBadgeClass(appointment.status)}>
+                                                            {getStatusIcon(appointment.status)} {translateStatus(appointment.status)}
+                                                        </div>
+                                                        <div className="appointment-id">
+                                                            <FaIdCard /> ID: {appointment.id}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="appointment-card-body">
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaCalendarCheck /> {t("date")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">{formatDate(appointment.date)}</div>
+                                                        </div>
+
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaRegClock /> {t("time")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">{formatTime(appointment.date)}</div>
+                                                        </div>
+
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaUserMd /> {t("doctor")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">{appointment.doctor}</div>
+                                                        </div>
+
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaHospital /> {t("branch")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">{getBranchName(appointment.branch)}</div>
+                                                        </div>
+
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaDoorOpen /> {t("room")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">{appointment.room}</div>
+                                                        </div>
+
+                                                        <div className="appointment-info-item">
+                                                            <div className="appointment-info-label">
+                                                                <FaMoneyBillWave /> {t("payment")}:
+                                                            </div>
+                                                            <div className="appointment-info-value">
+                                                                {appointment.payment_amount} {t("currency")}
+                                                            </div>
+                                                        </div>
+
+                                                        {appointment.comment && (
+                                                            <div className="appointment-info-item appointment-comment">
+                                                                <div className="appointment-info-label">
+                                                                    <FaCommentMedical /> {t("comment")}:
+                                                                </div>
+                                                                <div className="appointment-info-value">{appointment.comment}</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="appointment-card-footer">
+                                                        <span className="view-details">
+                                                            {t("view_details")} <FaExternalLinkAlt />
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Pagination for appointments */}
+                                        <Pagination
+                                            pageCount={Math.ceil(appointmentsTotalCount / appointmentsItemsPerPage)}
+                                            currentPage={appointmentsCurrentPage}
+                                            onPageChange={handleAppointmentPageChange}
+                                            itemsPerPage={appointmentsItemsPerPage}
+                                            totalItems={appointmentsTotalCount}
+                                            onItemsPerPageChange={handleAppointmentsItemsPerPageChange}
+                                        />
+                                    </>
+                                )}
                             </div>
                         </>
                     )}
