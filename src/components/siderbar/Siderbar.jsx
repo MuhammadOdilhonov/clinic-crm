@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
-import client, { BaseUrlImg } from "../../api/apiService"
+import { BaseUrlImg } from "../../api/apiService"
 import ApiLogo from "../../api/apiLogo"
 import {
     FaChartLine,
@@ -22,7 +22,6 @@ import {
     FaBell,
     FaBed,
     FaUserNurse,
-    FaHome,
     FaQuestionCircle,
     FaAngleDown,
     FaAngleRight,
@@ -32,7 +31,42 @@ import {
     FaLanguage,
     FaTasks,
     FaPhoneAlt,
+    FaTools,
+    FaLock,
 } from "react-icons/fa"
+
+// Under Construction Modal Component
+const UnderConstructionModal = ({ isOpen, onClose, featureName }) => {
+    if (!isOpen) return null
+
+    return (
+        <div className="under-construction-overlay" onClick={onClose}>
+            <div className="under-construction-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="under-construction-header">
+                    <FaTools className="construction-icon" />
+                    <h3>{featureName} - Tamirlanmoqda</h3>
+                    <button className="modal-close-btn" onClick={onClose}>
+                        <FaTimes />
+                    </button>
+                </div>
+                <div className="under-construction-body">
+                    <div className="construction-animation">
+                        <img src="/images/OroCRM_customization.gif" alt="Under Construction" />
+                    </div>
+                    <p>Bu bo'lim hozircha ishlar olib borilmoqda. Tez orada ishga tushadi.</p>
+                    <p className="estimated-time">
+                        Taxminiy muddat: <span>Tez orada...</span>
+                    </p>
+                </div>
+                <div className="under-construction-footer">
+                    <button className="ok-button" onClick={onClose}>
+                        Tushundim
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default function Sidebar(isOpen, toggleSidebar) {
     const { user, logout, hasRole } = useAuth()
@@ -45,6 +79,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
     const [showLanguageSelector, setShowLanguageSelector] = useState(false)
     const [showPartnershipInfo, setShowPartnershipInfo] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [showConstructionModal, setShowConstructionModal] = useState(false)
+    const [currentFeature, setCurrentFeature] = useState("")
+
+    // List of features under construction (can be expanded)
+    const underConstructionFeatures = ["lid", "finance", "doctors", "nurses", "rooms", ]
 
     // Close sidebar on route change in mobile view
     useEffect(() => {
@@ -53,18 +92,16 @@ export default function Sidebar(isOpen, toggleSidebar) {
         }
         loadLogo()
     }, [location.pathname])
+
     const loadLogo = async () => {
         try {
             const data = await ApiLogo.fetchLogo()
             console.log("Logo ma'lumotlari:", data)
             setDataClinicLogo(data)
-
-
         } catch (err) {
-            console.error("Logo yuklab bo‘lmadi:", err)
+            console.error("Logo yuklab bo'lmadi:", err)
         }
     }
-
 
     // Close sidebar when clicking outside on mobile
     useEffect(() => {
@@ -108,8 +145,43 @@ export default function Sidebar(isOpen, toggleSidebar) {
         return location.pathname.startsWith(path)
     }
 
-    // Hamkorlik ma'lumotlari
+    // Check if a feature is under construction
+    const isUnderConstruction = (featureId) => {
+        return underConstructionFeatures.includes(featureId)
+    }
 
+    // Handle click on under construction item
+    const handleConstructionClick = (e, featureName) => {
+        e.preventDefault()
+        setCurrentFeature(featureName)
+        setShowConstructionModal(true)
+    }
+
+    // Custom NavLink component that handles under construction features
+    const MenuLink = ({ to, featureId, children, end = false }) => {
+        const isConstruction = isUnderConstruction(featureId)
+
+        if (isConstruction) {
+            return (
+                <a
+                    href="#"
+                    className="nav-link under-construction"
+                    onClick={(e) => handleConstructionClick(e, children.props.children)}
+                >
+                    {children}
+                    <div className="construction-badge">
+                        <FaLock />
+                    </div>
+                </a>
+            )
+        }
+
+        return (
+            <NavLink to={to} className={({ isActive }) => (isActive ? "active" : "")} end={end}>
+                {children}
+            </NavLink>
+        )
+    }
 
     return (
         <>
@@ -135,18 +207,22 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                 </div>
                             </div>
                             <div className="company-logo partner-company">
-                                <img className="logo-icon" src={BaseUrlImg + dataClinicLogo.logo} alt="your-logo" />
+                                <img
+                                    className="logo-icon"
+                                    src={BaseUrlImg + dataClinicLogo.logo || "/placeholder.svg"}
+                                    alt="your-logo"
+                                />
                             </div>
                         </div>
 
                         {/* Hamkorlik haqida ma'lumot (hover bo'lganda ko'rinadi) */}
                         {showPartnershipInfo && (
                             <div className="partnership-info">
-                                <p className="partnership-title">
-                                    Clinic Crm va {dataClinicLogo.name}
-                                </p>
+                                <p className="partnership-title">Clinic Crm va {dataClinicLogo.name}</p>
                                 <p className="partnership-description">Rasmiy hamkorlik shartnomasi asosida biz bilan ish yuritmoqda</p>
-                                <p className="partnership-year">{dataClinicLogo.begin_contract}-{dataClinicLogo.end_contract}</p>
+                                <p className="partnership-year">
+                                    {dataClinicLogo.begin_contract}-{dataClinicLogo.end_contract}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -194,7 +270,6 @@ export default function Sidebar(isOpen, toggleSidebar) {
                     <div className="nav-section">
                         <div className="nav-section-title">{t("main_menu")}</div>
                         <ul>
-
                             {/* Director Menu Items */}
                             {hasRole("director") && (
                                 <>
@@ -204,9 +279,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                         </NavLink>
                                     </li>
                                     <li>
-                                        <NavLink to="/dashboard/director/lid" className={({ isActive }) => (isActive ? "active" : "")} end>
-                                            <FaPhoneAlt /> <span>Lidlar</span>
-                                        </NavLink>
+                                        <MenuLink to="/dashboard/director/lid" featureId="lid">
+                                            <>
+                                                <FaPhoneAlt /> <span>Lidlar</span>
+                                            </>
+                                        </MenuLink>
                                     </li>
 
                                     <li className={isMenuActive("/dashboard/director/staff") ? "active" : ""}>
@@ -224,21 +301,25 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                                     </NavLink>
                                                 </li>
                                                 <li>
-                                                    <NavLink to="/dashboard/director/staff/doctors">
-                                                        <span>{t("doctors")}</span>
-                                                    </NavLink>
+                                                    <MenuLink to="/dashboard/director/staff/doctors" featureId="doctors">
+                                                        <>
+                                                            <span>{t("doctors")}</span>
+                                                        </>
+                                                    </MenuLink>
                                                 </li>
                                                 <li>
-                                                    <NavLink to="/dashboard/director/staff/nurses">
-                                                        <span>{t("nurses")}</span>
-                                                    </NavLink>
+                                                    <MenuLink to="/dashboard/director/staff/nurses" featureId="nurses">
+                                                        <>
+                                                            <span>{t("nurses")}</span>
+                                                        </>
+                                                    </MenuLink>
                                                 </li>
                                             </ul>
                                         )}
                                     </li>
 
                                     <li>
-                                        <NavLink to="/dashboard/director/tasks" className={({ isActive }) => (isActive ? "active" : "")}>
+                                        <NavLink to="/dashboard/director/tasks" className={({ isActive }) => (isActive ? "active" : "")} >
                                             <FaTasks /> <span>{t("tasks")}</span>
                                         </NavLink>
                                     </li>
@@ -250,9 +331,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     </li>
 
                                     <li>
-                                        <NavLink to="/dashboard/director/rooms" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaBed /> <span>{t("inpatient_rooms")}</span>
-                                        </NavLink>
+                                        <MenuLink to="/dashboard/director/rooms" featureId="rooms">
+                                            <>
+                                                <FaBed /> <span>{t("inpatient_rooms")}</span>
+                                            </>
+                                        </MenuLink>
                                     </li>
 
                                     <li>
@@ -277,9 +360,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     </li>
 
                                     <li>
-                                        <NavLink to="/dashboard/director/finance" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaMoneyBillWave /> <span>{t("finance")}</span>
-                                        </NavLink>
+                                        <MenuLink to="/dashboard/director/finance" featureId="finance">
+                                            <>
+                                                <FaMoneyBillWave /> <span>{t("finance")}</span>
+                                            </>
+                                        </MenuLink>
                                     </li>
                                 </>
                             )}
@@ -318,9 +403,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     </li>
 
                                     <li>
-                                        <NavLink to="/dashboard/admin/rooms" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaBed /> <span>{t("inpatient_rooms")}</span>
-                                        </NavLink>
+                                        <MenuLink to="/dashboard/admin/rooms" featureId="rooms">
+                                            <>
+                                                <FaBed /> <span>{t("inpatient_rooms")}</span>
+                                            </>
+                                        </MenuLink>
                                     </li>
                                 </>
                             )}
@@ -379,9 +466,11 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     </li>
 
                                     <li>
-                                        <NavLink to="/dashboard/nurse/rooms" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaBed /> <span>{t("inpatient_rooms")}</span>
-                                        </NavLink>
+                                        <MenuLink to="/dashboard/nurse/rooms" featureId="rooms">
+                                            <>
+                                                <FaBed /> <span>{t("inpatient_rooms")}</span>
+                                            </>
+                                        </MenuLink>
                                     </li>
 
                                     <li>
@@ -460,8 +549,14 @@ export default function Sidebar(isOpen, toggleSidebar) {
                 </div>
             </aside>
 
+            {/* Under Construction Modal */}
+            <UnderConstructionModal
+                isOpen={showConstructionModal}
+                onClose={() => setShowConstructionModal(false)}
+                featureName={currentFeature}
+            />
+
             {isMobileOpen && <div className="sidebar-backdrop" onClick={() => setIsMobileOpen(false)}></div>}
         </>
     )
 }
-
