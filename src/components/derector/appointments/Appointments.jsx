@@ -20,6 +20,7 @@ import {
     FaEye,
     FaMoneyBillWave,
     FaSpinner,
+    FaNotesMedical,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
@@ -38,7 +39,7 @@ export default function Appointments() {
 
     // State for pagination
     const [currentPage, setCurrentPage] = useState(0)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
 
     // State for search and filters
     const [searchTerm, setSearchTerm] = useState("")
@@ -283,23 +284,76 @@ export default function Appointments() {
     }
 
     // Handle edit appointment input change
-    const handleEditAppointmentChange = (e) => {
-        const { name, value } = e.target
-        setTimeError("")
+    const handleEditAppointmentChange = async (e) => {
+        const { name, value } = e.target;
+        setTimeError("");
 
-        if (name === "time") {
-            // Handle time change separately
-            setCurrentAppointment({
-                ...currentAppointment,
-                time: value,
-            })
-        } else {
-            setCurrentAppointment({
-                ...currentAppointment,
-                [name]: value,
-            })
+        // Create updated appointment data
+        const updatedAppointment = {
+            ...currentAppointment,
+            [name]: value,
+        };
+
+        // Handle branch change - reset dependent fields
+        if (name === "branch") {
+            updatedAppointment.customer = "";
+            updatedAppointment.doctor = "";
+            updatedAppointment.room = "";
+
+            // Fetch new filter data for the selected branch
+            await fetchFilterData(value);
         }
-    }
+
+        // Handle doctor or room change - update busy times
+        if (name === "doctor" || name === "room") {
+            if (updatedAppointment.formattedDate && updatedAppointment.doctor && updatedAppointment.room) {
+                const params = {
+                    branchId: updatedAppointment.branch,
+                    doctorId: updatedAppointment.doctor,
+                    cabinetId: updatedAppointment.room,
+                    date: updatedAppointment.formattedDate,
+                };
+
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params);
+                setBusyTimes(busyTimesData);
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData);
+            }
+        }
+
+        // Handle date change - update busy times and reset time
+        if (name === "date") {
+            updatedAppointment.time = "";
+            updatedAppointment.formattedDate = value;
+
+            if (updatedAppointment.doctor && updatedAppointment.room) {
+                const params = {
+                    branchId: updatedAppointment.branch,
+                    doctorId: updatedAppointment.doctor,
+                    cabinetId: updatedAppointment.room,
+                    date: value,
+                };
+
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params);
+                setBusyTimes(busyTimesData);
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData);
+            }
+        }
+
+        setCurrentAppointment(updatedAppointment);
+    };
+
+    // Add a function to handle time selection in edit mode
+    const handleEditTimeSelect = (time) => {
+        setTimeError("");
+        setCurrentAppointment({
+            ...currentAppointment,
+            time: time,
+        });
+    };
 
     // Open add sidebar
     const openAddSidebar = () => {
@@ -366,18 +420,43 @@ export default function Appointments() {
 
     // Open edit sidebar
     const openEditSidebar = async (appointment) => {
+        setEditLoading(true);
         try {
             // Fetch the latest appointment data from the server
-            const latestAppointmentData = await fetchAppointmentById(appointment.id)
+            const latestAppointmentData = await fetchAppointmentById(appointment.id);
 
             if (latestAppointmentData) {
-                setShowEditSidebar(true)
+                // Set the current appointment data
+                setCurrentAppointment(latestAppointmentData);
+
+                // Fetch filter data for the branch
+                await fetchFilterData(latestAppointmentData.branch);
+
+                // Fetch busy times for the selected date, doctor, and room
+                if (latestAppointmentData.formattedDate && latestAppointmentData.doctor && latestAppointmentData.room) {
+                    const params = {
+                        branchId: latestAppointmentData.branch,
+                        doctorId: latestAppointmentData.doctor,
+                        cabinetId: latestAppointmentData.room,
+                        date: latestAppointmentData.formattedDate,
+                    };
+
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params);
+                    setBusyTimes(busyTimesData);
+
+                    // Generate available time slots
+                    generateTimeSlots(busyTimesData);
+                }
+
+                setShowEditSidebar(true);
             }
         } catch (error) {
-            console.error("Error opening edit sidebar:", error)
-            alert("Qabulni tahrirlashda xatolik yuz berdi")
+            console.error("Error opening edit sidebar:", error);
+            alert("Qabulni tahrirlashda xatolik yuz berdi");
+        } finally {
+            setEditLoading(false);
         }
-    }
+    };
 
     // Close edit sidebar
     const closeEditSidebar = () => {
@@ -438,48 +517,48 @@ export default function Appointments() {
 
     // Update appointment
     const updateAppointment = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
         try {
             // Extract date and time from the current appointment
-            let date = ""
-            let time = ""
+            let date = "";
+            let time = "";
 
-            // Use the formatted date and time if available
+            // Use the formatted date if available
             if (currentAppointment.formattedDate) {
-                date = currentAppointment.formattedDate
+                date = currentAppointment.formattedDate;
             } else if (currentAppointment.date) {
                 if (typeof currentAppointment.date === "string" && currentAppointment.date.includes("T")) {
-                    date = currentAppointment.date.split("T")[0]
+                    date = currentAppointment.date.split("T")[0];
                 } else {
-                    date = new Date(currentAppointment.date).toISOString().split("T")[0]
+                    date = new Date(currentAppointment.date).toISOString().split("T")[0];
                 }
             } else {
-                date = new Date().toISOString().split("T")[0]
+                date = new Date().toISOString().split("T")[0];
             }
 
             // Use the time input value or extract from date
             if (currentAppointment.time) {
-                time = currentAppointment.time
+                time = currentAppointment.time;
             } else if (currentAppointment.formattedTime) {
-                time = currentAppointment.formattedTime
+                time = currentAppointment.formattedTime;
             } else if (
                 currentAppointment.date &&
                 typeof currentAppointment.date === "string" &&
                 currentAppointment.date.includes("T")
             ) {
-                const timePart = currentAppointment.date.split("T")[1]
+                const timePart = currentAppointment.date.split("T")[1];
                 if (timePart && timePart.length >= 5) {
-                    time = timePart.substring(0, 5)
+                    time = timePart.substring(0, 5);
                 } else {
-                    time = "00:00"
+                    time = "00:00";
                 }
             } else {
-                time = "00:00"
+                time = "00:00";
             }
 
             // Format date and time for API
-            const formattedDate = `${date}T${time}:00Z`
+            const formattedDate = `${date}T${time}:00Z`;
 
             const appointmentData = {
                 branch: Number.parseInt(currentAppointment.branch),
@@ -492,21 +571,21 @@ export default function Appointments() {
                 diognosis: currentAppointment.diognosis || "",
                 payment_amount: currentAppointment.payment_amount || "",
                 organs: currentAppointment.organs || {},
-            }
+            };
 
-            console.log("Yangilangan qabul ma'lumotlari:", appointmentData)
-            await apiAppointments.updateAppointment(currentAppointment.id, appointmentData)
+            console.log("Yangilangan qabul ma'lumotlari:", appointmentData);
+            await apiAppointments.updateAppointment(currentAppointment.id, appointmentData);
 
             // Refresh appointments list
-            fetchAppointments()
+            fetchAppointments();
 
             // Close sidebar
-            closeEditSidebar()
+            closeEditSidebar();
         } catch (err) {
-            console.error("Qabulni yangilashda xatolik:", err)
-            alert("Qabulni yangilashda xatolik yuz berdi")
+            console.error("Qabulni yangilashda xatolik:", err);
+            alert("Qabulni yangilashda xatolik yuz berdi");
         }
-    }
+    };
 
     // Delete appointment
     const deleteAppointment = async (id) => {
@@ -1092,10 +1171,11 @@ export default function Appointments() {
                         </table>
                     </div>
                     <Pagination
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
+                        pageCount={Math.ceil(totalItems / itemsPerPage)}
                         currentPage={currentPage}
                         onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={totalItems}
                         onItemsPerPageChange={handleItemsPerPageChange}
                     />
                 </div>
@@ -1203,96 +1283,107 @@ export default function Appointments() {
                             </button>
                         </div>
                         <div className="appointments-sidebar-content">
-                            <div className="appointments-view-section">
-                                <h3>{t("patient_information")}</h3>
-                                <div className="appointments-form-group">
-                                    <label>{t("patient")}</label>
-                                    <div className="input-text">{currentAppointment.customer_name}</div>
+                            <div className="appointment-view-card">
+                                <div className={`appointment-status-indicator ${currentAppointment.status}`}>
+                                    {getStatusTranslation(currentAppointment.status)}
                                 </div>
 
-                                <div className="appointments-form-group">
-                                    <label>{t("gender")}</label>
-                                    <div className="input-text">{currentAppointment.customer_gender}</div>
-                                </div>
-                            </div>
-
-                            <div className="appointments-view-section">
-                                <h3>{t("appointment_details")}</h3>
-                                <div className="appointments-form-group">
-                                    <label>{t("doctor")}</label>
-                                    <div className="input-text">{currentAppointment.doctor_name}</div>
-                                </div>
-
-                                <div className="appointments-form-group">
-                                    <label>{t("room")}</label>
-                                    <div className="input-text">{currentAppointment.room_name}</div>
-                                </div>
-
-                                <div className="appointments-form-row">
-                                    <div className="appointments-form-group">
-                                        <label>{t("date")}</label>
-                                        <div className="input-text">
+                                <div className="appointment-view-header">
+                                    <div className="appointment-view-avatar">
+                                        <FaUser />
+                                    </div>
+                                    <div className="appointment-view-title">
+                                        <h3>{currentAppointment.customer_name}</h3>
+                                        <p className="appointment-view-subtitle">
+                                            <FaCalendarAlt />
                                             {currentAppointment.formattedDate || formatDateForDisplay(currentAppointment.date)}
+                                            <span className="appointment-time">
+                                                <FaClock />
+                                                {currentAppointment.formattedTime || formatTimeForDisplay(currentAppointment.date)}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="appointment-view-details">
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaUserMd />
+                                            {t("doctor_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("doctor")}:</span>
+                                            <span className="info-value">{currentAppointment.doctor_name}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("specialization")}:</span>
+                                            <span className="info-value">{currentAppointment.doctor_specialization || t("not_specified")}</span>
                                         </div>
                                     </div>
 
-                                    <div className="appointments-form-group">
-                                        <label>{t("time")}</label>
-                                        <div className="input-text">
-                                            {currentAppointment.formattedTime || formatTimeForDisplay(currentAppointment.date)}
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaBuilding />
+                                            {t("location_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("branch")}:</span>
+                                            <span className="info-value">{currentAppointment.branch_name}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("room")}:</span>
+                                            <span className="info-value">{currentAppointment.room_name}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaNotesMedical />
+                                            {t("medical_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("diagnosis")}:</span>
+                                            <span className="info-value">{currentAppointment.diognosis || t("no_diagnosis")}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("notes")}:</span>
+                                            <span className="info-value">{currentAppointment.comment || t("no_notes")}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaMoneyBillWave />
+                                            {t("payment_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("payment_amount")}:</span>
+                                            <span className="info-value">
+                                                {currentAppointment.payment_amount || "0"} {t("currency")}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-group">
-                                    <label>{t("status")}</label>
-                                    <div className={`input-text status-${currentAppointment.status}`}>
-                                        {getStatusTranslation(currentAppointment.status)}
-                                    </div>
+                                <div className="appointment-view-actions">
+                                    <button
+                                        type="button"
+                                        className="appointments-btn appointments-btn-primary"
+                                        onClick={() => {
+                                            closeViewSidebar();
+                                            openEditSidebar(currentAppointment);
+                                        }}
+                                    >
+                                        <FaEdit /> {t("edit")}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="appointments-btn appointments-btn-secondary"
+                                        onClick={closeViewSidebar}
+                                    >
+                                        {t("close")}
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="appointments-view-section">
-                                <h3>{t("medical_information")}</h3>
-                                <div className="appointments-form-group">
-                                    <label>{t("diagnosis")}</label>
-                                    <div className="input-text">{currentAppointment.diognosis || t("no_diagnosis")}</div>
-                                </div>
-
-                                <div className="appointments-form-group">
-                                    <label>{t("notes")}</label>
-                                    <div className="input-text">{currentAppointment.comment || t("no_notes")}</div>
-                                </div>
-                            </div>
-
-                            <div className="appointments-view-section">
-                                <h3>{t("payment_information")}</h3>
-                                <div className="appointments-form-group">
-                                    <label>{t("payment_amount")}</label>
-                                    <div className="input-text">
-                                        {currentAppointment.payment_amount || "0"} {t("currency")}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="appointments-form-actions">
-                                <button
-                                    type="button"
-                                    className="appointments-btn appointments-btn-primary"
-                                    onClick={() => {
-                                        closeViewSidebar()
-                                        openEditSidebar(currentAppointment)
-                                    }}
-                                >
-                                    <FaEdit /> {t("edit")}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="appointments-btn appointments-btn-secondary"
-                                    onClick={closeViewSidebar}
-                                >
-                                    {t("close")}
-                                </button>
                             </div>
                         </div>
                     </>
@@ -1346,6 +1437,7 @@ export default function Appointments() {
                                             onChange={handleEditAppointmentChange}
                                             required
                                         >
+                                            <option value="">{t("select_patient")}</option>
                                             {filterData.customers &&
                                                 filterData.customers.map((customer) => (
                                                     <option key={customer.id} value={customer.id}>
@@ -1366,6 +1458,7 @@ export default function Appointments() {
                                             onChange={handleEditAppointmentChange}
                                             required
                                         >
+                                            <option value="">{t("select_doctor")}</option>
                                             {filterData.doctors &&
                                                 filterData.doctors.map((doctor) => (
                                                     <option key={doctor.id} value={doctor.id}>
@@ -1381,6 +1474,7 @@ export default function Appointments() {
                                     <div className="input-icon-wrapper">
                                         <FaDoorOpen className="input-icon" />
                                         <select name="room" value={currentAppointment.room} onChange={handleEditAppointmentChange} required>
+                                            <option value="">{t("select_room")}</option>
                                             {filterData.cabinets &&
                                                 filterData.cabinets.map((cabinet) => (
                                                     <option key={cabinet.id} value={cabinet.id}>
@@ -1408,31 +1502,32 @@ export default function Appointments() {
                                             />
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="appointments-form-group">
-                                        <label>{t("time")}</label>
-                                        <div className="input-icon-wrapper">
-                                            <FaClock className="input-icon" />
-                                            <input
-                                                type="time"
-                                                name="time"
-                                                value={
-                                                    currentAppointment.time ||
-                                                    (currentAppointment.date &&
-                                                        typeof currentAppointment.date === "string" &&
-                                                        currentAppointment.date.includes("T") &&
-                                                        currentAppointment.date.split("T")[1]
-                                                        ? currentAppointment.date.split("T")[1].substring(0, 5)
-                                                        : "")
-                                                }
-                                                onChange={handleEditAppointmentChange}
-                                                required
-                                            />
+                                <div className="appointments-form-group">
+                                    <label>{t("time")}</label>
+                                    {timeError && (
+                                        <div className="time-error">
+                                            <FaExclamationCircle /> {timeError}
                                         </div>
-                                        {timeError && (
-                                            <div className="time-error">
-                                                <FaExclamationCircle /> {timeError}
-                                            </div>
+                                    )}
+                                    <div className="time-slots-container">
+                                        {availableTimes.length > 0 ? (
+                                            availableTimes.map((slot, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    className={`time-slot ${slot.isBooked ? "booked" : ""} ${currentAppointment.time === slot.time ? "selected" : ""
+                                                        }`}
+                                                    onClick={() => !slot.isBooked && handleEditTimeSelect(slot.time)}
+                                                    disabled={slot.isBooked}
+                                                >
+                                                    <FaClock className="time-icon" />
+                                                    {slot.time}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="no-times-message">{t("please_select_date_and_room_first")}</div>
                                         )}
                                     </div>
                                 </div>
@@ -1455,6 +1550,7 @@ export default function Appointments() {
                                         value={currentAppointment.diognosis || ""}
                                         onChange={handleEditAppointmentChange}
                                         rows={3}
+                                        placeholder={t("enter_diagnosis")}
                                     ></textarea>
                                 </div>
 
@@ -1465,6 +1561,7 @@ export default function Appointments() {
                                         value={currentAppointment.comment || ""}
                                         onChange={handleEditAppointmentChange}
                                         rows={3}
+                                        placeholder={t("enter_notes")}
                                     ></textarea>
                                 </div>
 
@@ -1477,6 +1574,7 @@ export default function Appointments() {
                                             name="payment_amount"
                                             value={currentAppointment.payment_amount || ""}
                                             onChange={handleEditAppointmentChange}
+                                            placeholder={t("enter_payment_amount")}
                                         />
                                     </div>
                                 </div>

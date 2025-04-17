@@ -5,7 +5,8 @@ const Pagination = ({ pageCount, currentPage, onPageChange, itemsPerPage, totalI
     // Calculate the range of items being displayed
     const startItem = currentPage * itemsPerPage + 1
     const endItem = Math.min((currentPage + 1) * itemsPerPage, totalItems)
-
+    console.log("asdasda >>>", pageCount, currentPage, onPageChange , itemsPerPage, totalItems, onItemsPerPageChange);
+    
     // Handle page click
     const handlePageClick = (event) => {
         onPageChange(event.selected)
