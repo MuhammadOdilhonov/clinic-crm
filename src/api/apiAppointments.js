@@ -21,6 +21,17 @@ export const fetchAppointments = async (params = {}) => {
     }
 }
 
+// Bitta qabulni ID bo'yicha olish
+export const fetchAppointmentById = async (id) => {
+    try {
+        const response = await client.get(`/meetings/${id}/`)
+        return response.data
+    } catch (error) {
+        console.error("Qabulni olishda xatolik:", error)
+        throw error
+    }
+}
+
 // Filtrlar uchun ma'lumotlarni olish (bemorlar, shifokorlar, xonalar)
 export const fetchFilterData = async (branchId) => {
     try {
@@ -87,6 +98,7 @@ export const deleteAppointment = async (id) => {
 
 export default {
     fetchAppointments,
+    fetchAppointmentById,
     fetchFilterData,
     fetchBusyTimes,
     createAppointment,

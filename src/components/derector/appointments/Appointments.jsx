@@ -53,6 +53,7 @@ export default function Appointments() {
     const [showEditSidebar, setShowEditSidebar] = useState(false)
     const [showViewSidebar, setShowViewSidebar] = useState(false)
     const [currentAppointment, setCurrentAppointment] = useState(null)
+    const [editLoading, setEditLoading] = useState(false)
 
     // State for new appointment
     const [newAppointment, setNewAppointment] = useState({
@@ -140,6 +141,47 @@ export default function Appointments() {
             setAppointments([])
         } finally {
             setLoading(false)
+        }
+    }
+
+    // Fetch a single appointment by ID
+    const fetchAppointmentById = async (id) => {
+        setEditLoading(true)
+        try {
+            const data = await apiAppointments.fetchAppointmentById(id)
+            console.log("Qabul ma'lumotlari:", data)
+
+            // Format the date and time for display and form
+            let formattedDate = ""
+            let formattedTime = ""
+
+            if (data.date) {
+                try {
+                    const dateObj = new Date(data.date)
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split("T")[0]
+                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                    }
+                } catch (error) {
+                    console.error("Error formatting date/time:", error)
+                }
+            }
+
+            // Prepare the appointment data with formatted values
+            const appointmentData = {
+                ...data,
+                formattedDate,
+                formattedTime,
+            }
+
+            setCurrentAppointment(appointmentData)
+            return appointmentData
+        } catch (err) {
+            console.error("Qabulni yuklashda xatolik:", err)
+            alert("Qabulni yuklashda xatolik yuz berdi")
+            return null
+        } finally {
+            setEditLoading(false)
         }
     }
 
@@ -245,10 +287,18 @@ export default function Appointments() {
         const { name, value } = e.target
         setTimeError("")
 
-        setCurrentAppointment({
-            ...currentAppointment,
-            [name]: value,
-        })
+        if (name === "time") {
+            // Handle time change separately
+            setCurrentAppointment({
+                ...currentAppointment,
+                time: value,
+            })
+        } else {
+            setCurrentAppointment({
+                ...currentAppointment,
+                [name]: value,
+            })
+        }
     }
 
     // Open add sidebar
@@ -279,7 +329,32 @@ export default function Appointments() {
 
     // Open view sidebar
     const openViewSidebar = (appointment) => {
-        setCurrentAppointment(appointment)
+        // Create a copy of the appointment to avoid reference issues
+        const appointmentCopy = { ...appointment }
+
+        // Ensure date is properly formatted for display
+        if (appointmentCopy.date) {
+            try {
+                const dateObj = new Date(appointmentCopy.date)
+                if (!isNaN(dateObj.getTime())) {
+                    appointmentCopy.formattedDate = dateObj.toLocaleDateString("uz-UZ", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                    })
+                    appointmentCopy.formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                } else {
+                    appointmentCopy.formattedDate = ""
+                    appointmentCopy.formattedTime = ""
+                }
+            } catch (error) {
+                console.error("Error formatting date/time:", error)
+                appointmentCopy.formattedDate = ""
+                appointmentCopy.formattedTime = ""
+            }
+        }
+
+        setCurrentAppointment(appointmentCopy)
         setShowViewSidebar(true)
     }
 
@@ -290,10 +365,18 @@ export default function Appointments() {
     }
 
     // Open edit sidebar
-    const openEditSidebar = (appointment) => {
-        setCurrentAppointment(appointment)
-        setTimeError("")
-        setShowEditSidebar(true)
+    const openEditSidebar = async (appointment) => {
+        try {
+            // Fetch the latest appointment data from the server
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
+
+            if (latestAppointmentData) {
+                setShowEditSidebar(true)
+            }
+        } catch (error) {
+            console.error("Error opening edit sidebar:", error)
+            alert("Qabulni tahrirlashda xatolik yuz berdi")
+        }
     }
 
     // Close edit sidebar
@@ -331,7 +414,7 @@ export default function Appointments() {
                 customer: Number.parseInt(newAppointment.customer),
                 doctor: Number.parseInt(newAppointment.doctor),
                 room: Number.parseInt(newAppointment.room),
-                full_date: formattedDate,
+                full_date: formattedDate, // Changed from date to full_date
                 status: newAppointment.status,
                 comment: newAppointment.comment,
                 diognosis: newAppointment.diognosis,
@@ -359,13 +442,40 @@ export default function Appointments() {
 
         try {
             // Extract date and time from the current appointment
-            let date = currentAppointment.date
+            let date = ""
             let time = ""
 
-            if (typeof currentAppointment.date === "string" && currentAppointment.date.includes("T")) {
-                const dateTimeParts = currentAppointment.date.split("T")
-                date = dateTimeParts[0]
-                time = dateTimeParts[1].substring(0, 5) // Extract HH:MM
+            // Use the formatted date and time if available
+            if (currentAppointment.formattedDate) {
+                date = currentAppointment.formattedDate
+            } else if (currentAppointment.date) {
+                if (typeof currentAppointment.date === "string" && currentAppointment.date.includes("T")) {
+                    date = currentAppointment.date.split("T")[0]
+                } else {
+                    date = new Date(currentAppointment.date).toISOString().split("T")[0]
+                }
+            } else {
+                date = new Date().toISOString().split("T")[0]
+            }
+
+            // Use the time input value or extract from date
+            if (currentAppointment.time) {
+                time = currentAppointment.time
+            } else if (currentAppointment.formattedTime) {
+                time = currentAppointment.formattedTime
+            } else if (
+                currentAppointment.date &&
+                typeof currentAppointment.date === "string" &&
+                currentAppointment.date.includes("T")
+            ) {
+                const timePart = currentAppointment.date.split("T")[1]
+                if (timePart && timePart.length >= 5) {
+                    time = timePart.substring(0, 5)
+                } else {
+                    time = "00:00"
+                }
+            } else {
+                time = "00:00"
             }
 
             // Format date and time for API
@@ -376,12 +486,12 @@ export default function Appointments() {
                 customer: Number.parseInt(currentAppointment.customer),
                 doctor: Number.parseInt(currentAppointment.doctor),
                 room: Number.parseInt(currentAppointment.room),
-                date: formattedDate,
+                full_date: formattedDate, // Changed from date to full_date
                 status: currentAppointment.status,
-                comment: currentAppointment.comment,
-                diognosis: currentAppointment.diognosis,
-                payment_amount: currentAppointment.payment_amount,
-                organs: {},
+                comment: currentAppointment.comment || "",
+                diognosis: currentAppointment.diognosis || "",
+                payment_amount: currentAppointment.payment_amount || "",
+                organs: currentAppointment.organs || {},
             }
 
             console.log("Yangilangan qabul ma'lumotlari:", appointmentData)
@@ -416,12 +526,20 @@ export default function Appointments() {
     // Handle page change
     const handlePageChange = (page) => {
         setCurrentPage(page)
+        // Explicitly fetch appointments when page changes
+        setTimeout(() => {
+            fetchAppointments()
+        }, 0)
     }
 
     // Handle items per page change
     const handleItemsPerPageChange = (newItemsPerPage) => {
         setItemsPerPage(newItemsPerPage)
         setCurrentPage(0) // Reset to first page
+        // Explicitly fetch appointments when items per page changes
+        setTimeout(() => {
+            fetchAppointments()
+        }, 0)
     }
 
     // Get week dates for calendar view
@@ -458,13 +576,17 @@ export default function Appointments() {
         if (!dateString) return ""
 
         let date
-        if (typeof dateString === "string" && dateString.includes("T")) {
-            date = new Date(dateString)
-        } else {
-            date = new Date(dateString)
+        try {
+            if (typeof dateString === "string" && dateString.includes("T")) {
+                date = new Date(dateString)
+            } else {
+                date = new Date(dateString)
+            }
+            return date.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+        } catch (error) {
+            console.error("Error formatting time:", error)
+            return ""
         }
-
-        return date.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
     }
 
     // Set view to today
@@ -911,7 +1033,7 @@ export default function Appointments() {
                                     </tr>
                                 ) : (
                                     appointments.map((appointment) => (
-                                        <tr key={appointment.id}>
+                                        <tr key={appointment.id} onClick={() => openViewSidebar(appointment)} style={{ cursor: "pointer" }}>
                                             <td>{appointment.customer_name}</td>
                                             <td>{appointment.doctor_name}</td>
                                             <td>{appointment.room_name}</td>
@@ -932,17 +1054,32 @@ export default function Appointments() {
                                                     </div>
                                                 </td>
                                             )}
-                                            <td>
+                                            <td onClick={(e) => e.stopPropagation()}>
                                                 <div className="appointments-action-buttons">
-                                                    <button className="appointments-btn-icon view" onClick={() => openViewSidebar(appointment)}>
+                                                    <button
+                                                        className="appointments-btn-icon view"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            openViewSidebar(appointment)
+                                                        }}
+                                                    >
                                                         <FaEye />
                                                     </button>
-                                                    <button className="appointments-btn-icon edit" onClick={() => openEditSidebar(appointment)}>
+                                                    <button
+                                                        className="appointments-btn-icon edit"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            openEditSidebar(appointment)
+                                                        }}
+                                                    >
                                                         <FaEdit />
                                                     </button>
                                                     <button
                                                         className="appointments-btn-icon delete"
-                                                        onClick={() => deleteAppointment(appointment.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            deleteAppointment(appointment.id)
+                                                        }}
                                                     >
                                                         <FaTrash />
                                                     </button>
@@ -1094,12 +1231,16 @@ export default function Appointments() {
                                 <div className="appointments-form-row">
                                     <div className="appointments-form-group">
                                         <label>{t("date")}</label>
-                                        <div className="input-text">{formatDateForDisplay(currentAppointment.date)}</div>
+                                        <div className="input-text">
+                                            {currentAppointment.formattedDate || formatDateForDisplay(currentAppointment.date)}
+                                        </div>
                                     </div>
 
                                     <div className="appointments-form-group">
                                         <label>{t("time")}</label>
-                                        <div className="input-text">{formatTimeForDisplay(currentAppointment.date)}</div>
+                                        <div className="input-text">
+                                            {currentAppointment.formattedTime || formatTimeForDisplay(currentAppointment.date)}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1164,7 +1305,11 @@ export default function Appointments() {
                 onClick={closeEditSidebar}
             ></div>
             <div className={`appointments-sidebar ${showEditSidebar ? "active" : ""}`}>
-                {currentAppointment && (
+                {editLoading ? (
+                    <div className="appointments-loading-container">
+                        <FaSpinner className="appointments-spinner" /> {t("loading")}
+                    </div>
+                ) : currentAppointment ? (
                     <>
                         <div className="appointments-sidebar-header">
                             <h2>{t("edit_appointment")}</h2>
@@ -1254,7 +1399,10 @@ export default function Appointments() {
                                             <input
                                                 type="date"
                                                 name="date"
-                                                value={currentAppointment.date ? currentAppointment.date.split("T")[0] : ""}
+                                                value={
+                                                    currentAppointment.formattedDate ||
+                                                    (currentAppointment.date ? currentAppointment.date.split("T")[0] : "")
+                                                }
                                                 onChange={handleEditAppointmentChange}
                                                 required
                                             />
@@ -1268,7 +1416,15 @@ export default function Appointments() {
                                             <input
                                                 type="time"
                                                 name="time"
-                                                value={currentAppointment.date ? currentAppointment.date.split("T")[1].substring(0, 5) : ""}
+                                                value={
+                                                    currentAppointment.time ||
+                                                    (currentAppointment.date &&
+                                                        typeof currentAppointment.date === "string" &&
+                                                        currentAppointment.date.includes("T") &&
+                                                        currentAppointment.date.split("T")[1]
+                                                        ? currentAppointment.date.split("T")[1].substring(0, 5)
+                                                        : "")
+                                                }
                                                 onChange={handleEditAppointmentChange}
                                                 required
                                             />
@@ -1340,7 +1496,7 @@ export default function Appointments() {
                             </form>
                         </div>
                     </>
-                )}
+                ) : null}
             </div>
         </div>
     )
