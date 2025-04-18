@@ -18,7 +18,10 @@ import {
     FaDoorOpen,
     FaClock,
     FaBuilding,
+    FaExclamationCircle,
+    FaMoneyBillWave,
 } from "react-icons/fa"
+import apiAppointments from "../../../api/apiAppointments"
 
 export default function ASchedule() {
     const { selectedBranch } = useAuth()
@@ -47,295 +50,153 @@ export default function ASchedule() {
         status: "pending",
         diagnosis: "",
         notes: "",
-        branch: selectedBranch === "all" ? "branch1" : selectedBranch,
+        branch: selectedBranch === "all" ? "" : selectedBranch,
     })
     const [step, setStep] = useState(1)
     const [availableTimes, setAvailableTimes] = useState([])
+    const [filterData, setFilterData] = useState({
+        branches: [],
+        customers: [],
+        doctors: [],
+        cabinets: [],
+    })
+    const [busyTimes, setBusyTimes] = useState([])
+    const [editLoading, setEditLoading] = useState(false)
+    const [timeError, setTimeError] = useState("")
 
     // Fetch appointments, doctors, patients, and rooms data
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true)
-
-                // Simulate API call
-                setTimeout(() => {
-                    // Mock doctors data
-                    const mockDoctors = [
-                        {
-                            id: 1,
-                            name: "Dr. Sardor Alimov",
-                            specialization: "General Practitioner",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 2,
-                            name: "Dr. Kamil Rakhimov",
-                            specialization: "Cardiologist",
-                            branch: "branch2",
-                        },
-                        {
-                            id: 3,
-                            name: "Dr. Aziz Yusupov",
-                            specialization: "Pulmonologist",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 4,
-                            name: "Dr. Malika Umarova",
-                            specialization: "Surgeon",
-                            branch: "branch3",
-                        },
-                    ]
-
-                    // Mock patients data
-                    const mockPatients = [
-                        {
-                            id: 1,
-                            name: "Alisher Karimov",
-                            age: 45,
-                            gender: "male",
-                            phone: "+998 90 123 45 67",
-                        },
-                        {
-                            id: 2,
-                            name: "Nilufar Rahimova",
-                            age: 32,
-                            gender: "female",
-                            phone: "+998 90 234 56 78",
-                        },
-                        {
-                            id: 3,
-                            name: "Sardor Aliyev",
-                            age: 28,
-                            gender: "male",
-                            phone: "+998 90 345 67 89",
-                        },
-                        {
-                            id: 4,
-                            name: "Malika Umarova",
-                            age: 50,
-                            gender: "female",
-                            phone: "+998 90 456 78 90",
-                        },
-                        {
-                            id: 5,
-                            name: "Jasur Toshmatov",
-                            age: 35,
-                            gender: "male",
-                            phone: "+998 90 567 89 01",
-                        },
-                    ]
-
-                    // Mock rooms data
-                    const mockRooms = [
-                        {
-                            id: 1,
-                            name: "Xona 101",
-                            type: "Qabul",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 2,
-                            name: "Xona 102",
-                            type: "Qabul",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 3,
-                            name: "Xona 201",
-                            type: "Qabul",
-                            branch: "branch2",
-                        },
-                        {
-                            id: 4,
-                            name: "Xona 202",
-                            type: "Qabul",
-                            branch: "branch2",
-                        },
-                        {
-                            id: 5,
-                            name: "Xona 301",
-                            type: "Qabul",
-                            branch: "branch3",
-                        },
-                        {
-                            id: 6,
-                            name: "Xona 302",
-                            type: "Qabul",
-                            branch: "branch3",
-                        },
-                    ]
-
-                    // Mock appointments data
-                    const today = new Date()
-                    const mockAppointments = [
-                        {
-                            id: 1,
-                            patientId: 1,
-                            patientName: "Alisher Karimov",
-                            doctorId: 3,
-                            doctorName: "Dr. Aziz Yusupov",
-                            roomId: 1,
-                            roomName: "Xona 101",
-                            date: formatDate(today),
-                            time: "09:00",
-                            status: "completed",
-                            diagnosis: "Yurak tekshiruvi",
-                            notes: "Dori-darmonlar belgilandi",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 2,
-                            patientId: 2,
-                            patientName: "Nilufar Rahimova",
-                            doctorId: 1,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 2,
-                            roomName: "Xona 102",
-                            date: formatDate(today),
-                            time: "10:30",
-                            status: "completed",
-                            diagnosis: "Bosh og'rig'i",
-                            notes: "Qo'shimcha tekshiruvlar talab qilinadi",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 3,
-                            patientId: 3,
-                            patientName: "Sardor Aliyev",
-                            doctorId: 3,
-                            doctorName: "Dr. Aziz Yusupov",
-                            roomId: 1,
-                            roomName: "Xona 101",
-                            date: formatDate(today),
-                            time: "11:45",
-                            status: "in-progress",
-                            diagnosis: "Yurak ritmi buzilishi",
-                            notes: "",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 4,
-                            patientId: 4,
-                            patientName: "Malika Umarova",
-                            doctorId: 4,
-                            doctorName: "Dr. Malika Umarova",
-                            roomId: 5,
-                            roomName: "Xona 301",
-                            date: formatDate(today),
-                            time: "13:15",
-                            status: "pending",
-                            diagnosis: "Profilaktik tekshiruv",
-                            notes: "",
-                            branch: "branch3",
-                        },
-                        {
-                            id: 5,
-                            patientId: 5,
-                            patientName: "Jasur Toshmatov",
-                            doctorId: 2,
-                            doctorName: "Dr. Kamil Rakhimov",
-                            roomId: 3,
-                            roomName: "Xona 201",
-                            date: formatDate(today),
-                            time: "14:30",
-                            status: "pending",
-                            diagnosis: "Qon bosimi",
-                            notes: "",
-                            branch: "branch2",
-                        },
-                        {
-                            id: 6,
-                            patientId: 1,
-                            patientName: "Alisher Karimov",
-                            doctorId: 1,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 1,
-                            roomName: "Xona 101",
-                            date: formatDate(addDays(today, 1)),
-                            time: "09:30",
-                            status: "pending",
-                            diagnosis: "Nazorat tekshiruvi",
-                            notes: "",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 7,
-                            patientId: 3,
-                            patientName: "Sardor Aliyev",
-                            doctorId: 2,
-                            doctorName: "Dr. Kamil Rakhimov",
-                            roomId: 3,
-                            roomName: "Xona 201",
-                            date: formatDate(addDays(today, 1)),
-                            time: "11:00",
-                            status: "pending",
-                            diagnosis: "EKG tekshiruvi",
-                            notes: "",
-                            branch: "branch2",
-                        },
-                    ]
-
-                    // Filter by branch if needed
-                    let branchFilteredDoctors = mockDoctors
-                    const branchFilteredPatients = mockPatients
-                    let branchFilteredRooms = mockRooms
-                    let branchFilteredAppointments = mockAppointments
-
-                    if (selectedBranch !== "all") {
-                        branchFilteredDoctors = mockDoctors.filter((doctor) => doctor.branch === selectedBranch)
-                        branchFilteredRooms = mockRooms.filter((room) => room.branch === selectedBranch)
-                        branchFilteredAppointments = mockAppointments.filter((appointment) => appointment.branch === selectedBranch)
-                    }
-
-                    setDoctors(branchFilteredDoctors)
-                    setPatients(mockPatients)
-                    setRooms(branchFilteredRooms)
-                    setAppointments(branchFilteredAppointments)
-                    setFilteredAppointments(branchFilteredAppointments)
-                    setLoading(false)
-                }, 500)
-            } catch (err) {
-                setError(err.message || "An error occurred")
-                setLoading(false)
-            }
-        }
-
         fetchData()
-    }, [selectedBranch])
-
-    // Generate time slots from 8:00 to 18:00 with 1 hour intervals
-    const generateTimeSlots = () => {
-        const slots = []
-        for (let hour = 8; hour <= 17; hour++) {
-            const formattedHour = hour.toString().padStart(2, "0")
-            slots.push(`${formattedHour}:00`)
-        }
-        return slots
-    }
+    }, [selectedBranch, filterDoctor, filterStatus, searchTerm])
 
     // Update available times when date or room changes
     useEffect(() => {
-        if (newAppointment.date && newAppointment.roomId) {
-            const allTimeSlots = generateTimeSlots()
-            const bookedTimes = appointments
-                .filter(
-                    (appointment) =>
-                        appointment.date === newAppointment.date && appointment.roomId === Number.parseInt(newAppointment.roomId),
-                )
-                .map((appointment) => appointment.time)
-
-            setAvailableTimes(
-                allTimeSlots.map((time) => ({
-                    time,
-                    isBooked: bookedTimes.includes(time),
-                })),
-            )
-        } else {
-            setAvailableTimes([])
+        if (newAppointment.date && newAppointment.doctorId && newAppointment.roomId) {
+            fetchBusyTimes()
         }
-    }, [newAppointment.date, newAppointment.roomId, appointments])
+    }, [newAppointment.date, newAppointment.doctorId, newAppointment.roomId])
+
+    // Fetch all necessary data
+    const fetchData = async () => {
+        try {
+            setLoading(true)
+
+            // Fetch appointments
+            const params = {}
+            if (filterStatus !== "all") params.status = filterStatus
+            if (filterDoctor !== "all") params.doctor = filterDoctor
+            if (selectedBranch !== "all") params.branch = selectedBranch
+            if (searchTerm) params.search = searchTerm
+
+            const appointmentsData = await apiAppointments.fetchAppointments(params)
+            console.log("Appointments data:", appointmentsData)
+
+            // Fetch filter data for the selected branch
+            const branchId = selectedBranch === "all" ? 1 : selectedBranch // Default to first branch if all selected
+            const filterDataResponse = await apiAppointments.fetchFilterData(branchId)
+            console.log("Filter data:", filterDataResponse)
+
+            // Set the data
+            setAppointments(appointmentsData.results || [])
+            setFilteredAppointments(appointmentsData.results || [])
+            setFilterData(filterDataResponse)
+
+            // Extract doctors, patients, and rooms from filter data
+            setDoctors(filterDataResponse.doctors || [])
+            setPatients(filterDataResponse.customers || [])
+            setRooms(filterDataResponse.cabinets || [])
+
+            setError(null)
+        } catch (err) {
+            console.error("Error fetching data:", err)
+            setError("Failed to load data. Please try again.")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Fetch busy times for selected date, doctor, and room
+    const fetchBusyTimes = async () => {
+        try {
+            const params = {
+                branchId: selectedBranch === "all" ? newAppointment.branch : selectedBranch,
+                doctorId: newAppointment.doctorId,
+                cabinetId: newAppointment.roomId,
+                date: newAppointment.date,
+            }
+
+            const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+            console.log("Busy times:", busyTimesData)
+            setBusyTimes(busyTimesData)
+
+            // Generate available time slots
+            generateTimeSlots(busyTimesData)
+        } catch (err) {
+            console.error("Error fetching busy times:", err)
+        }
+    }
+
+    // Generate time slots from 8:00 to 18:00 with 1 hour intervals
+    const generateTimeSlots = (busyTimesData = []) => {
+        const slots = []
+        const busyTimesList = busyTimesData.map((item) => item.time)
+
+        for (let hour = 8; hour <= 17; hour++) {
+            const formattedHour = hour.toString().padStart(2, "0")
+            const timeSlot = `${formattedHour}:00`
+
+            slots.push({
+                time: timeSlot,
+                isBooked: busyTimesList.includes(timeSlot),
+            })
+        }
+
+        setAvailableTimes(slots)
+    }
+
+    // Fetch a single appointment by ID
+    const fetchAppointmentById = async (id) => {
+        setEditLoading(true)
+        try {
+            const data = await apiAppointments.fetchAppointmentById(id)
+            console.log("Appointment details:", data)
+
+            // Format the date and time for display and form
+            let formattedDate = ""
+            let formattedTime = ""
+
+            if (data.date) {
+                try {
+                    const dateObj = new Date(data.date)
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split("T")[0]
+                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                    }
+                } catch (error) {
+                    console.error("Error formatting date/time:", error)
+                }
+            }
+
+            // Prepare the appointment data with formatted values
+            const appointmentData = {
+                ...data,
+                patientId: data.customer.toString(),
+                doctorId: data.doctor.toString(),
+                roomId: data.room.toString(),
+                date: formattedDate,
+                time: formattedTime,
+            }
+
+            setSelectedAppointment(appointmentData)
+            return appointmentData
+        } catch (err) {
+            console.error("Error loading appointment:", err)
+            alert("Error loading appointment details")
+            return null
+        } finally {
+            setEditLoading(false)
+        }
+    }
 
     // Filter appointments based on filters and search
     useEffect(() => {
@@ -343,7 +204,7 @@ export default function ASchedule() {
 
         // Filter by doctor
         if (filterDoctor !== "all") {
-            result = result.filter((appointment) => appointment.doctorId === Number.parseInt(filterDoctor))
+            result = result.filter((appointment) => appointment.doctor === Number.parseInt(filterDoctor))
         }
 
         // Filter by status
@@ -355,9 +216,9 @@ export default function ASchedule() {
         if (searchTerm) {
             result = result.filter(
                 (appointment) =>
-                    appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()),
+                    appointment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    appointment.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    appointment.diognosis?.toLowerCase().includes(searchTerm.toLowerCase()),
             )
         }
 
@@ -397,7 +258,11 @@ export default function ASchedule() {
     // Get appointments for a specific date
     const getAppointmentsForDate = (date) => {
         const dateString = formatDate(date)
-        return filteredAppointments.filter((appointment) => appointment.date === dateString)
+        return filteredAppointments.filter((appointment) => {
+            if (!appointment.date) return false
+            const appointmentDate = new Date(appointment.date)
+            return formatDate(appointmentDate) === dateString
+        })
     }
 
     // Navigate to previous week/day
@@ -450,51 +315,75 @@ export default function ASchedule() {
             roomId: "",
             date: formatDate(today),
             time: "",
-            status: "pending",
+            status: "expected",
             diagnosis: "",
             notes: "",
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
+            branch: selectedBranch === "all" ? "" : selectedBranch,
         })
         setStep(1)
         setShowAddModal(true)
+        setTimeError("")
     }
 
     // Open edit appointment modal
-    const openEditModal = (appointment) => {
-        setSelectedAppointment({
-            ...appointment,
-            patientId: appointment.patientId.toString(),
-            doctorId: appointment.doctorId.toString(),
-            roomId: appointment.roomId.toString(),
-        })
-        setShowEditModal(true)
+    const openEditModal = async (appointment) => {
+        try {
+            // Fetch the latest appointment data from the server
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
+
+            if (latestAppointmentData) {
+                setSelectedAppointment(latestAppointmentData)
+
+                // Fetch busy times for the selected date, doctor, and room
+                if (latestAppointmentData.date && latestAppointmentData.doctorId && latestAppointmentData.roomId) {
+                    const params = {
+                        branchId: latestAppointmentData.branch,
+                        doctorId: latestAppointmentData.doctorId,
+                        cabinetId: latestAppointmentData.roomId,
+                        date: latestAppointmentData.date,
+                    }
+
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                    setBusyTimes(busyTimesData)
+
+                    // Generate available time slots
+                    generateTimeSlots(busyTimesData)
+                }
+
+                setShowEditModal(true)
+            }
+        } catch (error) {
+            console.error("Error opening edit modal:", error)
+            alert("Error loading appointment details")
+        }
     }
 
     // Handle new appointment form input changes
     const handleNewAppointmentChange = (e) => {
         const { name, value } = e.target
+        setTimeError("")
 
         if (name === "doctorId" && value) {
             const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(value))
             setNewAppointment({
                 ...newAppointment,
                 doctorId: value,
-                doctorName: selectedDoctor.name,
-                specialization: selectedDoctor.specialization,
+                doctorName: selectedDoctor ? `${selectedDoctor.first_name} ${selectedDoctor.last_name}` : "",
+                specialization: selectedDoctor ? selectedDoctor.specialization : "",
             })
         } else if (name === "patientId" && value) {
             const selectedPatient = patients.find((p) => p.id === Number.parseInt(value))
             setNewAppointment({
                 ...newAppointment,
                 patientId: value,
-                patientName: selectedPatient.name,
+                patientName: selectedPatient ? selectedPatient.full_name : "",
             })
         } else if (name === "roomId" && value) {
             const selectedRoom = rooms.find((r) => r.id === Number.parseInt(value))
             setNewAppointment({
                 ...newAppointment,
                 roomId: value,
-                roomName: selectedRoom.name,
+                roomName: selectedRoom ? selectedRoom.name : "",
             })
         } else if (name === "branch" && value) {
             setNewAppointment({
@@ -505,6 +394,18 @@ export default function ASchedule() {
                 roomId: "",
                 roomName: "",
             })
+
+            // Fetch new filter data for the selected branch
+            apiAppointments
+                .fetchFilterData(value)
+                .then((data) => {
+                    setFilterData(data)
+                    setDoctors(data.doctors || [])
+                    setRooms(data.cabinets || [])
+                })
+                .catch((err) => {
+                    console.error("Error fetching filter data:", err)
+                })
         } else {
             setNewAppointment({
                 ...newAppointment,
@@ -515,6 +416,7 @@ export default function ASchedule() {
 
     // Handle time selection
     const handleTimeSelect = (time) => {
+        setTimeError("")
         setNewAppointment({
             ...newAppointment,
             time,
@@ -532,84 +434,181 @@ export default function ASchedule() {
     }
 
     // Handle add appointment form submission
-    const handleAddAppointment = (e) => {
+    const handleAddAppointment = async (e) => {
         e.preventDefault()
 
-        const selectedPatient = patients.find((p) => p.id === Number.parseInt(newAppointment.patientId))
-        const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(newAppointment.doctorId))
-        const selectedRoom = rooms.find((r) => r.id === Number.parseInt(newAppointment.roomId))
+        try {
+            // Format date and time for API
+            const formattedDate = `${newAppointment.date}T${newAppointment.time}:00Z`
 
-        const newAppointmentWithId = {
-            ...newAppointment,
-            id: appointments.length + 1,
-            patientId: Number.parseInt(newAppointment.patientId),
-            patientName: selectedPatient.name,
-            doctorId: Number.parseInt(newAppointment.doctorId),
-            doctorName: selectedDoctor.name,
-            roomId: Number.parseInt(newAppointment.roomId),
-            roomName: selectedRoom.name,
-            status: "pending",
-            branch: selectedDoctor.branch,
+            const appointmentData = {
+                branch: Number.parseInt(newAppointment.branch || selectedBranch),
+                customer: Number.parseInt(newAppointment.patientId),
+                doctor: Number.parseInt(newAppointment.doctorId),
+                room: Number.parseInt(newAppointment.roomId),
+                full_date: formattedDate,
+                status: newAppointment.status,
+                comment: newAppointment.notes,
+                diognosis: newAppointment.diagnosis,
+                payment_amount: newAppointment.payment_amount || "",
+                organs: {},
+            }
+
+            console.log("New appointment data:", appointmentData)
+            await apiAppointments.createAppointment(appointmentData)
+
+            // Refresh appointments list
+            fetchData()
+
+            // Close modal
+            setShowAddModal(false)
+        } catch (err) {
+            console.error("Error creating appointment:", err)
+            alert("Error creating appointment")
         }
-
-        setAppointments([...appointments, newAppointmentWithId])
-        setShowAddModal(false)
     }
 
     // Handle edit appointment form submission
-    const handleEditAppointment = (e) => {
+    const handleEditAppointment = async (e) => {
         e.preventDefault()
 
-        const updatedAppointments = appointments.map((appointment) =>
-            appointment.id === selectedAppointment.id
-                ? {
-                    ...selectedAppointment,
-                    patientId: Number.parseInt(selectedAppointment.patientId),
-                    doctorId: Number.parseInt(selectedAppointment.doctorId),
-                    roomId: Number.parseInt(selectedAppointment.roomId),
-                }
-                : appointment,
-        )
+        try {
+            // Format date and time for API
+            const formattedDate = `${selectedAppointment.date}T${selectedAppointment.time}:00Z`
 
-        setAppointments(updatedAppointments)
-        setShowEditModal(false)
+            const appointmentData = {
+                branch: Number.parseInt(selectedAppointment.branch),
+                customer: Number.parseInt(selectedAppointment.patientId),
+                doctor: Number.parseInt(selectedAppointment.doctorId),
+                room: Number.parseInt(selectedAppointment.roomId),
+                full_date: formattedDate,
+                status: selectedAppointment.status,
+                comment: selectedAppointment.notes || "",
+                diognosis: selectedAppointment.diagnosis || "",
+                payment_amount: selectedAppointment.payment_amount || "",
+                organs: selectedAppointment.organs || {},
+            }
+
+            console.log("Updated appointment data:", appointmentData)
+            await apiAppointments.updateAppointment(selectedAppointment.id, appointmentData)
+
+            // Refresh appointments list
+            fetchData()
+
+            // Close modal
+            setShowEditModal(false)
+        } catch (err) {
+            console.error("Error updating appointment:", err)
+            alert("Error updating appointment")
+        }
     }
 
     // Handle delete appointment
-    const handleDeleteAppointment = (id) => {
+    const handleDeleteAppointment = async (id) => {
         if (window.confirm(t("confirm_delete_appointment"))) {
-            const updatedAppointments = appointments.filter((appointment) => appointment.id !== id)
-            setAppointments(updatedAppointments)
+            try {
+                await apiAppointments.deleteAppointment(id)
+
+                // Refresh appointments list
+                fetchData()
+            } catch (err) {
+                console.error("Error deleting appointment:", err)
+                alert("Error deleting appointment")
+            }
         }
     }
 
     // Handle selected appointment form input changes
     const handleSelectedAppointmentChange = (e) => {
         const { name, value } = e.target
+        setTimeError("")
+
         setSelectedAppointment({
             ...selectedAppointment,
             [name]: value,
         })
+
+        // If date, doctor, or room changes, update busy times
+        if (name === "date" || name === "doctorId" || name === "roomId") {
+            if (selectedAppointment.date && selectedAppointment.doctorId && selectedAppointment.roomId) {
+                const params = {
+                    branchId: selectedAppointment.branch,
+                    doctorId: name === "doctorId" ? value : selectedAppointment.doctorId,
+                    cabinetId: name === "roomId" ? value : selectedAppointment.roomId,
+                    date: name === "date" ? value : selectedAppointment.date,
+                }
+
+                apiAppointments
+                    .fetchBusyTimes(params)
+                    .then((data) => {
+                        setBusyTimes(data)
+                        generateTimeSlots(data)
+                    })
+                    .catch((err) => {
+                        console.error("Error fetching busy times:", err)
+                    })
+            }
+        }
+    }
+
+    // Handle time selection in edit mode
+    const handleEditTimeSelect = (time) => {
+        setTimeError("")
+        setSelectedAppointment({
+            ...selectedAppointment,
+            time: time,
+        })
     }
 
     // Format time for display
-    const formatTime = (time) => {
-        return time
+    const formatTimeForDisplay = (dateString) => {
+        if (!dateString) return ""
+
+        let date
+        try {
+            if (typeof dateString === "string" && dateString.includes("T")) {
+                date = new Date(dateString)
+            } else {
+                date = new Date(dateString)
+            }
+            return date.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+        } catch (error) {
+            console.error("Error formatting time:", error)
+            return ""
+        }
     }
 
     // Get status badge class
     const getStatusBadgeClass = (status) => {
         switch (status) {
-            case "completed":
+            case "finished":
                 return "completed"
-            case "in-progress":
+            case "progress":
                 return "in-progress"
-            case "pending":
+            case "expected":
                 return "pending"
             case "cancelled":
                 return "cancelled"
             default:
                 return ""
+        }
+    }
+
+    // Get status translation
+    const getStatusTranslation = (status) => {
+        switch (status) {
+            case "expected":
+                return t("expected")
+            case "accepted":
+                return t("accepted")
+            case "progress":
+                return t("progress")
+            case "finished":
+                return t("finished")
+            case "cancelled":
+                return t("cancelled")
+            default:
+                return status
         }
     }
 
@@ -630,9 +629,12 @@ export default function ASchedule() {
                                     <FaBuilding className="input-icon" />
                                     <select name="branch" value={newAppointment.branch} onChange={handleNewAppointmentChange} required>
                                         <option value="">{t("select_branch")}</option>
-                                        <option value="branch1">{t("branch1")}</option>
-                                        <option value="branch2">{t("branch2")}</option>
-                                        <option value="branch3">{t("branch3")}</option>
+                                        {filterData.branches &&
+                                            filterData.branches.map((branch) => (
+                                                <option key={branch.id} value={branch.id}>
+                                                    {branch.name}
+                                                </option>
+                                            ))}
                                     </select>
                                 </div>
                             </div>
@@ -651,7 +653,7 @@ export default function ASchedule() {
                                     <option value="">{t("select_patient")}</option>
                                     {patients.map((patient) => (
                                         <option key={patient.id} value={patient.id}>
-                                            {patient.name} ({patient.age}, {t(patient.gender)})
+                                            {patient.full_name}
                                         </option>
                                     ))}
                                 </select>
@@ -662,7 +664,12 @@ export default function ASchedule() {
                             <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
                                 {t("cancel")}
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={!newAppointment.patientId}>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={nextStep}
+                                disabled={!newAppointment.patientId || (selectedBranch === "all" && !newAppointment.branch)}
+                            >
                                 {t("next")}
                             </button>
                         </div>
@@ -681,17 +688,11 @@ export default function ASchedule() {
                                 <FaUserMd className="input-icon" />
                                 <select name="doctorId" value={newAppointment.doctorId} onChange={handleNewAppointmentChange} required>
                                     <option value="">{t("select_doctor")}</option>
-                                    {doctors
-                                        .filter((doctor) =>
-                                            selectedBranch === "all"
-                                                ? doctor.branch === newAppointment.branch
-                                                : doctor.branch === selectedBranch,
-                                        )
-                                        .map((doctor) => (
-                                            <option key={doctor.id} value={doctor.id}>
-                                                {doctor.name} ({doctor.specialization})
-                                            </option>
-                                        ))}
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name} - {doctor.specialization}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -719,15 +720,11 @@ export default function ASchedule() {
                                 <FaDoorOpen className="input-icon" />
                                 <select name="roomId" value={newAppointment.roomId} onChange={handleNewAppointmentChange} required>
                                     <option value="">{t("select_room")}</option>
-                                    {rooms
-                                        .filter((room) =>
-                                            selectedBranch === "all" ? room.branch === newAppointment.branch : room.branch === selectedBranch,
-                                        )
-                                        .map((room) => (
-                                            <option key={room.id} value={room.id}>
-                                                {room.name} ({room.type})
-                                            </option>
-                                        ))}
+                                    {rooms.map((room) => (
+                                        <option key={room.id} value={room.id}>
+                                            {room.name} - {room.type}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -783,6 +780,11 @@ export default function ASchedule() {
 
                         <div className="form-group">
                             <label>{t("time")}</label>
+                            {timeError && (
+                                <div className="time-error">
+                                    <FaExclamationCircle /> {timeError}
+                                </div>
+                            )}
                             <div className="time-slots-container">
                                 {availableTimes.map((slot, index) => (
                                     <button
@@ -839,6 +841,20 @@ export default function ASchedule() {
                                 rows={3}
                                 placeholder={t("enter_notes")}
                             ></textarea>
+                        </div>
+
+                        <div className="form-group">
+                            <label>{t("payment_amount")}</label>
+                            <div className="input-icon-wrapper">
+                                <FaMoneyBillWave className="input-icon" />
+                                <input
+                                    type="number"
+                                    name="payment_amount"
+                                    value={newAppointment.payment_amount || ""}
+                                    onChange={handleNewAppointmentChange}
+                                    placeholder={t("enter_payment_amount")}
+                                />
+                            </div>
                         </div>
 
                         <div className="modal-actions">
@@ -928,7 +944,7 @@ export default function ASchedule() {
                             <option value="all">{t("all_doctors")}</option>
                             {doctors.map((doctor) => (
                                 <option key={doctor.id} value={doctor.id}>
-                                    {doctor.name}
+                                    {doctor.first_name} {doctor.last_name}
                                 </option>
                             ))}
                         </select>
@@ -938,9 +954,10 @@ export default function ASchedule() {
                         <FaFilter />
                         <select value={filterStatus} onChange={handleFilterStatus}>
                             <option value="all">{t("all_statuses")}</option>
-                            <option value="pending">{t("pending")}</option>
-                            <option value="in-progress">{t("in_progress")}</option>
-                            <option value="completed">{t("completed")}</option>
+                            <option value="expected">{t("expected")}</option>
+                            <option value="accepted">{t("accepted")}</option>
+                            <option value="progress">{t("progress")}</option>
+                            <option value="finished">{t("finished")}</option>
                             <option value="cancelled">{t("cancelled")}</option>
                         </select>
                     </div>
@@ -983,13 +1000,15 @@ export default function ASchedule() {
                                                 className={`appointment-card ${getStatusBadgeClass(appointment.status)}`}
                                                 onClick={() => openEditModal(appointment)}
                                             >
-                                                <div className="appointment-time">{formatTime(appointment.time)}</div>
-                                                <div className="appointment-patient">{appointment.patientName}</div>
-                                                <div className="appointment-doctor">{appointment.doctorName}</div>
-                                                <div className="appointment-room">{appointment.roomName}</div>
-                                                <div className="appointment-diagnosis">{appointment.diagnosis}</div>
+                                                <div className="appointment-time">{formatTimeForDisplay(appointment.date)}</div>
+                                                <div className="appointment-patient">{appointment.customer_name}</div>
+                                                <div className="appointment-doctor">{appointment.doctor_name}</div>
+                                                <div className="appointment-room">{appointment.room_name}</div>
+                                                <div className="appointment-diagnosis">{appointment.diognosis}</div>
                                                 <div className="appointment-status">
-                                                    <span className={`status-badge ${appointment.status}`}>{t(appointment.status)}</span>
+                                                    <span className={`status-badge ${appointment.status}`}>
+                                                        {getStatusTranslation(appointment.status)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))
@@ -1035,16 +1054,22 @@ export default function ASchedule() {
                                 </thead>
                                 <tbody>
                                     {getAppointmentsForDate(currentDate)
-                                        .sort((a, b) => a.time.localeCompare(b.time))
+                                        .sort((a, b) => {
+                                            const timeA = formatTimeForDisplay(a.date) || ""
+                                            const timeB = formatTimeForDisplay(b.date) || ""
+                                            return timeA.localeCompare(timeB)
+                                        })
                                         .map((appointment) => (
                                             <tr key={appointment.id}>
-                                                <td>{formatTime(appointment.time)}</td>
-                                                <td>{appointment.patientName}</td>
-                                                <td>{appointment.doctorName}</td>
-                                                <td>{appointment.roomName}</td>
-                                                <td>{appointment.diagnosis}</td>
+                                                <td>{formatTimeForDisplay(appointment.date)}</td>
+                                                <td>{appointment.customer_name}</td>
+                                                <td>{appointment.doctor_name}</td>
+                                                <td>{appointment.room_name}</td>
+                                                <td>{appointment.diognosis}</td>
                                                 <td>
-                                                    <span className={`status-badge ${appointment.status}`}>{t(appointment.status)}</span>
+                                                    <span className={`status-badge ${appointment.status}`}>
+                                                        {getStatusTranslation(appointment.status)}
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <div className="action-buttons">
@@ -1140,7 +1165,7 @@ export default function ASchedule() {
                                                 <option value="">{t("select_patient")}</option>
                                                 {patients.map((patient) => (
                                                     <option key={patient.id} value={patient.id}>
-                                                        {patient.name} ({patient.age}, {t(patient.gender)})
+                                                        {patient.full_name}
                                                     </option>
                                                 ))}
                                             </select>
@@ -1161,7 +1186,7 @@ export default function ASchedule() {
                                                 <option value="">{t("select_doctor")}</option>
                                                 {doctors.map((doctor) => (
                                                     <option key={doctor.id} value={doctor.id}>
-                                                        {doctor.name} ({doctor.specialization})
+                                                        {doctor.first_name} {doctor.last_name} - {doctor.specialization}
                                                     </option>
                                                 ))}
                                             </select>
@@ -1184,7 +1209,7 @@ export default function ASchedule() {
                                                 <option value="">{t("select_room")}</option>
                                                 {rooms.map((room) => (
                                                     <option key={room.id} value={room.id}>
-                                                        {room.name} ({room.type})
+                                                        {room.name} - {room.type}
                                                     </option>
                                                 ))}
                                             </select>
@@ -1200,9 +1225,10 @@ export default function ASchedule() {
                                             onChange={handleSelectedAppointmentChange}
                                             required
                                         >
-                                            <option value="pending">{t("pending")}</option>
-                                            <option value="in-progress">{t("in_progress")}</option>
-                                            <option value="completed">{t("completed")}</option>
+                                            <option value="expected">{t("expected")}</option>
+                                            <option value="accepted">{t("accepted")}</option>
+                                            <option value="progress">{t("progress")}</option>
+                                            <option value="finished">{t("finished")}</option>
                                             <option value="cancelled">{t("cancelled")}</option>
                                         </select>
                                     </div>
@@ -1225,17 +1251,25 @@ export default function ASchedule() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="time">{t("time")}</label>
-                                        <div className="input-icon-wrapper">
-                                            <FaClock className="input-icon" />
-                                            <input
-                                                type="time"
-                                                id="time"
-                                                name="time"
-                                                value={selectedAppointment.time}
-                                                onChange={handleSelectedAppointmentChange}
-                                                required
-                                            />
+                                        <label>{t("time")}</label>
+                                        {timeError && (
+                                            <div className="time-error">
+                                                <FaExclamationCircle /> {timeError}
+                                            </div>
+                                        )}
+                                        <div className="time-slots-container">
+                                            {availableTimes.map((slot, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    className={`time-slot ${slot.isBooked ? "booked" : ""} ${selectedAppointment.time === slot.time ? "selected" : ""}`}
+                                                    onClick={() => !slot.isBooked && handleEditTimeSelect(slot.time)}
+                                                    disabled={slot.isBooked && selectedAppointment.time !== slot.time}
+                                                >
+                                                    <FaClock className="time-icon" />
+                                                    {slot.time}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -1245,7 +1279,7 @@ export default function ASchedule() {
                                     <textarea
                                         id="diagnosis"
                                         name="diagnosis"
-                                        value={selectedAppointment.diagnosis}
+                                        value={selectedAppointment.diagnosis || ""}
                                         onChange={handleSelectedAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_diagnosis")}
@@ -1257,11 +1291,25 @@ export default function ASchedule() {
                                     <textarea
                                         id="notes"
                                         name="notes"
-                                        value={selectedAppointment.notes}
+                                        value={selectedAppointment.notes || ""}
                                         onChange={handleSelectedAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_notes")}
                                     ></textarea>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>{t("payment_amount")}</label>
+                                    <div className="input-icon-wrapper">
+                                        <FaMoneyBillWave className="input-icon" />
+                                        <input
+                                            type="number"
+                                            name="payment_amount"
+                                            value={selectedAppointment.payment_amount || ""}
+                                            onChange={handleSelectedAppointmentChange}
+                                            placeholder={t("enter_payment_amount")}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -1280,4 +1328,3 @@ export default function ASchedule() {
         </div>
     )
 }
-
