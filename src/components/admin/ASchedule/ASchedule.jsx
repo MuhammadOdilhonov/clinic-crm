@@ -19,7 +19,7 @@ import {
     FaClock,
     FaBuilding,
     FaExclamationCircle,
-    FaMoneyBillWave,
+    FaMoneyBillWave, // Fixed: Added missing import
 } from "react-icons/fa"
 import apiAppointments from "../../../api/apiAppointments"
 
@@ -47,71 +47,142 @@ export default function ASchedule() {
         roomId: "",
         date: "",
         time: "",
-        status: "pending",
+        status: "expected",
         diagnosis: "",
         notes: "",
         branch: selectedBranch === "all" ? "" : selectedBranch,
     })
     const [step, setStep] = useState(1)
     const [availableTimes, setAvailableTimes] = useState([])
+    const [busyTimes, setBusyTimes] = useState([])
     const [filterData, setFilterData] = useState({
         branches: [],
         customers: [],
         doctors: [],
         cabinets: [],
     })
-    const [busyTimes, setBusyTimes] = useState([])
-    const [editLoading, setEditLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
     const [timeError, setTimeError] = useState("")
 
     // Fetch appointments, doctors, patients, and rooms data
     useEffect(() => {
-        fetchData()
-    }, [selectedBranch, filterDoctor, filterStatus, searchTerm])
+        fetchAppointments()
+    }, [selectedBranch, currentPage, itemsPerPage, filterStatus, filterDoctor])
 
-    // Update available times when date or room changes
+    // Load filter data when branch changes
+    useEffect(() => {
+        if (selectedBranch !== "all") {
+            fetchFilterData(selectedBranch)
+        } else if (newAppointment.branch) {
+            fetchFilterData(newAppointment.branch)
+        } else {
+            // If all branches selected, fetch data for the first branch or default
+            fetchFilterData(1) // Default to first branch
+        }
+    }, [selectedBranch, newAppointment.branch])
+
+    // Update available times when date, doctor, or room changes
     useEffect(() => {
         if (newAppointment.date && newAppointment.doctorId && newAppointment.roomId) {
             fetchBusyTimes()
         }
     }, [newAppointment.date, newAppointment.doctorId, newAppointment.roomId])
 
-    // Fetch all necessary data
-    const fetchData = async () => {
-        try {
-            setLoading(true)
+    // Filter appointments based on filters and search
+    useEffect(() => {
+        let result = [...appointments]
 
-            // Fetch appointments
-            const params = {}
+        // Filter by doctor
+        if (filterDoctor !== "all") {
+            result = result.filter((appointment) => appointment.doctorId === Number.parseInt(filterDoctor))
+        }
+
+        // Filter by status
+        if (filterStatus !== "all") {
+            result = result.filter((appointment) => appointment.status === filterStatus)
+        }
+
+        // Filter by search term
+        if (searchTerm) {
+            result = result.filter(
+                (appointment) =>
+                    appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    appointment.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()),
+            )
+        }
+
+        setFilteredAppointments(result)
+    }, [appointments, filterDoctor, filterStatus, searchTerm])
+
+    // Fetch appointments from API
+    const fetchAppointments = async () => {
+        setLoading(true)
+        try {
+            const params = {
+                page: currentPage + 1,
+                page_size: itemsPerPage,
+            }
+
+            // Add filters if they are set
             if (filterStatus !== "all") params.status = filterStatus
             if (filterDoctor !== "all") params.doctor = filterDoctor
             if (selectedBranch !== "all") params.branch = selectedBranch
             if (searchTerm) params.search = searchTerm
 
-            const appointmentsData = await apiAppointments.fetchAppointments(params)
-            console.log("Appointments data:", appointmentsData)
+            const data = await apiAppointments.fetchAppointments(params)
+            console.log("Appointments data:", data)
 
-            // Fetch filter data for the selected branch
-            const branchId = selectedBranch === "all" ? 1 : selectedBranch // Default to first branch if all selected
-            const filterDataResponse = await apiAppointments.fetchFilterData(branchId)
-            console.log("Filter data:", filterDataResponse)
+            // Transform API data to match component structure
+            const transformedAppointments = (data.results || []).map((appointment) => ({
+                id: appointment.id,
+                patientId: appointment.customer,
+                patientName: appointment.customer_name,
+                doctorId: appointment.doctor,
+                doctorName: appointment.doctor_name,
+                roomId: appointment.room,
+                roomName: appointment.room_name,
+                date: appointment.date ? new Date(appointment.date).toISOString().split("T")[0] : "",
+                time: appointment.date
+                    ? new Date(appointment.date).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                    : "",
+                status: appointment.status,
+                diagnosis: appointment.diognosis || "",
+                notes: appointment.comment || "",
+                branch: appointment.branch,
+                branch_name: appointment.branch_name,
+                payment_amount: appointment.payment_amount || "",
+            }))
 
-            // Set the data
-            setAppointments(appointmentsData.results || [])
-            setFilteredAppointments(appointmentsData.results || [])
-            setFilterData(filterDataResponse)
-
-            // Extract doctors, patients, and rooms from filter data
-            setDoctors(filterDataResponse.doctors || [])
-            setPatients(filterDataResponse.customers || [])
-            setRooms(filterDataResponse.cabinets || [])
-
+            setAppointments(transformedAppointments)
+            setFilteredAppointments(transformedAppointments)
+            setTotalItems(data.count || 0)
             setError(null)
         } catch (err) {
-            console.error("Error fetching data:", err)
-            setError("Failed to load data. Please try again.")
+            console.error("Error loading appointments:", err)
+            setError("Error loading appointments")
+            setAppointments([])
+            setFilteredAppointments([])
         } finally {
             setLoading(false)
+        }
+    }
+
+    // Fetch filter data (branches, customers, doctors, cabinets)
+    const fetchFilterData = async (branchId) => {
+        try {
+            const data = await apiAppointments.fetchFilterData(branchId)
+            console.log("Filter data:", data)
+            setFilterData(data)
+
+            // Set doctors, patients, and rooms from the filter data
+            setDoctors(data.doctors || [])
+            setPatients(data.customers || [])
+            setRooms(data.cabinets || [])
+        } catch (err) {
+            console.error("Error loading filter data:", err)
         }
     }
 
@@ -119,7 +190,7 @@ export default function ASchedule() {
     const fetchBusyTimes = async () => {
         try {
             const params = {
-                branchId: selectedBranch === "all" ? newAppointment.branch : selectedBranch,
+                branchId: newAppointment.branch || selectedBranch,
                 doctorId: newAppointment.doctorId,
                 cabinetId: newAppointment.roomId,
                 date: newAppointment.date,
@@ -132,7 +203,7 @@ export default function ASchedule() {
             // Generate available time slots
             generateTimeSlots(busyTimesData)
         } catch (err) {
-            console.error("Error fetching busy times:", err)
+            console.error("Error loading busy times:", err)
         }
     }
 
@@ -153,77 +224,6 @@ export default function ASchedule() {
 
         setAvailableTimes(slots)
     }
-
-    // Fetch a single appointment by ID
-    const fetchAppointmentById = async (id) => {
-        setEditLoading(true)
-        try {
-            const data = await apiAppointments.fetchAppointmentById(id)
-            console.log("Appointment details:", data)
-
-            // Format the date and time for display and form
-            let formattedDate = ""
-            let formattedTime = ""
-
-            if (data.date) {
-                try {
-                    const dateObj = new Date(data.date)
-                    if (!isNaN(dateObj.getTime())) {
-                        formattedDate = dateObj.toISOString().split("T")[0]
-                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
-                    }
-                } catch (error) {
-                    console.error("Error formatting date/time:", error)
-                }
-            }
-
-            // Prepare the appointment data with formatted values
-            const appointmentData = {
-                ...data,
-                patientId: data.customer.toString(),
-                doctorId: data.doctor.toString(),
-                roomId: data.room.toString(),
-                date: formattedDate,
-                time: formattedTime,
-            }
-
-            setSelectedAppointment(appointmentData)
-            return appointmentData
-        } catch (err) {
-            console.error("Error loading appointment:", err)
-            alert("Error loading appointment details")
-            return null
-        } finally {
-            setEditLoading(false)
-        }
-    }
-
-    // Filter appointments based on filters and search
-    useEffect(() => {
-        let result = [...appointments]
-
-        // Filter by doctor
-        if (filterDoctor !== "all") {
-            result = result.filter((appointment) => appointment.doctor === Number.parseInt(filterDoctor))
-        }
-
-        // Filter by status
-        if (filterStatus !== "all") {
-            result = result.filter((appointment) => appointment.status === filterStatus)
-        }
-
-        // Filter by search term
-        if (searchTerm) {
-            result = result.filter(
-                (appointment) =>
-                    appointment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.diognosis?.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-        }
-
-        setFilteredAppointments(result)
-    }, [appointments, filterDoctor, filterStatus, searchTerm])
 
     // Helper function to format date
     function formatDate(date) {
@@ -258,11 +258,7 @@ export default function ASchedule() {
     // Get appointments for a specific date
     const getAppointmentsForDate = (date) => {
         const dateString = formatDate(date)
-        return filteredAppointments.filter((appointment) => {
-            if (!appointment.date) return false
-            const appointmentDate = new Date(appointment.date)
-            return formatDate(appointmentDate) === dateString
-        })
+        return filteredAppointments.filter((appointment) => appointment.date === dateString)
     }
 
     // Navigate to previous week/day
@@ -297,6 +293,12 @@ export default function ASchedule() {
         setSearchTerm(e.target.value)
     }
 
+    // Handle search submit
+    const handleSearchSubmit = (e) => {
+        e.preventDefault()
+        fetchAppointments()
+    }
+
     // Handle filter changes
     const handleFilterDoctor = (e) => {
         setFilterDoctor(e.target.value)
@@ -329,29 +331,61 @@ export default function ASchedule() {
     const openEditModal = async (appointment) => {
         try {
             // Fetch the latest appointment data from the server
-            const latestAppointmentData = await fetchAppointmentById(appointment.id)
+            const latestAppointmentData = await apiAppointments.fetchAppointmentById(appointment.id)
 
-            if (latestAppointmentData) {
-                setSelectedAppointment(latestAppointmentData)
+            // Format date and time for the form
+            let formattedDate = ""
+            let formattedTime = ""
 
-                // Fetch busy times for the selected date, doctor, and room
-                if (latestAppointmentData.date && latestAppointmentData.doctorId && latestAppointmentData.roomId) {
-                    const params = {
-                        branchId: latestAppointmentData.branch,
-                        doctorId: latestAppointmentData.doctorId,
-                        cabinetId: latestAppointmentData.roomId,
-                        date: latestAppointmentData.date,
+            if (latestAppointmentData.date) {
+                try {
+                    const dateObj = new Date(latestAppointmentData.date)
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split("T")[0]
+                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
                     }
+                } catch (error) {
+                    console.error("Error formatting date/time:", error)
+                }
+            }
 
-                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
-                    setBusyTimes(busyTimesData)
+            // Transform API data to match component structure
+            const transformedAppointment = {
+                id: latestAppointmentData.id,
+                patientId: latestAppointmentData.customer.toString(),
+                patientName: latestAppointmentData.customer_name,
+                doctorId: latestAppointmentData.doctor.toString(),
+                doctorName: latestAppointmentData.doctor_name,
+                roomId: latestAppointmentData.room.toString(),
+                roomName: latestAppointmentData.room_name,
+                date: formattedDate,
+                time: formattedTime,
+                status: latestAppointmentData.status,
+                diagnosis: latestAppointmentData.diognosis || "",
+                notes: latestAppointmentData.comment || "",
+                branch: latestAppointmentData.branch.toString(),
+                payment_amount: latestAppointmentData.payment_amount || "",
+            }
 
-                    // Generate available time slots
-                    generateTimeSlots(busyTimesData)
+            setSelectedAppointment(transformedAppointment)
+
+            // Fetch busy times for the selected date, doctor, and room
+            if (formattedDate && transformedAppointment.doctorId && transformedAppointment.roomId) {
+                const params = {
+                    branchId: transformedAppointment.branch,
+                    doctorId: transformedAppointment.doctorId,
+                    cabinetId: transformedAppointment.roomId,
+                    date: formattedDate,
                 }
 
-                setShowEditModal(true)
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData)
             }
+
+            setShowEditModal(true)
         } catch (error) {
             console.error("Error opening edit modal:", error)
             alert("Error loading appointment details")
@@ -396,16 +430,7 @@ export default function ASchedule() {
             })
 
             // Fetch new filter data for the selected branch
-            apiAppointments
-                .fetchFilterData(value)
-                .then((data) => {
-                    setFilterData(data)
-                    setDoctors(data.doctors || [])
-                    setRooms(data.cabinets || [])
-                })
-                .catch((err) => {
-                    console.error("Error fetching filter data:", err)
-                })
+            fetchFilterData(value)
         } else {
             setNewAppointment({
                 ...newAppointment,
@@ -423,6 +448,99 @@ export default function ASchedule() {
         })
     }
 
+    // Handle selected appointment form input changes
+    const handleSelectedAppointmentChange = async (e) => {
+        const { name, value } = e.target
+        setTimeError("")
+
+        // Create updated appointment data
+        const updatedAppointment = {
+            ...selectedAppointment,
+            [name]: value,
+        }
+
+        // Handle branch change - reset dependent fields
+        if (name === "branch") {
+            updatedAppointment.doctorId = ""
+            updatedAppointment.doctorName = ""
+            updatedAppointment.roomId = ""
+            updatedAppointment.roomName = ""
+
+            // Fetch new filter data for the selected branch
+            await fetchFilterData(value)
+        }
+
+        // Handle doctor change
+        if (name === "doctorId" && value) {
+            const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(value))
+            updatedAppointment.doctorName = selectedDoctor ? `${selectedDoctor.first_name} ${selectedDoctor.last_name}` : ""
+        }
+
+        // Handle patient change
+        if (name === "patientId" && value) {
+            const selectedPatient = patients.find((p) => p.id === Number.parseInt(value))
+            updatedAppointment.patientName = selectedPatient ? selectedPatient.full_name : ""
+        }
+
+        // Handle room change
+        if (name === "roomId" && value) {
+            const selectedRoom = rooms.find((r) => r.id === Number.parseInt(value))
+            updatedAppointment.roomName = selectedRoom ? selectedRoom.name : ""
+        }
+
+        // Handle doctor or room change - update busy times
+        if (
+            (name === "doctorId" || name === "roomId") &&
+            updatedAppointment.date &&
+            updatedAppointment.doctorId &&
+            updatedAppointment.roomId
+        ) {
+            const params = {
+                branchId: updatedAppointment.branch,
+                doctorId: updatedAppointment.doctorId,
+                cabinetId: updatedAppointment.roomId,
+                date: updatedAppointment.date,
+            }
+
+            const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+            setBusyTimes(busyTimesData)
+
+            // Generate available time slots
+            generateTimeSlots(busyTimesData)
+        }
+
+        // Handle date change - update busy times and reset time
+        if (name === "date") {
+            updatedAppointment.time = ""
+
+            if (updatedAppointment.doctorId && updatedAppointment.roomId) {
+                const params = {
+                    branchId: updatedAppointment.branch,
+                    doctorId: updatedAppointment.doctorId,
+                    cabinetId: updatedAppointment.roomId,
+                    date: value,
+                }
+
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData)
+            }
+        }
+
+        setSelectedAppointment(updatedAppointment)
+    }
+
+    // Handle edit time selection
+    const handleEditTimeSelect = (time) => {
+        setTimeError("")
+        setSelectedAppointment({
+            ...selectedAppointment,
+            time: time,
+        })
+    }
+
     // Next step in appointment creation
     const nextStep = () => {
         setStep(step + 1)
@@ -436,13 +554,29 @@ export default function ASchedule() {
     // Handle add appointment form submission
     const handleAddAppointment = async (e) => {
         e.preventDefault()
+        // Format date and time for API
+        const formattedDate = `${newAppointment.date}T${newAppointment.time}:00Z`
 
+        const appointmentData = {
+            branch: Number.parseInt(newAppointment.branch),
+            customer: Number.parseInt(newAppointment.patientId),
+            doctor: Number.parseInt(newAppointment.doctorId),
+            room: Number.parseInt(newAppointment.roomId),
+            full_date: formattedDate,
+            status: newAppointment.status,
+            comment: newAppointment.notes,
+            diognosis: newAppointment.diagnosis,
+            payment_amount: newAppointment.payment_amount || "",
+            organs: {},
+        }
+        console.log(appointmentData);
+        
         try {
             // Format date and time for API
             const formattedDate = `${newAppointment.date}T${newAppointment.time}:00Z`
 
             const appointmentData = {
-                branch: Number.parseInt(newAppointment.branch || selectedBranch),
+                branch: Number.parseInt(newAppointment.branch),
                 customer: Number.parseInt(newAppointment.patientId),
                 doctor: Number.parseInt(newAppointment.doctorId),
                 room: Number.parseInt(newAppointment.roomId),
@@ -458,7 +592,7 @@ export default function ASchedule() {
             await apiAppointments.createAppointment(appointmentData)
 
             // Refresh appointments list
-            fetchData()
+            fetchAppointments()
 
             // Close modal
             setShowAddModal(false)
@@ -486,14 +620,14 @@ export default function ASchedule() {
                 comment: selectedAppointment.notes || "",
                 diognosis: selectedAppointment.diagnosis || "",
                 payment_amount: selectedAppointment.payment_amount || "",
-                organs: selectedAppointment.organs || {},
+                organs: {},
             }
 
             console.log("Updated appointment data:", appointmentData)
             await apiAppointments.updateAppointment(selectedAppointment.id, appointmentData)
 
             // Refresh appointments list
-            fetchData()
+            fetchAppointments()
 
             // Close modal
             setShowEditModal(false)
@@ -510,7 +644,7 @@ export default function ASchedule() {
                 await apiAppointments.deleteAppointment(id)
 
                 // Refresh appointments list
-                fetchData()
+                fetchAppointments()
             } catch (err) {
                 console.error("Error deleting appointment:", err)
                 alert("Error deleting appointment")
@@ -518,74 +652,31 @@ export default function ASchedule() {
         }
     }
 
-    // Handle selected appointment form input changes
-    const handleSelectedAppointmentChange = (e) => {
-        const { name, value } = e.target
-        setTimeError("")
-
-        setSelectedAppointment({
-            ...selectedAppointment,
-            [name]: value,
-        })
-
-        // If date, doctor, or room changes, update busy times
-        if (name === "date" || name === "doctorId" || name === "roomId") {
-            if (selectedAppointment.date && selectedAppointment.doctorId && selectedAppointment.roomId) {
-                const params = {
-                    branchId: selectedAppointment.branch,
-                    doctorId: name === "doctorId" ? value : selectedAppointment.doctorId,
-                    cabinetId: name === "roomId" ? value : selectedAppointment.roomId,
-                    date: name === "date" ? value : selectedAppointment.date,
-                }
-
-                apiAppointments
-                    .fetchBusyTimes(params)
-                    .then((data) => {
-                        setBusyTimes(data)
-                        generateTimeSlots(data)
-                    })
-                    .catch((err) => {
-                        console.error("Error fetching busy times:", err)
-                    })
-            }
-        }
-    }
-
-    // Handle time selection in edit mode
-    const handleEditTimeSelect = (time) => {
-        setTimeError("")
-        setSelectedAppointment({
-            ...selectedAppointment,
-            time: time,
-        })
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+        // Explicitly fetch appointments when page changes
+        setTimeout(() => {
+            fetchAppointments()
+        }, 0)
     }
 
     // Format time for display
-    const formatTimeForDisplay = (dateString) => {
-        if (!dateString) return ""
-
-        let date
-        try {
-            if (typeof dateString === "string" && dateString.includes("T")) {
-                date = new Date(dateString)
-            } else {
-                date = new Date(dateString)
-            }
-            return date.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
-        } catch (error) {
-            console.error("Error formatting time:", error)
-            return ""
-        }
+    const formatTime = (time) => {
+        return time
     }
 
     // Get status badge class
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case "finished":
+            case "completed":
                 return "completed"
             case "progress":
+            case "in-progress":
                 return "in-progress"
             case "expected":
+            case "pending":
                 return "pending"
             case "cancelled":
                 return "cancelled"
@@ -607,6 +698,12 @@ export default function ASchedule() {
                 return t("finished")
             case "cancelled":
                 return t("cancelled")
+            case "pending":
+                return t("pending")
+            case "in-progress":
+                return t("in_progress")
+            case "completed":
+                return t("completed")
             default:
                 return status
         }
@@ -1000,11 +1097,11 @@ export default function ASchedule() {
                                                 className={`appointment-card ${getStatusBadgeClass(appointment.status)}`}
                                                 onClick={() => openEditModal(appointment)}
                                             >
-                                                <div className="appointment-time">{formatTimeForDisplay(appointment.date)}</div>
-                                                <div className="appointment-patient">{appointment.customer_name}</div>
-                                                <div className="appointment-doctor">{appointment.doctor_name}</div>
-                                                <div className="appointment-room">{appointment.room_name}</div>
-                                                <div className="appointment-diagnosis">{appointment.diognosis}</div>
+                                                <div className="appointment-time">{formatTime(appointment.time)}</div>
+                                                <div className="appointment-patient">{appointment.patientName}</div>
+                                                <div className="appointment-doctor">{appointment.doctorName}</div>
+                                                <div className="appointment-room">{appointment.roomName}</div>
+                                                <div className="appointment-diagnosis">{appointment.diagnosis}</div>
                                                 <div className="appointment-status">
                                                     <span className={`status-badge ${appointment.status}`}>
                                                         {getStatusTranslation(appointment.status)}
@@ -1054,18 +1151,14 @@ export default function ASchedule() {
                                 </thead>
                                 <tbody>
                                     {getAppointmentsForDate(currentDate)
-                                        .sort((a, b) => {
-                                            const timeA = formatTimeForDisplay(a.date) || ""
-                                            const timeB = formatTimeForDisplay(b.date) || ""
-                                            return timeA.localeCompare(timeB)
-                                        })
+                                        .sort((a, b) => a.time.localeCompare(b.time))
                                         .map((appointment) => (
                                             <tr key={appointment.id}>
-                                                <td>{formatTimeForDisplay(appointment.date)}</td>
-                                                <td>{appointment.customer_name}</td>
-                                                <td>{appointment.doctor_name}</td>
-                                                <td>{appointment.room_name}</td>
-                                                <td>{appointment.diognosis}</td>
+                                                <td>{appointment.time}</td>
+                                                <td>{appointment.patientName}</td>
+                                                <td>{appointment.doctorName}</td>
+                                                <td>{appointment.roomName}</td>
+                                                <td>{appointment.diagnosis}</td>
                                                 <td>
                                                     <span className={`status-badge ${appointment.status}`}>
                                                         {getStatusTranslation(appointment.status)}
@@ -1249,28 +1342,34 @@ export default function ASchedule() {
                                             />
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="form-group">
-                                        <label>{t("time")}</label>
-                                        {timeError && (
-                                            <div className="time-error">
-                                                <FaExclamationCircle /> {timeError}
-                                            </div>
-                                        )}
-                                        <div className="time-slots-container">
-                                            {availableTimes.map((slot, index) => (
-                                                <button
-                                                    key={index}
-                                                    type="button"
-                                                    className={`time-slot ${slot.isBooked ? "booked" : ""} ${selectedAppointment.time === slot.time ? "selected" : ""}`}
-                                                    onClick={() => !slot.isBooked && handleEditTimeSelect(slot.time)}
-                                                    disabled={slot.isBooked && selectedAppointment.time !== slot.time}
-                                                >
-                                                    <FaClock className="time-icon" />
-                                                    {slot.time}
-                                                </button>
-                                            ))}
+                                <div className="form-group">
+                                    <label>{t("time")}</label>
+                                    {timeError && (
+                                        <div className="time-error">
+                                            <FaExclamationCircle /> {timeError}
                                         </div>
+                                    )}
+                                    <div className="time-slots-container">
+                                        {availableTimes.map((slot, index) => (
+                                            <button
+                                                key={index}
+                                                type="button"
+                                                className={`time-slot ${slot.isBooked && selectedAppointment.time !== slot.time ? "booked" : ""} ${selectedAppointment.time === slot.time ? "selected" : ""
+                                                    }`}
+                                                onClick={() =>
+                                                    (!slot.isBooked || selectedAppointment.time === slot.time) && handleEditTimeSelect(slot.time)
+                                                }
+                                                disabled={slot.isBooked && selectedAppointment.time !== slot.time}
+                                            >
+                                                <FaClock className="time-icon" />
+                                                {slot.time}
+                                            </button>
+                                        ))}
+                                        {availableTimes.length === 0 && (
+                                            <div className="no-times-message">{t("please_select_date_and_room_first")}</div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1279,7 +1378,7 @@ export default function ASchedule() {
                                     <textarea
                                         id="diagnosis"
                                         name="diagnosis"
-                                        value={selectedAppointment.diagnosis || ""}
+                                        value={selectedAppointment.diagnosis}
                                         onChange={handleSelectedAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_diagnosis")}
@@ -1291,7 +1390,7 @@ export default function ASchedule() {
                                     <textarea
                                         id="notes"
                                         name="notes"
-                                        value={selectedAppointment.notes || ""}
+                                        value={selectedAppointment.notes}
                                         onChange={handleSelectedAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_notes")}
@@ -1299,11 +1398,12 @@ export default function ASchedule() {
                                 </div>
 
                                 <div className="form-group">
-                                    <label>{t("payment_amount")}</label>
+                                    <label htmlFor="payment_amount">{t("payment_amount")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaMoneyBillWave className="input-icon" />
                                         <input
                                             type="number"
+                                            id="payment_amount"
                                             name="payment_amount"
                                             value={selectedAppointment.payment_amount || ""}
                                             onChange={handleSelectedAppointmentChange}
