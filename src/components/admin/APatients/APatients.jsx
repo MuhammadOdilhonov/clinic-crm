@@ -1,30 +1,39 @@
-import React, { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
-import { useNavigate } from "react-router-dom" 
+import { useNavigate } from "react-router-dom"
 import {
     FaSearch,
     FaFilter,
     FaPlus,
     FaEdit,
     FaTrash,
-    FaFileMedical,
-    FaCalendarPlus,
-    FaUserInjured,
     FaExclamationTriangle,
     FaFileExport,
     FaFileImport,
+    FaUserInjured,
 } from "react-icons/fa"
+import apiPatients from "../../../api/apiPatients"
+import apiBranches from "../../../api/apiBranches"
+import Pagination from "../../pagination/Pagination"
+import ConfirmModal from "../../modal/ConfirmModal"
+import SuccessModal from "../../modal/SuccessModal"
 
 export default function APatients() {
     const { selectedBranch } = useAuth()
     const { t } = useLanguage()
     const navigate = useNavigate()
+
+    // State management
     const [patients, setPatients] = useState([])
-    const [filteredPatients, setFilteredPatients] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
     const [filterGender, setFilterGender] = useState("all")
+    const [filterAge, setFilterAge] = useState("all")
     const [filterStatus, setFilterStatus] = useState("all")
+    const [filterBranch, setFilterBranch] = useState(selectedBranch)
+    const [showFilters, setShowFilters] = useState(false)
     const [sortBy, setSortBy] = useState("name")
     const [sortOrder, setSortOrder] = useState("asc")
     const [showAddModal, setShowAddModal] = useState(false)
@@ -32,186 +41,127 @@ export default function APatients() {
     const [selectedPatient, setSelectedPatient] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [newPatient, setNewPatient] = useState({
-        name: "",
-        age: "",
-        gender: "male",
-        phone: "",
-        email: "",
-        address: "",
-        bloodGroup: "",
-        allergies: "",
-        medicalHistory: "",
-        emergencyContact: "",
-        registrationDate: new Date().toISOString().split("T")[0],
+    const [branches, setBranches] = useState([])
+    const [branchesLoading, setBranchesLoading] = useState(true)
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(0)
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [confirmModalProps, setConfirmModalProps] = useState({
+        title: "",
+        message: "",
+        confirmText: "",
+        cancelText: "",
+        type: "warning",
+        onConfirm: () => { },
+    })
+    const [successModalProps, setSuccessModalProps] = useState({
+        title: "",
+        message: "",
     })
 
-    // Fetch patients data
+    // New patient state
+    const [newPatient, setNewPatient] = useState({
+        full_name: "",
+        age: 18,
+        gender: "male",
+        phone_number: "",
+        email: "",
+        location: "",
+        status: "faol",
+        branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
+    })
+
+    // Fetch branches from API
     useEffect(() => {
-        const fetchPatients = async () => {
+        const fetchBranches = async () => {
             try {
-                setLoading(true)
-
-                // Simulate API call
-                setTimeout(() => {
-                    // Mock patients data
-                    const mockPatients = [
-                        {
-                            id: 1,
-                            name: "Alisher Karimov",
-                            age: 45,
-                            gender: "male",
-                            phone: "+998 90 123 45 67",
-                            email: "alisher@example.com",
-                            address: "Tashkent, Chilanzar district",
-                            bloodGroup: "A+",
-                            allergies: "Penicillin",
-                            medicalHistory: "Hypertension, Diabetes",
-                            emergencyContact: "+998 90 987 65 43",
-                            registrationDate: "2023-01-15",
-                            lastVisit: "2023-05-15",
-                            status: "active",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 2,
-                            name: "Nilufar Rahimova",
-                            age: 32,
-                            gender: "female",
-                            phone: "+998 90 234 56 78",
-                            email: "nilufar@example.com",
-                            address: "Tashkent, Yunusabad district",
-                            bloodGroup: "B-",
-                            allergies: "None",
-                            medicalHistory: "Migraine",
-                            emergencyContact: "+998 90 876 54 32",
-                            registrationDate: "2023-02-20",
-                            lastVisit: "2023-05-14",
-                            status: "active",
-                            branch: "branch1",
-                        },
-                        {
-                            id: 3,
-                            name: "Sardor Aliyev",
-                            age: 28,
-                            gender: "male",
-                            phone: "+998 90 345 67 89",
-                            email: "sardor@example.com",
-                            address: "Tashkent, Mirabad district",
-                            bloodGroup: "O+",
-                            allergies: "Sulfa drugs",
-                            medicalHistory: "Asthma",
-                            emergencyContact: "+998 90 765 43 21",
-                            registrationDate: "2023-03-10",
-                            lastVisit: "2023-05-13",
-                            status: "active",
-                            branch: "branch2",
-                        },
-                        {
-                            id: 4,
-                            name: "Malika Umarova",
-                            age: 50,
-                            gender: "female",
-                            phone: "+998 90 456 78 90",
-                            email: "malika@example.com",
-                            address: "Tashkent, Shaykhantaur district",
-                            bloodGroup: "AB+",
-                            allergies: "Latex",
-                            medicalHistory: "Arthritis",
-                            emergencyContact: "+998 90 654 32 10",
-                            registrationDate: "2023-04-05",
-                            lastVisit: "2023-05-12",
-                            status: "inactive",
-                            branch: "branch3",
-                        },
-                        {
-                            id: 5,
-                            name: "Jasur Toshmatov",
-                            age: 35,
-                            gender: "male",
-                            phone: "+998 90 567 89 01",
-                            email: "jasur@example.com",
-                            address: "Tashkent, Almazar district",
-                            bloodGroup: "A-",
-                            allergies: "None",
-                            medicalHistory: "None",
-                            emergencyContact: "+998 90 543 21 09",
-                            registrationDate: "2023-05-01",
-                            lastVisit: "2023-05-11",
-                            status: "active",
-                            branch: "branch2",
-                        },
-                    ]
-
-                    // Filter by branch if needed
-                    let branchFilteredPatients = mockPatients
-                    if (selectedBranch !== "all") {
-                        branchFilteredPatients = mockPatients.filter((patient) => patient.branch === selectedBranch)
-                    }
-
-                    setPatients(branchFilteredPatients)
-                    setFilteredPatients(branchFilteredPatients)
-                    setLoading(false)
-                }, 500)
+                setBranchesLoading(true)
+                const branchesData = await apiBranches.fetchBranches()
+                setBranches(branchesData)
+                setBranchesLoading(false)
             } catch (err) {
-                setError(err.message || "An error occurred")
-                setLoading(false)
+                console.error("Error fetching branches:", err)
+                setBranchesLoading(false)
             }
         }
 
-        fetchPatients()
-    }, [selectedBranch])
+        fetchBranches()
+    }, [])
 
-    // Filter and sort patients
+    // Update branch in new patient form when selected branch changes
     useEffect(() => {
-        let result = [...patients]
-
-        // Apply search filter
-        if (searchTerm) {
-            result = result.filter(
-                (patient) =>
-                    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    patient.phone.includes(searchTerm) ||
-                    patient.email.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-        }
-
-        // Apply gender filter
-        if (filterGender !== "all") {
-            result = result.filter((patient) => patient.gender === filterGender)
-        }
-
-        // Apply status filter
-        if (filterStatus !== "all") {
-            result = result.filter((patient) => patient.status === filterStatus)
-        }
-
-        // Apply sorting
-        result.sort((a, b) => {
-            let comparison = 0
-
-            switch (sortBy) {
-                case "name":
-                    comparison = a.name.localeCompare(b.name)
-                    break
-                case "age":
-                    comparison = a.age - b.age
-                    break
-                case "registrationDate":
-                    comparison = new Date(a.registrationDate) - new Date(b.registrationDate)
-                    break
-                case "lastVisit":
-                    comparison = new Date(a.lastVisit) - new Date(b.lastVisit)
-                    break
-                default:
-                    comparison = 0
-            }
-
-            return sortOrder === "asc" ? comparison : -comparison
+        setNewPatient({
+            ...newPatient,
+            branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
         })
 
-        setFilteredPatients(result)
-    }, [patients, searchTerm, filterGender, filterStatus, sortBy, sortOrder])
+        setFilterBranch(selectedBranch)
+    }, [selectedBranch])
+
+    // Fetch patients data from API
+    const fetchPatients = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            // Convert currentPage from 0-based to 1-based for API
+            const apiPage = currentPage + 1
+
+            // Get branch ID for filtering
+            const branchId = filterBranch === "all" ? null : filterBranch
+
+            // Prepare filter parameters
+            const filterParams = {
+                gender: filterGender !== "all" ? filterGender : null,
+                age_range: filterAge !== "all" ? filterAge : null,
+                status: filterStatus !== "all" ? filterStatus : null,
+                branch: branchId,
+                search: searchTerm || null,
+                sort_by: sortBy,
+                sort_order: sortOrder,
+            }
+
+            const response = await apiPatients.fetchPatients(apiPage, itemsPerPage, searchTerm, branchId, filterParams)
+
+            // Transform API data to match component structure
+            const transformedPatients = response.results.map((patient) => ({
+                id: patient.id,
+                name: patient.full_name,
+                age: patient.age,
+                gender: patient.gender,
+                phone: patient.phone_number,
+                email: patient.email || "",
+                address: patient.location || "",
+                lastVisit: patient.updated_at ? new Date(patient.updated_at).toISOString().split("T")[0] : "",
+                registrationDate: patient.created_at ? new Date(patient.created_at).toISOString().split("T")[0] : "",
+                diagnosis: patient.diagnosis || "",
+                doctor: patient.doctor || "",
+                branch: patient.branch,
+                status: patient.status || "faol",
+            }))
+
+            setPatients(transformedPatients)
+            setTotalItems(response.count)
+            setTotalPages(Math.ceil(response.count / itemsPerPage))
+            setLoading(false)
+        } catch (err) {
+            console.error("Error fetching patients:", err)
+            setError(err.message || "An error occurred while fetching patients")
+            setLoading(false)
+        }
+    }
+
+    // Fetch patients when dependencies change
+    useEffect(() => {
+        fetchPatients()
+    }, [currentPage, itemsPerPage, selectedBranch])
 
     // Handle search input
     const handleSearch = (e) => {
@@ -223,8 +173,21 @@ export default function APatients() {
         setFilterGender(e.target.value)
     }
 
+    const handleFilterAge = (e) => {
+        setFilterAge(e.target.value)
+    }
+
     const handleFilterStatus = (e) => {
         setFilterStatus(e.target.value)
+    }
+
+    const handleFilterBranch = (e) => {
+        setFilterBranch(e.target.value)
+    }
+
+    // Toggle filters
+    const toggleFilters = () => {
+        setShowFilters(!showFilters)
     }
 
     // Handle sort changes
@@ -237,27 +200,43 @@ export default function APatients() {
         }
     }
 
+    // Apply filters to patients
+    const applyFilters = () => {
+        setCurrentPage(0) // Reset to first page when applying filters
+        fetchPatients()
+    }
+
     // Open add patient modal
     const openAddModal = () => {
         setNewPatient({
-            name: "",
-            age: "",
+            full_name: "",
+            age: 18,
             gender: "male",
-            phone: "",
+            phone_number: "",
             email: "",
-            address: "",
-            bloodGroup: "",
-            allergies: "",
-            medicalHistory: "",
-            emergencyContact: "",
-            registrationDate: new Date().toISOString().split("T")[0],
+            location: "",
+            status: "faol",
+            branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
         })
         setShowAddModal(true)
     }
 
     // Open edit patient modal
     const openEditModal = (patient) => {
-        setSelectedPatient(patient)
+        // Transform patient data to match API format
+        const apiPatient = {
+            id: patient.id,
+            full_name: patient.name,
+            age: patient.age,
+            gender: patient.gender,
+            phone_number: patient.phone,
+            email: patient.email,
+            location: patient.address,
+            status: patient.status,
+            branch: patient.branch,
+        }
+
+        setSelectedPatient(apiPatient)
         setShowEditModal(true)
     }
 
@@ -266,45 +245,8 @@ export default function APatients() {
         const { name, value } = e.target
         setNewPatient({
             ...newPatient,
-            [name]: value,
+            [name]: name === "age" || name === "branch" ? (value === "" ? "" : Number.parseInt(value)) : value,
         })
-    }
-
-    const handleViewPatientDetails = (patientId) => {
-        navigate(`/dashboard/admin/patients/${patientId}`)
-    }
-    // Handle add patient form submission
-    const handleAddPatient = (e) => {
-        e.preventDefault()
-
-        const newPatientWithId = {
-            ...newPatient,
-            id: patients.length + 1,
-            lastVisit: newPatient.registrationDate,
-            status: "active",
-            branch: selectedBranch === "all" ? "branch1" : selectedBranch,
-        }
-
-        setPatients([...patients, newPatientWithId])
-        setShowAddModal(false)
-    }
-
-    // Handle edit patient form submission
-    const handleEditPatient = (e) => {
-        e.preventDefault()
-
-        const updatedPatients = patients.map((patient) => (patient.id === selectedPatient.id ? selectedPatient : patient))
-
-        setPatients(updatedPatients)
-        setShowEditModal(false)
-    }
-
-    // Handle delete patient
-    const handleDeletePatient = (id) => {
-        if (window.confirm(t("confirm_delete_patient"))) {
-            const updatedPatients = patients.filter((patient) => patient.id !== id)
-            setPatients(updatedPatients)
-        }
     }
 
     // Handle selected patient form input changes
@@ -312,12 +254,208 @@ export default function APatients() {
         const { name, value } = e.target
         setSelectedPatient({
             ...selectedPatient,
-            [name]: value,
+            [name]: name === "age" || name === "branch" ? Number.parseInt(value) : value,
         })
     }
 
+    // Handle add patient form submission
+    const handleAddPatient = async (e) => {
+        e.preventDefault()
+        try {
+            setLoading(true)
+
+            // Create patient using API
+            await apiPatients.createPatient(newPatient)
+
+            // Close the modal
+            setShowAddModal(false)
+            setLoading(false)
+
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_added_successfully"),
+            })
+            setShowSuccessModal(true)
+
+            // Refresh the patient list
+            fetchPatients()
+        } catch (err) {
+            console.error("Error adding patient:", err)
+            setError(err.message || "An error occurred while adding the patient")
+            setLoading(false)
+        }
+    }
+
+    const handleViewPatientDetails = (patientId) => {
+        navigate(`/dashboard/admin/patients/${patientId}`)
+    }
+
+    // Handle edit patient form submission
+    const handleEditPatient = async (e) => {
+        e.preventDefault()
+        try {
+            setLoading(true)
+
+            // Extract ID and remove it from the data to send
+            const { id, ...patientData } = selectedPatient
+
+            // Update patient using API
+            await apiPatients.updatePatient(id, patientData)
+
+            // Close the modal
+            setShowEditModal(false)
+            setLoading(false)
+
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_updated_successfully"),
+            })
+            setShowSuccessModal(true)
+
+            // Refresh the patient list
+            fetchPatients()
+        } catch (err) {
+            console.error("Error updating patient:", err)
+            setError(err.message || "An error occurred while updating the patient")
+            setLoading(false)
+        }
+    }
+
+    // Confirm delete patient
+    const confirmDeletePatient = (id, name) => {
+        setConfirmModalProps({
+            title: t("confirm_delete"),
+            message: t("confirm_delete_patient_message", { name }),
+            confirmText: t("delete"),
+            cancelText: t("cancel"),
+            type: "danger",
+            onConfirm: () => deletePatient(id),
+        })
+        setShowConfirmModal(true)
+    }
+
+    // Delete patient
+    const deletePatient = async (id) => {
+        try {
+            setLoading(true)
+            setShowConfirmModal(false)
+
+            // Delete patient using API
+            await apiPatients.deletePatient(id)
+
+            // Show success modal
+            setSuccessModalProps({
+                title: t("success"),
+                message: t("patient_deleted_successfully"),
+            })
+            setShowSuccessModal(true)
+
+            // Refresh the patient list
+            fetchPatients()
+            setLoading(false)
+        } catch (err) {
+            console.error("Error deleting patient:", err)
+            setError(err.message || "An error occurred while deleting the patient")
+            setLoading(false)
+        }
+    }
+
+    // Handle pagination page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page when changing items per page
+    }
+
+    // Export to PDF
+    const exportToPDF = async () => {
+        try {
+            setLoading(true)
+            // Call the API function to get PDF data
+            const pdfBlob = await apiPatients.exportToPDF()
+
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(new Blob([pdfBlob]))
+
+            // Create a temporary link element
+            const link = document.createElement("a")
+            link.href = url
+
+            // Set the filename for download
+            const currentDate = new Date().toISOString().split("T")[0]
+            link.setAttribute("download", `patients_${currentDate}.pdf`)
+
+            // Append to body, click to download, then remove
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            // Clean up the URL object
+            window.URL.revokeObjectURL(url)
+
+            setLoading(false)
+        } catch (err) {
+            console.error("Error exporting to PDF:", err)
+            setError(err.message || "An error occurred while exporting to PDF")
+            setLoading(false)
+
+            // Show error in a user-friendly way
+            alert(t("error_exporting_pdf"))
+        }
+    }
+
+    // Export to Excel
+    const exportToExcel = async () => {
+        try {
+            setLoading(true)
+
+            // Call the API function to get Excel data
+            const excelBlob = await apiPatients.exportToExcel()
+
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(new Blob([excelBlob]))
+
+            // Create a temporary link element
+            const link = document.createElement("a")
+            link.href = url
+
+            // Set the filename for download
+            const currentDate = new Date().toISOString().split("T")[0]
+            link.setAttribute("download", `patients_${currentDate}.xlsx`)
+
+            // Append to body, click to download, then remove
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            // Clean up the URL object
+            window.URL.revokeObjectURL(url)
+
+            setLoading(false)
+        } catch (err) {
+            console.error("Error exporting to Excel:", err)
+            setError(err.message || "An error occurred while exporting to Excel")
+            setLoading(false)
+
+            // Show error in a user-friendly way
+            alert(t("error_exporting_excel"))
+        }
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : t("unknown_branch")
+    }
+
     // Loading state
-    if (loading) {
+    if (loading && patients.length === 0) {
         return (
             <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -327,13 +465,13 @@ export default function APatients() {
     }
 
     // Error state
-    if (error) {
+    if (error && patients.length === 0) {
         return (
             <div className="error-container">
                 <FaExclamationTriangle className="error-icon" />
                 <h2>{t("error_occurred")}</h2>
                 <p>{error}</p>
-                <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                <button className="btn btn-primary" onClick={fetchPatients}>
                     {t("try_again")}
                 </button>
             </div>
@@ -350,39 +488,84 @@ export default function APatients() {
                     <button className="btn btn-primary" onClick={openAddModal}>
                         <FaPlus /> {t("add_patient")}
                     </button>
-                    <button className="btn btn-outline">
-                        <FaFileExport /> {t("export")}
+                    <button className="btn btn-outline" onClick={exportToPDF}>
+                        <FaFileExport /> PDF
                     </button>
-                    <button className="btn btn-outline">
-                        <FaFileImport /> {t("import")}
+                    <button className="btn btn-outline" onClick={exportToExcel}>
+                        <FaFileImport /> Excel
                     </button>
                 </div>
             </div>
 
             <div className="filters-bar">
-                <div className="search-box">
-                    <FaSearch />
-                    <input type="text" placeholder={t("search_patients")} value={searchTerm} onChange={handleSearch} />
+                <div className="search-filter">
+                    <div className="search-box">
+                        <FaSearch />
+                        <input
+                            type="text"
+                            placeholder={t("search_patients")}
+                            value={searchTerm}
+                            onChange={handleSearch}
+                            onKeyPress={(e) => e.key === "Enter" && applyFilters()}
+                        />
+                    </div>
+                    <button className={`filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
+                        <FaFilter /> {t("filters")}
+                    </button>
                 </div>
 
-                <div className="filters">
-                    <div className="filter-group">
-                        <FaFilter />
-                        <select value={filterGender} onChange={handleFilterGender}>
-                            <option value="all">{t("all_genders")}</option>
-                            <option value="male">{t("male")}</option>
-                            <option value="female">{t("female")}</option>
-                        </select>
-                    </div>
+                {showFilters && (
+                    <div className="advanced-filters">
+                        <div className="filter-row">
+                            <div className="filter-group">
+                                <label>{t("gender")}:</label>
+                                <select value={filterGender} onChange={handleFilterGender}>
+                                    <option value="all">{t("all")}</option>
+                                    <option value="male">{t("male")}</option>
+                                    <option value="female">{t("female")}</option>
+                                </select>
+                            </div>
 
-                    <div className="filter-group">
-                        <select value={filterStatus} onChange={handleFilterStatus}>
-                            <option value="all">{t("all_statuses")}</option>
-                            <option value="active">{t("active")}</option>
-                            <option value="inactive">{t("inactive")}</option>
-                        </select>
+                            <div className="filter-group">
+                                <label>{t("age")}:</label>
+                                <select value={filterAge} onChange={handleFilterAge}>
+                                    <option value="all">{t("all")}</option>
+                                    <option value="0-18">0-18</option>
+                                    <option value="19-35">19-35</option>
+                                    <option value="36-50">36-50</option>
+                                    <option value="51+">51+</option>
+                                </select>
+                            </div>
+
+                            <div className="filter-group">
+                                <label>{t("status")}:</label>
+                                <select value={filterStatus} onChange={handleFilterStatus}>
+                                    <option value="all">{t("all")}</option>
+                                    <option value="faol">{t("active")}</option>
+                                    <option value="nofaol">{t("inactive")}</option>
+                                </select>
+                            </div>
+
+                            {selectedBranch === "all" && !branchesLoading && (
+                                <div className="filter-group">
+                                    <label>{t("branch")}:</label>
+                                    <select value={filterBranch} onChange={handleFilterBranch}>
+                                        <option value="all">{t("all")}</option>
+                                        {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id.toString()}>
+                                                {branch.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            <button className="btn btn-primary apply-filters-btn" onClick={applyFilters}>
+                                {t("apply_filters")}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <div className="patients-table-container">
@@ -397,13 +580,9 @@ export default function APatients() {
                             </th>
                             <th>{t("gender")}</th>
                             <th>{t("phone")}</th>
-                            <th>{t("email")}</th>
-                            <th
-                                onClick={() => handleSort("registrationDate")}
-                                className={sortBy === "registrationDate" ? `sort-${sortOrder}` : ""}
-                            >
-                                {t("registration_date")}
-                            </th>
+                            <th>{t("diagnosis")}</th>
+                            <th>{t("doctor")}</th>
+                            <th>{t("branch")}</th>
                             <th onClick={() => handleSort("lastVisit")} className={sortBy === "lastVisit" ? `sort-${sortOrder}` : ""}>
                                 {t("last_visit")}
                             </th>
@@ -412,36 +591,43 @@ export default function APatients() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredPatients.length > 0 ? (
-                            filteredPatients.map((patient) => (
+                        {patients.length > 0 ? (
+                            patients.map((patient) => (
                                 <tr key={patient.id} onClick={() => handleViewPatientDetails(patient.id)}>
                                     <td>{patient.name}</td>
                                     <td>{patient.age}</td>
                                     <td>{t(patient.gender)}</td>
                                     <td>{patient.phone}</td>
-                                    <td>{patient.email}</td>
-                                    <td>{patient.registrationDate}</td>
+                                    <td>{patient.diagnosis}</td>
+                                    <td>{patient.doctor}</td>
+                                    <td>{getBranchName(patient.branch)}</td>
                                     <td>{patient.lastVisit}</td>
                                     <td>
-                                        <span className={`status-badge ${patient.status}`}>{t(patient.status)}</span>
+                                        <span className={`status-badge ${patient.status}`}>
+                                            {patient.status === "faol" ? t("active") : t("inactive")}
+                                        </span>
                                     </td>
                                     <td>
                                         <div className="action-buttons">
-                                            <button className="btn-icon view" title={t("view_details")}>
-                                                <FaFileMedical />
-                                            </button>
-                                            <button className="btn-icon edit" title={t("edit")} onClick={() => openEditModal(patient)}>
+                                            <button
+                                                className="btn-icon edit"
+                                                title={t("edit")}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    openEditModal(patient)
+                                                }}
+                                            >
                                                 <FaEdit />
                                             </button>
                                             <button
                                                 className="btn-icon delete"
                                                 title={t("delete")}
-                                                onClick={() => handleDeletePatient(patient.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    confirmDeletePatient(patient.id, patient.name)
+                                                }}
                                             >
                                                 <FaTrash />
-                                            </button>
-                                            <button className="btn-icon appointment" title={t("schedule_appointment")}>
-                                                <FaCalendarPlus />
                                             </button>
                                         </div>
                                     </td>
@@ -449,7 +635,7 @@ export default function APatients() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="9" className="no-data">
+                                <td colSpan="10" className="no-data">
                                     <p>{t("no_patients_found")}</p>
                                 </td>
                             </tr>
@@ -457,6 +643,18 @@ export default function APatients() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {patients.length > 0 && (
+                <Pagination
+                    pageCount={totalPages}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                />
+            )}
 
             {/* Add Patient Modal */}
             {showAddModal && (
@@ -473,12 +671,12 @@ export default function APatients() {
                             <div className="modal-body">
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label htmlFor="name">{t("full_name")}</label>
+                                        <label htmlFor="full_name">{t("full_name")}</label>
                                         <input
                                             type="text"
-                                            id="name"
-                                            name="name"
-                                            value={newPatient.name}
+                                            id="full_name"
+                                            name="full_name"
+                                            value={newPatient.full_name}
                                             onChange={handleNewPatientChange}
                                             required
                                         />
@@ -507,12 +705,12 @@ export default function APatients() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="phone">{t("phone")}</label>
+                                        <label htmlFor="phone_number">{t("phone")}</label>
                                         <input
                                             type="text"
-                                            id="phone"
-                                            name="phone"
-                                            value={newPatient.phone}
+                                            id="phone_number"
+                                            name="phone_number"
+                                            value={newPatient.phone_number}
                                             onChange={handleNewPatientChange}
                                             required
                                         />
@@ -532,82 +730,40 @@ export default function APatients() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="bloodGroup">{t("blood_group")}</label>
-                                        <select
-                                            id="bloodGroup"
-                                            name="bloodGroup"
-                                            value={newPatient.bloodGroup}
+                                        <label htmlFor="location">{t("address")}</label>
+                                        <input
+                                            type="text"
+                                            id="location"
+                                            name="location"
+                                            value={newPatient.location}
                                             onChange={handleNewPatientChange}
-                                        >
-                                            <option value="">{t("select_blood_group")}</option>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
-                                        </select>
+                                        />
                                     </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="address">{t("address")}</label>
-                                    <input
-                                        type="text"
-                                        id="address"
-                                        name="address"
-                                        value={newPatient.address}
-                                        onChange={handleNewPatientChange}
-                                    />
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label htmlFor="allergies">{t("allergies")}</label>
-                                        <input
-                                            type="text"
-                                            id="allergies"
-                                            name="allergies"
-                                            value={newPatient.allergies}
-                                            onChange={handleNewPatientChange}
-                                        />
+                                        <label htmlFor="branch">{t("branch")}</label>
+                                        <select name="branch" value={newPatient.branch} onChange={handleNewPatientChange}>
+                                            {branchesLoading ? (
+                                                <option value="">{t("loading")}</option>
+                                            ) : (
+                                                branches.map((branch) => (
+                                                    <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))
+                                            )}
+                                        </select>
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="emergencyContact">{t("emergency_contact")}</label>
-                                        <input
-                                            type="text"
-                                            id="emergencyContact"
-                                            name="emergencyContact"
-                                            value={newPatient.emergencyContact}
-                                            onChange={handleNewPatientChange}
-                                        />
+                                        <label htmlFor="status">{t("status")}</label>
+                                        <select name="status" value={newPatient.status} onChange={handleNewPatientChange}>
+                                            <option value="faol">{t("active")}</option>
+                                            <option value="nofaol">{t("inactive")}</option>
+                                        </select>
                                     </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="medicalHistory">{t("medical_history")}</label>
-                                    <textarea
-                                        id="medicalHistory"
-                                        name="medicalHistory"
-                                        value={newPatient.medicalHistory}
-                                        onChange={handleNewPatientChange}
-                                        rows="3"
-                                    ></textarea>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="registrationDate">{t("registration_date")}</label>
-                                    <input
-                                        type="date"
-                                        id="registrationDate"
-                                        name="registrationDate"
-                                        value={newPatient.registrationDate}
-                                        onChange={handleNewPatientChange}
-                                        required
-                                    />
                                 </div>
                             </div>
 
@@ -616,7 +772,7 @@ export default function APatients() {
                                     {t("cancel")}
                                 </button>
                                 <button type="submit" className="btn btn-primary">
-                                    {t("add_patient")}
+                                    {loading ? `${t("adding")}...` : t("add_patient")}
                                 </button>
                             </div>
                         </form>
@@ -639,12 +795,12 @@ export default function APatients() {
                             <div className="modal-body">
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label htmlFor="edit-name">{t("full_name")}</label>
+                                        <label htmlFor="edit-full_name">{t("full_name")}</label>
                                         <input
                                             type="text"
-                                            id="edit-name"
-                                            name="name"
-                                            value={selectedPatient.name}
+                                            id="edit-full_name"
+                                            name="full_name"
+                                            value={selectedPatient.full_name}
                                             onChange={handleSelectedPatientChange}
                                             required
                                         />
@@ -678,12 +834,12 @@ export default function APatients() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="edit-phone">{t("phone")}</label>
+                                        <label htmlFor="edit-phone_number">{t("phone")}</label>
                                         <input
                                             type="text"
-                                            id="edit-phone"
-                                            name="phone"
-                                            value={selectedPatient.phone}
+                                            id="edit-phone_number"
+                                            name="phone_number"
+                                            value={selectedPatient.phone_number}
                                             onChange={handleSelectedPatientChange}
                                             required
                                         />
@@ -703,73 +859,38 @@ export default function APatients() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="edit-bloodGroup">{t("blood_group")}</label>
+                                        <label htmlFor="edit-location">{t("address")}</label>
+                                        <input
+                                            type="text"
+                                            id="edit-location"
+                                            name="location"
+                                            value={selectedPatient.location}
+                                            onChange={handleSelectedPatientChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="edit-branch">{t("branch")}</label>
                                         <select
-                                            id="edit-bloodGroup"
-                                            name="bloodGroup"
-                                            value={selectedPatient.bloodGroup}
+                                            id="edit-branch"
+                                            name="branch"
+                                            value={selectedPatient.branch}
                                             onChange={handleSelectedPatientChange}
                                         >
-                                            <option value="">{t("select_blood_group")}</option>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
+                                            {branchesLoading ? (
+                                                <option value="">{t("loading")}</option>
+                                            ) : (
+                                                branches.map((branch) => (
+                                                    <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))
+                                            )}
                                         </select>
                                     </div>
-                                </div>
 
-                                <div className="form-group">
-                                    <label htmlFor="edit-address">{t("address")}</label>
-                                    <input
-                                        type="text"
-                                        id="edit-address"
-                                        name="address"
-                                        value={selectedPatient.address}
-                                        onChange={handleSelectedPatientChange}
-                                    />
-                                </div>
-
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor="edit-allergies">{t("allergies")}</label>
-                                        <input
-                                            type="text"
-                                            id="edit-allergies"
-                                            name="allergies"
-                                            value={selectedPatient.allergies}
-                                            onChange={handleSelectedPatientChange}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label htmlFor="edit-emergencyContact">{t("emergency_contact")}</label>
-                                        <input
-                                            type="text"
-                                            id="edit-emergencyContact"
-                                            name="emergencyContact"
-                                            value={selectedPatient.emergencyContact}
-                                            onChange={handleSelectedPatientChange}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="edit-medicalHistory">{t("medical_history")}</label>
-                                    <textarea
-                                        id="edit-medicalHistory"
-                                        name="medicalHistory"
-                                        value={selectedPatient.medicalHistory}
-                                        onChange={handleSelectedPatientChange}
-                                        rows="3"
-                                    ></textarea>
-                                </div>
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor="edit-status">{t("status")}</label>
                                         <select
@@ -778,8 +899,8 @@ export default function APatients() {
                                             value={selectedPatient.status}
                                             onChange={handleSelectedPatientChange}
                                         >
-                                            <option value="active">{t("active")}</option>
-                                            <option value="inactive">{t("inactive")}</option>
+                                            <option value="faol">{t("active")}</option>
+                                            <option value="nofaol">{t("inactive")}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -790,13 +911,36 @@ export default function APatients() {
                                     {t("cancel")}
                                 </button>
                                 <button type="submit" className="btn btn-primary">
-                                    {t("save_changes")}
+                                    {loading ? `${t("saving")}...` : t("save_changes")}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* Confirm Modal for Delete */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={confirmModalProps.onConfirm}
+                title={confirmModalProps.title}
+                message={confirmModalProps.message}
+                confirmText={confirmModalProps.confirmText}
+                cancelText={confirmModalProps.cancelText}
+                type={confirmModalProps.type}
+                isLoading={loading}
+            />
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title={successModalProps.title}
+                message={successModalProps.message}
+                autoClose={true}
+                autoCloseTime={3000}
+            />
         </div>
     )
-};
+}
