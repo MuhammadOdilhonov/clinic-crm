@@ -98,34 +98,37 @@ export default function Tasks() {
                     tasksData = await apiTasks.fetchMonthlyTasks(formattedDate, selectedBranch)
             }
 
+            // Handle different response formats
+            // If tasksData is an array, use it directly, otherwise check for results property
+            const taskItems = Array.isArray(tasksData) ? tasksData : tasksData.results || []
+            const totalCount = Array.isArray(tasksData) ? taskItems.length : tasksData.count || 0
+
             // Transform API data to match the expected format in the UI
-            const transformedTasks = tasksData.results
-                ? tasksData.results.map((task) => ({
-                    id: task.id,
-                    title: task.title,
-                    description: task.description,
-                    startDate: new Date(`${task.start_date}T${task.start_time}`),
-                    endDate: new Date(`${task.end_date}T${task.end_time}`),
-                    status: task.status,
-                    priority: task.priority,
-                    assignee: {
-                        id: task.assignee.id,
-                        name: `${task.assignee.first_name} ${task.assignee.last_name}`,
-                        role: task.assignee.role,
-                    },
-                    createdBy: task.created_by
-                        ? {
-                            id: task.created_by.id,
-                            name: `${task.created_by.first_name} ${task.created_by.last_name}`,
-                            role: task.created_by.role,
-                        }
-                        : null,
-                    createdAt: new Date(task.created_at),
-                }))
-                : []
+            const transformedTasks = taskItems.map((task) => ({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                startDate: new Date(`${task.start_date}T${task.start_time}`),
+                endDate: new Date(`${task.end_date}T${task.end_time}`),
+                status: task.status,
+                priority: task.priority,
+                assignee: {
+                    id: task.assignee_data ? task.assignee_data.id : task.assignee,
+                    name: task.assignee_data ? `${task.assignee_data.first_name} ${task.assignee_data.last_name}` : "Unknown",
+                    role: task.assignee_data ? task.assignee_data.role : "",
+                },
+                createdBy: task.created_by
+                    ? {
+                        id: task.created_by.id,
+                        name: `${task.created_by.first_name || ""} ${task.created_by.last_name || ""}`.trim() || "Unknown",
+                        role: task.created_by.role || "",
+                    }
+                    : null,
+                createdAt: new Date(task.created_at),
+            }))
 
             setTasks(transformedTasks)
-            setTotalTasks(tasksData.count || 0)
+            setTotalTasks(totalCount)
             setError(null)
         } catch (err) {
             console.error("Error fetching tasks:", err)
@@ -364,6 +367,9 @@ export default function Tasks() {
         setSelectedTask(tasks.find((task) => task.id === taskId))
         setShowDeleteConfirm(true)
     }
+
+    const pageCount = Math.ceil(totalTasks / itemsPerPage)
+
 
     // Confirm task deletion
     const confirmDeleteTask = async () => {
@@ -608,10 +614,11 @@ export default function Tasks() {
                                 </div>
                                 <div className="pagination-container">
                                     <Pagination
+                                        pageCount={pageCount}
                                         currentPage={currentPage}
-                                        totalItems={totalTasks}
-                                        itemsPerPage={itemsPerPage}
                                         onPageChange={setCurrentPage}
+                                        itemsPerPage={itemsPerPage}
+                                        totalItems={totalTasks}
                                     />
                                     <div className="items-per-page">
                                         <label>{t("items_per_page")}:</label>
