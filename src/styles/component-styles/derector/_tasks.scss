@@ -42,23 +42,28 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
     font-family: $font-family;
     color: $text-color;
     background-color: $background-color;
-    min-height: 100vh;
+    min-height: calc(100vh - 80px);
     width: 100%;
     margin-top: 80px;
+    padding-bottom: 20px;
 
     .tasks-container {
         display: flex;
         flex-direction: column;
         height: 100%;
         width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        border-radius: $border-radius;
+        overflow: hidden;
     }
 
     // Header styles
     .tasks-header {
         @include flex-between;
-        padding: 8px 16px;
+        padding: 12px 16px;
         border-bottom: 1px solid $border-color;
-        height: 64px;
+        background-color: $background-color;
+        z-index: 10;
 
         .header-left {
             display: flex;
@@ -74,10 +79,11 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 font-weight: 500;
                 padding: 8px 16px;
                 cursor: pointer;
-                transition: background-color 0.2s;
+                transition: all 0.2s ease;
 
                 &:hover {
                     background-color: $hover-color;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                 }
             }
 
@@ -92,9 +98,11 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                     border-radius: 50%;
                     @include flex-center;
                     color: $secondary-color;
+                    transition: all 0.2s ease;
 
                     &:hover {
                         background-color: $hover-color;
+                        color: $primary-color;
                     }
                 }
             }
@@ -127,16 +135,18 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 input {
                     background-color: $hover-color;
                     border: none;
-                    border-radius: 8px;
+                    border-radius: 24px;
                     padding: 8px 16px 8px 36px;
                     font-size: 14px;
-                    width: 200px;
+                    width: 220px;
                     color: $text-color;
+                    transition: all 0.2s ease;
 
                     &:focus {
                         outline: none;
                         background-color: $background-color;
-                        box-shadow: 0 1px 1px 0 rgba(65, 69, 73, 0.3), 0 1px 3px 1px rgba(65, 69, 73, 0.15);
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                        width: 250px;
                     }
 
                     &::placeholder {
@@ -152,37 +162,36 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 border-radius: 50%;
                 @include flex-center;
                 color: $secondary-color;
+                transition: all 0.2s ease;
 
                 &:hover {
                     background-color: $hover-color;
+                    color: $primary-color;
                 }
             }
 
             .view-buttons {
                 display: flex;
                 border: 1px solid $border-color;
-                border-radius: 4px;
+                border-radius: 24px;
                 overflow: hidden;
+                background-color: $hover-color;
 
                 .view-btn {
                     @include button-reset;
                     padding: 8px 12px;
                     font-size: 14px;
                     color: $text-color;
-                    background-color: $background-color;
-                    border-right: 1px solid $border-color;
-
-                    &:last-child {
-                        border-right: none;
-                    }
+                    background-color: transparent;
+                    transition: all 0.2s ease;
 
                     &:hover {
-                        background-color: $hover-color;
+                        background-color: rgba($primary-color, 0.05);
                     }
 
                     &.active {
-                        background-color: $primary-light;
-                        color: $primary-color;
+                        background-color: $primary-color;
+                        color: white;
                         font-weight: 500;
                     }
                 }
@@ -197,16 +206,17 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 font-size: 14px;
                 color: $text-color;
                 border: 1px solid $border-color;
-                border-radius: 4px;
+                border-radius: 24px;
+                transition: all 0.2s ease;
 
                 &:hover {
                     background-color: $hover-color;
                 }
 
                 &.active {
-                    background-color: $primary-light;
-                    color: $primary-color;
-                    font-weight: 500;
+                    background-color: $primary-color;
+                    color: white;
+                    border-color: $primary-color;
                 }
             }
 
@@ -215,30 +225,21 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 align-items: center;
                 gap: 8px;
 
-                .icon-btn {
-                    @include button-reset;
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    @include flex-center;
-                    color: $secondary-color;
-
-                    &:hover {
-                        background-color: $hover-color;
-                    }
-                }
-
                 .create-btn {
                     @include button-reset;
-                    width: 36px;
-                    height: 36px;
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
                     @include flex-center;
                     background-color: $primary-color;
                     color: white;
+                    transition: all 0.2s ease;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 
                     &:hover {
-                        box-shadow: $shadow;
+                        background-color: darken($primary-color, 5%);
+                        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+                        transform: translateY(-1px);
                     }
                 }
             }
@@ -252,6 +253,7 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         padding: 16px;
         background-color: $background-color;
         border-bottom: 1px solid $border-color;
+        animation: slideDown 0.3s ease;
 
         .filter-group {
             display: flex;
@@ -261,6 +263,7 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
             label {
                 font-size: 14px;
                 color: $text-secondary;
+                font-weight: 500;
             }
 
             select {
@@ -269,17 +272,19 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 border-radius: 4px;
                 color: $text-color;
                 font-size: 14px;
-                padding: 6px 24px 6px 8px;
+                padding: 8px 32px 8px 12px;
                 cursor: pointer;
                 appearance: none;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
                 background-repeat: no-repeat;
-                background-position: right 4px center;
+                background-position: right 8px center;
                 background-size: 16px;
+                transition: all 0.2s ease;
 
                 &:focus {
                     outline: none;
                     border-color: $primary-color;
+                    box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
                 }
             }
         }
@@ -290,6 +295,81 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         flex: 1;
         padding: 0;
         overflow: auto;
+        background-color: $background-color;
+
+        .calendar-header {
+            @include flex-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid $border-color;
+
+            .calendar-navigation {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+
+                h2 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 500;
+                }
+
+                .btn-icon {
+                    @include button-reset;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    @include flex-center;
+                    color: $secondary-color;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background-color: $hover-color;
+                        color: $primary-color;
+                    }
+                }
+
+                .btn-secondary {
+                    background-color: $hover-color;
+                    border: none;
+                    border-radius: 16px;
+                    color: $text-color;
+                    font-size: 13px;
+                    padding: 4px 12px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background-color: darken($hover-color, 5%);
+                    }
+                }
+            }
+
+            .calendar-view-selector {
+                display: flex;
+                gap: 4px;
+
+                .btn-sm {
+                    background-color: transparent;
+                    border: 1px solid $border-color;
+                    border-radius: 16px;
+                    color: $text-color;
+                    font-size: 13px;
+                    padding: 4px 12px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background-color: $hover-color;
+                    }
+
+                    &.active {
+                        background-color: $primary-color;
+                        color: white;
+                        border-color: $primary-color;
+                    }
+                }
+            }
+        }
     }
 
     // Tasks list container
@@ -297,6 +377,7 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         flex: 1;
         padding: 16px;
         overflow: auto;
+        background-color: $background-color;
 
         .section-title {
             font-size: 18px;
@@ -306,90 +387,191 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         }
 
         .tasks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            margin-bottom: 20px;
 
-            .task-card {
-                background-color: $background-color;
-                border: 1px solid $border-color;
+            .tasks-table {
+                width: 100%;
+                border-collapse: collapse;
                 border-radius: $border-radius;
-                padding: 16px;
-                cursor: pointer;
-                transition: box-shadow 0.2s;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
-                &:hover {
-                    box-shadow: $shadow;
+                th {
+                    background-color: $hover-color;
+                    color: $text-color;
+                    font-weight: 500;
+                    text-align: left;
+                    padding: 12px 16px;
+                    font-size: 14px;
+                    border-bottom: 1px solid $border-color;
                 }
 
-                .task-header {
-                    @include flex-between;
-                    margin-bottom: 12px;
+                td {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid $border-color;
+                    font-size: 14px;
 
-                    .task-title {
-                        font-size: 16px;
+                    &.task-title {
                         font-weight: 500;
-                        margin: 0;
-                        color: $text-color;
                     }
 
-                    .status-badge {
-                        font-size: 12px;
-                        font-weight: 500;
-                        padding: 4px 8px;
-                        border-radius: 12px;
+                    &.task-assignee {
+                        .assignee-info {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
 
-                        &.completed {
-                            background-color: rgba($success-color, 0.1);
-                            color: $success-color;
-                        }
-
-                        &.in-progress {
-                            background-color: rgba($info-color, 0.1);
-                            color: $info-color;
-                        }
-
-                        &.pending {
-                            background-color: rgba($warning-color, 0.1);
-                            color: $warning-color;
+                            .assignee-icon {
+                                color: $secondary-color;
+                                font-size: 14px;
+                            }
                         }
                     }
-                }
 
-                .task-details {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    font-size: 13px;
-                    color: $text-secondary;
+                    &.task-status {
+                        .status-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 4px;
+                            padding: 4px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 500;
 
-                    .task-date,
-                    .task-assignee {
+                            .status-icon {
+                                font-size: 10px;
+                            }
+
+                            &.completed {
+                                background-color: rgba($success-color, 0.1);
+                                color: $success-color;
+                            }
+
+                            &.in_progress {
+                                background-color: rgba($info-color, 0.1);
+                                color: $info-color;
+                            }
+
+                            &.pending {
+                                background-color: rgba($warning-color, 0.1);
+                                color: $warning-color;
+                            }
+                        }
+                    }
+
+                    &.task-priority {
+                        .priority-badge {
+                            display: inline-block;
+                            padding: 4px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 500;
+
+                            &.high-priority {
+                                background-color: rgba($error-color, 0.1);
+                                color: $error-color;
+                            }
+
+                            &.medium-priority {
+                                background-color: rgba($warning-color, 0.1);
+                                color: $warning-color;
+                            }
+
+                            &.low-priority {
+                                background-color: rgba($success-color, 0.1);
+                                color: $success-color;
+                            }
+                        }
+                    }
+
+                    &.task-actions {
                         display: flex;
-                        align-items: center;
-                        gap: 6px;
+                        gap: 8px;
+
+                        .action-btn {
+                            @include button-reset;
+                            width: 28px;
+                            height: 28px;
+                            border-radius: 4px;
+                            @include flex-center;
+                            transition: all 0.2s ease;
+
+                            &.view {
+                                color: $info-color;
+
+                                &:hover {
+                                    background-color: rgba($info-color, 0.1);
+                                }
+                            }
+
+                            &.edit {
+                                color: $warning-color;
+
+                                &:hover {
+                                    background-color: rgba($warning-color, 0.1);
+                                }
+                            }
+
+                            &.delete {
+                                color: $error-color;
+
+                                &:hover {
+                                    background-color: rgba($error-color, 0.1);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                tr {
+                    &:hover {
+                        background-color: rgba($primary-color, 0.02);
                     }
 
-                    .priority-badge {
-                        font-size: 12px;
-                        font-weight: 500;
-                        padding: 2px 8px;
-                        border-radius: 12px;
+                    &.completed {
+                        background-color: rgba($success-color, 0.03);
+                    }
+                }
 
-                        &.high-priority {
-                            background-color: rgba($error-color, 0.1);
-                            color: $error-color;
-                        }
+                .no-data {
+                    text-align: center;
+                    padding: 40px;
+                    color: $text-secondary;
+                }
+            }
+        }
 
-                        &.medium-priority {
-                            background-color: rgba($warning-color, 0.1);
-                            color: $warning-color;
-                        }
+        .pagination-container {
+            @include flex-between;
+            margin-top: 20px;
 
-                        &.low-priority {
-                            background-color: rgba($success-color, 0.1);
-                            color: $success-color;
-                        }
+            .items-per-page {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+
+                label {
+                    font-size: 14px;
+                    color: $text-secondary;
+                }
+
+                select {
+                    background-color: $background-color;
+                    border: 1px solid $border-color;
+                    border-radius: 4px;
+                    color: $text-color;
+                    font-size: 14px;
+                    padding: 4px 24px 4px 8px;
+                    cursor: pointer;
+                    appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 4px center;
+                    background-size: 16px;
+
+                    &:focus {
+                        outline: none;
+                        border-color: $primary-color;
                     }
                 }
             }
@@ -426,24 +608,27 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         align-items: center;
         justify-content: center;
         z-index: 1000;
+        animation: fadeIn 0.2s ease;
 
         .modal-content {
             background-color: $background-color;
             border-radius: $border-radius;
-            box-shadow: $shadow;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             width: 100%;
             max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
+            animation: scaleIn 0.2s ease;
         }
     }
 
     // Loading styles
-    .loading-container {
+    .loading-container,
+    .loading-indicator {
         @include flex-center;
         flex-direction: column;
         gap: 16px;
-        height: 100vh;
+        padding: 40px 0;
 
         .loading-spinner {
             width: 40px;
@@ -461,6 +646,17 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
         }
     }
 
+    // Error message
+    .error-message {
+        padding: 20px;
+        text-align: center;
+        color: $error-color;
+        background-color: rgba($error-color, 0.05);
+        border-radius: $border-radius;
+        margin: 20px 0;
+    }
+
+    // Animations
     @keyframes spin {
         0% {
             transform: rotate(0deg);
@@ -468,6 +664,40 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
 
         100% {
             transform: rotate(360deg);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 }
@@ -528,6 +758,45 @@ $font-family: 'Google Sans', Roboto, Arial, sans-serif;
                 select {
                     flex: 1;
                 }
+            }
+        }
+
+        .tasks-list-container {
+            .tasks-list {
+                .tasks-table {
+
+                    th,
+                    td {
+                        padding: 8px;
+                    }
+
+                    th:nth-child(3),
+                    td:nth-child(3) {
+                        display: none;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .director-tasks {
+        .tasks-list-container {
+            .tasks-list {
+                .tasks-table {
+
+                    th:nth-child(4),
+                    td:nth-child(4) {
+                        display: none;
+                    }
+                }
+            }
+
+            .pagination-container {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
             }
         }
     }

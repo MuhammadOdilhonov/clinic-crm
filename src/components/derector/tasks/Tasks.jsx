@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import {
     FaTasks,
-    FaCalendarAlt,
     FaSearch,
     FaFilter,
     FaPlus,
@@ -11,6 +10,12 @@ import {
     FaChevronRight,
     FaListUl,
     FaUser,
+    FaEdit,
+    FaTrash,
+    FaEye,
+    FaCheck,
+    FaClock,
+    FaExclamationTriangle,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
@@ -18,11 +23,22 @@ import TaskCalendar from "../../commonTasks/taskCalendar/TaskCalendar"
 import TaskForm from "../../commonTasks/taskForm/TaskForm"
 import TaskDetails from "../../commonTasks/taskDetails/TaskDetails"
 import DayTasksList from "../../commonTasks/DayTasksList/DayTasksList"
+import ConfirmModal from "../../modal/ConfirmModal"
+import Pagination from "../../pagination/Pagination"
+import apiTasks from "../../../api/apiTasks"
+import apiUsers from "../../../api/apiUsers"
 
 export default function Tasks() {
     const { user, selectedBranch } = useAuth()
     const { t } = useLanguage()
+
+    // State for tasks
     const [loading, setLoading] = useState(true)
+    const [tasks, setTasks] = useState([])
+    const [totalTasks, setTotalTasks] = useState(0)
+    const [error, setError] = useState(null)
+
+    // State for view
     const [view, setView] = useState("month") // month, week, day, year, list
     const [currentDate, setCurrentDate] = useState(new Date())
     const [showTaskForm, setShowTaskForm] = useState(false)
@@ -30,257 +46,136 @@ export default function Tasks() {
     const [showDayTasks, setShowDayTasks] = useState(false)
     const [selectedDay, setSelectedDay] = useState(null)
     const [selectedTask, setSelectedTask] = useState(null)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [statusFilter, setStatusFilter] = useState("all")
-    const [priorityFilter, setPriorityFilter] = useState("all")
-    const [assigneeFilter, setAssigneeFilter] = useState("all")
-    const [tasks, setTasks] = useState([])
-    const [staff, setStaff] = useState([])
-    const [showFilters, setShowFilters] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [newTaskDate, setNewTaskDate] = useState(null)
     const [selectedMonthTasks, setSelectedMonthTasks] = useState([])
     const [isMonthView, setIsMonthView] = useState(false)
 
-    useEffect(() => {
+    // State for filters and pagination
+    const [searchQuery, setSearchQuery] = useState("")
+    const [statusFilter, setStatusFilter] = useState("all")
+    const [priorityFilter, setPriorityFilter] = useState("all")
+    const [assigneeFilter, setAssigneeFilter] = useState("all")
+    const [staff, setStaff] = useState([])
+    const [showFilters, setShowFilters] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    // Fetch tasks based on view
+    const fetchTasks = async () => {
         setLoading(true)
+        try {
+            let tasksData
+            const formattedDate =
+                currentDate instanceof Date ? currentDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0]
 
-        // Simulate API call to fetch tasks
-        setTimeout(() => {
-            // Mock tasks data
-            const mockTasks = [
-                {
-                    id: 1,
-                    title: "Yangi tibbiy jihozlarni tekshirish",
-                    description: "Kardiologiya bo'limi uchun yangi kelgan jihozlarni tekshirish va o'rnatish",
-                    startDate: new Date(2023, 4, 18, 10, 0),
-                    endDate: new Date(2023, 4, 18, 12, 0),
-                    status: "pending",
-                    priority: "high",
-                    assignee: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 15),
-                },
-                {
-                    id: 2,
-                    title: "Xodimlar yig'ilishi",
-                    description: "Yangi klinika qoidalari va tartiblarini muhokama qilish",
-                    startDate: new Date(2023, 4, 19, 14, 0),
-                    endDate: new Date(2023, 4, 19, 15, 30),
-                    status: "pending",
-                    priority: "medium",
-                    assignee: {
-                        id: 102,
-                        name: "Malika Umarova",
-                        role: "admin",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 16),
-                },
-                {
-                    id: 3,
-                    title: "Yangi hamshiralar bilan suhbat",
-                    description: "Yangi ishga olingan hamshiralar bilan tanishish va ularning vazifalarini tushuntirish",
-                    startDate: new Date(2023, 4, 20, 11, 0),
-                    endDate: new Date(2023, 4, 20, 12, 0),
-                    status: "completed",
-                    priority: "medium",
-                    assignee: {
-                        id: 103,
-                        name: "Nilufar Rahimova",
-                        role: "nurse",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 17),
-                },
-                {
-                    id: 4,
-                    title: "Moliyaviy hisobotni tayyorlash",
-                    description: "O'tgan oyning moliyaviy hisobotini tayyorlash va taqdim etish",
-                    startDate: new Date(2023, 4, 21, 9, 0),
-                    endDate: new Date(2023, 4, 21, 17, 0),
-                    status: "in-progress",
-                    priority: "high",
-                    assignee: {
-                        id: 104,
-                        name: "Jasur Toshmatov",
-                        role: "admin",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 18),
-                },
-                {
-                    id: 5,
-                    title: "Yangi shifokorlar bilan suhbat",
-                    description: "Yangi ishga olingan shifokorlar bilan tanishish va ularning vazifalarini tushuntirish",
-                    startDate: new Date(2023, 4, 22, 13, 0),
-                    endDate: new Date(2023, 4, 22, 15, 0),
-                    status: "pending",
-                    priority: "medium",
-                    assignee: {
-                        id: 105,
-                        name: "Dilshod Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 19),
-                },
-                // Qo'shimcha vazifalar - boshqa oylar uchun
-                {
-                    id: 6,
-                    title: "Yangi yil tadbiri rejasi",
-                    description: "Klinika xodimlari uchun yangi yil tadbirini rejalashtirish",
-                    startDate: new Date(2023, 11, 15, 10, 0), // Dekabr
-                    endDate: new Date(2023, 11, 15, 12, 0),
-                    status: "pending",
-                    priority: "medium",
-                    assignee: {
-                        id: 102,
-                        name: "Malika Umarova",
-                        role: "admin",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 11, 1),
-                },
-                {
-                    id: 7,
-                    title: "Yanvar oyi hisoboti",
-                    description: "Yanvar oyi uchun klinika faoliyati hisobotini tayyorlash",
-                    startDate: new Date(2023, 0, 25, 9, 0), // Yanvar
-                    endDate: new Date(2023, 0, 25, 17, 0),
-                    status: "completed",
-                    priority: "high",
-                    assignee: {
-                        id: 104,
-                        name: "Jasur Toshmatov",
-                        role: "admin",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 0, 20),
-                },
-                {
-                    id: 8,
-                    title: "Mart bayram tadbiri",
-                    description: "8-mart xalqaro xotin-qizlar kuni munosabati bilan tadbir o'tkazish",
-                    startDate: new Date(2023, 2, 7, 14, 0), // Mart
-                    endDate: new Date(2023, 2, 7, 16, 0),
-                    status: "pending",
-                    priority: "medium",
-                    assignee: {
-                        id: 103,
-                        name: "Nilufar Rahimova",
-                        role: "nurse",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 2, 1),
-                },
-            ]
+            // Different API calls based on view
+            switch (view) {
+                case "day":
+                    tasksData = await apiTasks.fetchDailyTasks(formattedDate, selectedBranch)
+                    break
+                case "week":
+                    tasksData = await apiTasks.fetchWeeklyTasks(formattedDate, selectedBranch)
+                    break
+                case "month":
+                    tasksData = await apiTasks.fetchMonthlyTasks(formattedDate, selectedBranch)
+                    break
+                case "year":
+                    tasksData = await apiTasks.fetchYearlyTasks(formattedDate, selectedBranch)
+                    break
+                case "list":
+                    // For list view, use the regular tasks endpoint with filters
+                    const filters = {
+                        status: statusFilter !== "all" ? statusFilter : undefined,
+                        priority: priorityFilter !== "all" ? priorityFilter : undefined,
+                        assignee: assigneeFilter !== "all" ? assigneeFilter : undefined,
+                        branch: selectedBranch !== "all" ? selectedBranch : undefined,
+                        search: searchQuery || undefined,
+                    }
+                    tasksData = await apiTasks.fetchTasks(currentPage, itemsPerPage, filters)
+                    break
+                default:
+                    tasksData = await apiTasks.fetchMonthlyTasks(formattedDate, selectedBranch)
+            }
 
-            // Mock staff data - Direktor barcha xodimlarni ko'ra oladi
-            const mockStaff = [
-                {
-                    id: 101,
-                    name: "Dr. Aziz Karimov",
-                    role: "doctor",
-                    department: "Kardiologiya",
-                },
-                {
-                    id: 102,
-                    name: "Malika Umarova",
-                    role: "admin",
-                    department: "Qabul bo'limi",
-                },
-                {
-                    id: 103,
-                    name: "Nilufar Rahimova",
-                    role: "nurse",
-                    department: "Pediatriya",
-                },
-                {
-                    id: 104,
-                    name: "Jasur Toshmatov",
-                    role: "admin",
-                    department: "Moliya bo'limi",
-                },
-                {
-                    id: 105,
-                    name: "Dilshod Karimov",
-                    role: "doctor",
-                    department: "Nevrologiya",
-                },
-                {
-                    id: 106,
-                    name: "Zarina Aliyeva",
-                    role: "nurse",
-                    department: "Kardiologiya",
-                },
-                {
-                    id: 107,
-                    name: "Gulnora Karimova",
-                    role: "nurse",
-                    department: "Kardiologiya",
-                },
-            ]
+            // Transform API data to match the expected format in the UI
+            const transformedTasks = tasksData.results
+                ? tasksData.results.map((task) => ({
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    startDate: new Date(`${task.start_date}T${task.start_time}`),
+                    endDate: new Date(`${task.end_date}T${task.end_time}`),
+                    status: task.status,
+                    priority: task.priority,
+                    assignee: {
+                        id: task.assignee.id,
+                        name: `${task.assignee.first_name} ${task.assignee.last_name}`,
+                        role: task.assignee.role,
+                    },
+                    createdBy: task.created_by
+                        ? {
+                            id: task.created_by.id,
+                            name: `${task.created_by.first_name} ${task.created_by.last_name}`,
+                            role: task.created_by.role,
+                        }
+                        : null,
+                    createdAt: new Date(task.created_at),
+                }))
+                : []
 
-            setTasks(mockTasks)
-            setStaff(mockStaff)
+            setTasks(transformedTasks)
+            setTotalTasks(tasksData.count || 0)
+            setError(null)
+        } catch (err) {
+            console.error("Error fetching tasks:", err)
+            setError(t("error_fetching_tasks"))
+        } finally {
             setLoading(false)
-        }, 800)
+        }
+    }
+
+    // Fetch staff (users)
+    const fetchStaff = async () => {
+        try {
+            // Use a large page size to get all staff
+            const filters = {
+                branch: selectedBranch !== "all" ? selectedBranch : undefined,
+            }
+            const usersData = await apiUsers.fetchUsers(1, 1000, filters)
+
+            // Transform API data
+            const transformedStaff = usersData.results
+                ? usersData.results.map((user) => ({
+                    id: user.id,
+                    name: `${user.first_name} ${user.last_name}`,
+                    role: user.role,
+                    department: user.department || "",
+                }))
+                : []
+
+            setStaff(transformedStaff)
+        } catch (err) {
+            console.error("Error fetching staff:", err)
+        }
+    }
+
+    // Initial data loading
+    useEffect(() => {
+        fetchStaff()
     }, [selectedBranch])
 
-    // Filter tasks based on search query and filters
-    const filteredTasks = tasks.filter((task) => {
-        // Search query filter
-        const matchesSearch =
-            task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchQuery.toLowerCase())
+    // Fetch tasks when view, date, or filters change
+    useEffect(() => {
+        fetchTasks()
+    }, [view, currentDate, selectedBranch, currentPage, itemsPerPage])
 
-        // Status filter
-        const matchesStatus = statusFilter === "all" || task.status === statusFilter
-
-        // Priority filter
-        const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter
-
-        // Assignee filter
-        const matchesAssignee = assigneeFilter === "all" || task.assignee.id.toString() === assigneeFilter
-
-        return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
-    })
+    // Fetch tasks when filters change in list view
+    useEffect(() => {
+        if (view === "list") {
+            fetchTasks()
+        }
+    }, [statusFilter, priorityFilter, assigneeFilter, searchQuery])
 
     // Navigate to previous month/week/day
     const handlePrevious = () => {
@@ -380,7 +275,7 @@ export default function Tasks() {
         // Set the current date
         setCurrentDate(monthDate)
 
-        // Oyning vazifalarini olish
+        // Get month tasks
         const monthTasks = tasks.filter((task) => {
             if (!task || !task.startDate) return false
 
@@ -388,7 +283,7 @@ export default function Tasks() {
             return taskDate.getMonth() === monthDate.getMonth() && taskDate.getFullYear() === monthDate.getFullYear()
         })
 
-        // Oy ma'lumotlarini saqlash
+        // Save month data
         setSelectedDay({
             date: monthDate,
             isMonth: true,
@@ -400,7 +295,7 @@ export default function Tasks() {
         setIsMonthView(true)
         setShowDayTasks(true)
 
-        // Oyni tanlagandan so'ng, ko'rinishni oylik ko'rinishga o'zgartirish
+        // Change view to month after selecting a month
         setView("month")
     }
 
@@ -408,7 +303,7 @@ export default function Tasks() {
     const handleDayClick = (day) => {
         if (!day) return
 
-        // Agar yillik ko'rinishda oy bosilgan bo'lsa
+        // If year view and month is clicked
         if (view === "year") {
             handleMonthClick(day)
             return
@@ -417,7 +312,7 @@ export default function Tasks() {
         // Create a new date object to avoid reference issues
         const dayDate = new Date(day.date)
 
-        // Oddiy kun uchun vazifalarni olish
+        // Get day tasks
         const dayTasks = tasks.filter((task) => {
             if (!task || !task.startDate) return false
 
@@ -442,38 +337,70 @@ export default function Tasks() {
     }
 
     // Handle task form submission
-    const handleTaskSubmit = (taskData) => {
-        if (selectedTask && selectedTask.id) {
-            // Update existing task
-            setTasks(tasks.map((task) => (task.id === selectedTask.id ? { ...task, ...taskData } : task)))
-        } else {
-            // Create new task
-            const newTask = {
-                id: tasks.length + 1,
-                ...taskData,
-                createdBy: {
-                    id: user.id,
-                    name: user.name,
-                    role: user.role,
-                },
-                createdAt: new Date(),
+    const handleTaskSubmit = async (taskData) => {
+        try {
+            if (selectedTask && selectedTask.id) {
+                // Update existing task
+                await apiTasks.updateTask(selectedTask.id, taskData)
+            } else {
+                // Create new task
+                await apiTasks.createTask(taskData)
             }
-            setTasks([...tasks, newTask])
+
+            // Refresh tasks
+            fetchTasks()
+
+            // Close form
+            setShowTaskForm(false)
+            setNewTaskDate(null)
+        } catch (error) {
+            console.error("Error saving task:", error)
+            alert(t("error_saving_task"))
         }
-        setShowTaskForm(false)
-        setNewTaskDate(null)
     }
 
     // Handle task deletion
     const handleDeleteTask = (taskId) => {
-        setTasks(tasks.filter((task) => task.id !== taskId))
-        setShowTaskDetails(false)
+        setSelectedTask(tasks.find((task) => task.id === taskId))
+        setShowDeleteConfirm(true)
+    }
+
+    // Confirm task deletion
+    const confirmDeleteTask = async () => {
+        if (!selectedTask) return
+
+        try {
+            await apiTasks.deleteTask(selectedTask.id)
+
+            // Refresh tasks
+            fetchTasks()
+
+            // Close modals
+            setShowDeleteConfirm(false)
+            setShowTaskDetails(false)
+        } catch (error) {
+            console.error("Error deleting task:", error)
+            alert(t("error_deleting_task"))
+        }
     }
 
     // Handle task status change
-    const handleStatusChange = (taskId, newStatus) => {
-        setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
-        setShowTaskDetails(false)
+    const handleStatusChange = async (taskId, newStatus) => {
+        const task = tasks.find((t) => t.id === taskId)
+        if (!task) return
+
+        try {
+            await apiTasks.updateTask(taskId, { ...task, status: newStatus })
+
+            // Refresh tasks
+            fetchTasks()
+
+            // Close details
+            setShowTaskDetails(false)
+        } catch (error) {
+            console.error("Error updating task status:", error)
+            alert(t("error_updating_task"))
+        }
     }
 
     // Toggle filters visibility
@@ -481,7 +408,13 @@ export default function Tasks() {
         setShowFilters(!showFilters)
     }
 
-    if (loading) {
+    // Handle search form submission
+    const handleSearch = (e) => {
+        e.preventDefault()
+        fetchTasks()
+    }
+
+    if (loading && tasks.length === 0) {
         return (
             <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -517,6 +450,11 @@ export default function Tasks() {
                                 placeholder={t("search_tasks")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        fetchTasks()
+                                    }
+                                }}
                             />
                         </div>
 
@@ -559,7 +497,7 @@ export default function Tasks() {
                             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                                 <option value="all">{t("all")}</option>
                                 <option value="pending">{t("pending")}</option>
-                                <option value="in-progress">{t("in_progress")}</option>
+                                <option value="in_progress">{t("in_progress")}</option>
                                 <option value="completed">{t("completed")}</option>
                             </select>
                         </div>
@@ -591,7 +529,7 @@ export default function Tasks() {
                 {view !== "list" ? (
                     <div className="calendar-container">
                         <TaskCalendar
-                            tasks={filteredTasks}
+                            tasks={tasks}
                             currentDate={currentDate}
                             view={view}
                             onTaskClick={handleViewTask}
@@ -602,35 +540,96 @@ export default function Tasks() {
                 ) : (
                     <div className="tasks-list-container">
                         <h2 className="section-title">{t("tasks_list")}</h2>
-                        {filteredTasks.length > 0 ? (
-                            <div className="tasks-list">
-                                {filteredTasks.map((task) => (
-                                    <div key={task.id} className="task-card" onClick={() => handleViewTask(task)}>
-                                        <div className="task-header">
-                                            <h3 className="task-title">{task.title}</h3>
-                                            <div className={`status-badge ${task.status}`}>
-                                                {task.status === "completed" && t("completed")}
-                                                {task.status === "in-progress" && t("in_progress")}
-                                                {task.status === "pending" && t("pending")}
-                                            </div>
-                                        </div>
-                                        <div className="task-details">
-                                            <div className="task-date">
-                                                <FaCalendarAlt />
-                                                <span>
-                                                    {task.startDate.toLocaleDateString()}{" "}
-                                                    {task.startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                                </span>
-                                            </div>
-                                            <div className="task-assignee">
-                                                <FaUser />
-                                                <span>{task.assignee.name}</span>
-                                            </div>
-                                            <div className={`priority-badge ${task.priority}-priority`}>{t(task.priority)}</div>
-                                        </div>
-                                    </div>
-                                ))}
+                        {loading ? (
+                            <div className="loading-indicator">
+                                <div className="loading-spinner"></div>
+                                <p>{t("loading")}...</p>
                             </div>
+                        ) : error ? (
+                            <div className="error-message">{error}</div>
+                        ) : tasks.length > 0 ? (
+                            <>
+                                <div className="tasks-list">
+                                    <table className="tasks-table">
+                                        <thead>
+                                            <tr>
+                                                <th>{t("title")}</th>
+                                                <th>{t("assignee")}</th>
+                                                <th>{t("start_date")}</th>
+                                                <th>{t("status")}</th>
+                                                <th>{t("priority")}</th>
+                                                <th>{t("actions")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tasks.map((task) => (
+                                                <tr key={task.id} className={`task-row ${task.status}`}>
+                                                    <td className="task-title">{task.title}</td>
+                                                    <td className="task-assignee">
+                                                        <div className="assignee-info">
+                                                            <FaUser className="assignee-icon" />
+                                                            <span>{task.assignee.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="task-date">
+                                                        {task.startDate.toLocaleDateString()}{" "}
+                                                        {task.startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                    </td>
+                                                    <td className="task-status">
+                                                        <span className={`status-badge ${task.status}`}>
+                                                            {task.status === "completed" && <FaCheck className="status-icon" />}
+                                                            {task.status === "in_progress" && <FaClock className="status-icon" />}
+                                                            {task.status === "pending" && <FaExclamationTriangle className="status-icon" />}
+                                                            {t(task.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="task-priority">
+                                                        <span className={`priority-badge ${task.priority}-priority`}>{t(task.priority)}</span>
+                                                    </td>
+                                                    <td className="task-actions">
+                                                        <button className="action-btn view" onClick={() => handleViewTask(task)} title={t("view")}>
+                                                            <FaEye />
+                                                        </button>
+                                                        <button className="action-btn edit" onClick={() => handleEditTask(task)} title={t("edit")}>
+                                                            <FaEdit />
+                                                        </button>
+                                                        <button
+                                                            className="action-btn delete"
+                                                            onClick={() => handleDeleteTask(task.id)}
+                                                            title={t("delete")}
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="pagination-container">
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={totalTasks}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                    <div className="items-per-page">
+                                        <label>{t("items_per_page")}:</label>
+                                        <select
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value))
+                                                setCurrentPage(1)
+                                            }}
+                                        >
+                                            <option value="10">10</option>
+                                            <option value="20">20</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </>
                         ) : (
                             <div className="no-tasks-message">
                                 <FaTasks />
@@ -653,7 +652,7 @@ export default function Tasks() {
                                 setShowTaskForm(false)
                                 setNewTaskDate(null)
                             }}
-                            canAssignToAll={true} // Direktor ham barcha xodimlarga vazifalarni belgilashi mumkin
+                            canAssignToAll={true} // Director can assign tasks to all staff
                         />
                     </div>
                 </div>
@@ -707,7 +706,21 @@ export default function Tasks() {
                     </div>
                 </div>
             )}
+
+            {showDeleteConfirm && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <ConfirmModal
+                            title={t("confirm_delete")}
+                            message={t("confirm_delete_task_message")}
+                            confirmText={t("delete")}
+                            cancelText={t("cancel")}
+                            onConfirm={confirmDeleteTask}
+                            onCancel={() => setShowDeleteConfirm(false)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
-
