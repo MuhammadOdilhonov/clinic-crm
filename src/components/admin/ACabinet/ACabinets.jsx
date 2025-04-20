@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import {
@@ -15,348 +15,616 @@ import {
     FaInfoCircle,
     FaExclamationTriangle,
     FaCheckCircle,
-    FaRegHospital,
-    FaRegCalendarCheck,
-    FaRegClock,
-    FaRegClipboard,
+    FaTimes,
+    FaUserNurse,
+    FaTools,
+    FaBuilding,
+    FaChartBar,
+    FaFlask,
+    FaAmbulance,
+    FaTooth,
 } from "react-icons/fa"
+import { getCabinets, createCabinet, updateCabinet, deleteCabinet, getCabinetById } from "../../../api/apiCabinets"
+import { getCabinetStatistics } from "../../../api/apiCabinetsStatistic"
+import Pagination from "../../pagination/Pagination"
+import ConfirmModal from "../../modal/ConfirmModal"
+import SuccessModal from "../../modal/SuccessModal"
+import apiUsers from "../../../api/apiUsers"
+import apiBranches from "../../../api/apiBranches"
 
 export default function ACabinets() {
     const { user, selectedBranch } = useAuth()
     const { t } = useLanguage()
-    const [loading, setLoading] = useState(true)
+
+    // State for cabinets data
+    const [cabinetsData, setCabinetsData] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [totalItems, setTotalItems] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
+    const [pageCount, setPageCount] = useState(0)
 
-    // Data states
-    const [cabinets, setCabinets] = useState([])
+    // State for branches
     const [branches, setBranches] = useState([])
-    const [doctors, setDoctors] = useState([])
-    const [equipments, setEquipments] = useState([])
+    const [isLoadingBranches, setIsLoadingBranches] = useState(false)
+    const [branchError, setBranchError] = useState(null)
 
-    // UI states
+    // State for staff
+    const [doctors, setDoctors] = useState([])
+    const [nurses, setNurses] = useState([])
+    const [isLoadingStaff, setIsLoadingStaff] = useState(false)
+    const [staffError, setStaffError] = useState(null)
+
+    // State for statistics
+    const [statistics, setStatistics] = useState({
+        total_cabinets: 0,
+        available_cabinets: 0,
+        occupied_cabinets: 0,
+        repair_cabinets: 0,
+        type_distribution: [],
+    })
+    const [isLoadingStats, setIsLoadingStats] = useState(false)
+
+    // UI state
     const [searchTerm, setSearchTerm] = useState("")
-    const [filterBranchId, setFilterBranchId] = useState("")
-    const [filterType, setFilterType] = useState("")
     const [showAddModal, setShowAddModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [showDetailsModal, setShowDetailsModal] = useState(false)
+    const [showStatsModal, setShowStatsModal] = useState(true)
+    const [showFilters, setShowFilters] = useState(false)
+    const [filterType, setFilterType] = useState("all")
+    const [filterFloor, setFilterFloor] = useState("all")
+    const [filterStatus, setFilterStatus] = useState("all")
+    const [filterBranch, setFilterBranch] = useState("")
     const [currentCabinet, setCurrentCabinet] = useState(null)
-    const [selectedEquipments, setSelectedEquipments] = useState([])
+    const [showDoctorWarning, setShowDoctorWarning] = useState(false)
+    const [showNurseWarning, setShowNurseWarning] = useState(false)
+
+    // Modal state
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [successMessage, setSuccessMessage] = useState("")
+    const [cabinetToDelete, setCabinetToDelete] = useState(null)
 
     // Form data
     const [formData, setFormData] = useState({
-        cabinetNumber: "",
-        cabinetType: "",
-        branchId: "",
-        doctorId: "",
-        floor: "",
-        capacity: "",
+        name: "",
+        type: "",
+        floor: "1",
         status: "available",
         description: "",
+        branch: selectedBranch?.id || "",
+        userDoctor: "",
+        userNurses: [],
     })
 
-    // Fetch data
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true)
-
-                // In a real app, these would be API calls
-                // Simulating API calls with setTimeout
-                setTimeout(() => {
-                    // Mock branches data
-                    const mockBranches = [
-                        { id: 1, name: "Main Branch", address: "Tashkent, Chilanzar district" },
-                        { id: 2, name: "Secondary Branch", address: "Tashkent, Yunusabad district" },
-                        { id: 3, name: "Tertiary Branch", address: "Tashkent, Mirzo Ulugbek district" },
-                    ]
-
-                    // Mock doctors data
-                    const mockDoctors = [
-                        { id: 1, name: "Dr. Sardor Alimov", specialization: "General Practitioner", branchId: 1 },
-                        { id: 2, name: "Dr. Kamil Rakhimov", specialization: "Cardiologist", branchId: 1 },
-                        { id: 3, name: "Dr. Aziz Yusupov", specialization: "Pulmonologist", branchId: 2 },
-                        { id: 4, name: "Dr. Malika Umarova", specialization: "Surgeon", branchId: 3 },
-                    ]
-
-                    // Mock equipment data
-                    const mockEquipments = [
-                        { id: 1, name: "X-Ray Machine", type: "diagnostic" },
-                        { id: 2, name: "ECG Machine", type: "diagnostic" },
-                        { id: 3, name: "Ultrasound Machine", type: "diagnostic" },
-                        { id: 4, name: "Ultrasound Machine", type: "diagnostic" },
-                        { id: 5, name: "Surgical Tools Set", type: "surgical" },
-                        { id: 6, name: "Dental Chair", type: "dental" },
-                        { id: 7, name: "Ophthalmoscope", type: "diagnostic" },
-                        { id: 8, name: "Defibrillator", type: "emergency" },
-                        { id: 9, name: "Sterilization Equipment", type: "general" },
-                    ]
-
-                    // Mock cabinets data
-                    const mockCabinets = [
-                        {
-                            id: 101,
-                            cabinetNumber: "101",
-                            cabinetType: "examination",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            doctorId: 1,
-                            doctorName: "Dr. Sardor Alimov",
-                            floor: "1",
-                            capacity: "3",
-                            status: "available",
-                            description: "General examination room",
-                            equipments: [1, 6],
-                            lastMaintenance: "2023-04-15",
-                            nextMaintenance: "2023-07-15",
-                        },
-                        {
-                            id: 102,
-                            cabinetNumber: "102",
-                            cabinetType: "procedure",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            doctorId: 2,
-                            doctorName: "Dr. Kamil Rakhimov",
-                            floor: "1",
-                            capacity: "2",
-                            status: "occupied",
-                            description: "Cardiology procedure room",
-                            equipments: [2, 7],
-                            lastMaintenance: "2023-03-20",
-                            nextMaintenance: "2023-06-20",
-                        },
-                        {
-                            id: 201,
-                            cabinetNumber: "201",
-                            cabinetType: "examination",
-                            branchId: 2,
-                            branchName: "Secondary Branch",
-                            doctorId: 3,
-                            doctorName: "Dr. Aziz Yusupov",
-                            floor: "2",
-                            capacity: "3",
-                            status: "available",
-                            description: "Pulmonology examination room",
-                            equipments: [3],
-                            lastMaintenance: "2023-05-10",
-                            nextMaintenance: "2023-08-10",
-                        },
-                        {
-                            id: 301,
-                            cabinetNumber: "301",
-                            cabinetType: "surgery",
-                            branchId: 3,
-                            branchName: "Tertiary Branch",
-                            doctorId: 4,
-                            doctorName: "Dr. Malika Umarova",
-                            floor: "3",
-                            capacity: "5",
-                            status: "maintenance",
-                            description: "Surgery room",
-                            equipments: [4, 7, 8],
-                            lastMaintenance: "2023-05-25",
-                            nextMaintenance: "2023-08-25",
-                        },
-                    ]
-
-                    setBranches(mockBranches)
-                    setDoctors(mockDoctors)
-                    setEquipments(mockEquipments)
-                    setCabinets(mockCabinets)
-                    setLoading(false)
-                }, 800)
-            } catch (err) {
-                setError(err.message || "An error occurred")
-                setLoading(false)
+    // Fetch branches
+    const fetchBranchData = useCallback(async () => {
+        setIsLoadingBranches(true)
+        setBranchError(null)
+        try {
+            const branchData = await apiBranches.fetchBranches()
+            // Check if branchData has results property
+            if (branchData && branchData.results) {
+                setBranches(branchData.results)
+            } else {
+                // Ensure branchData is an array
+                setBranches(Array.isArray(branchData) ? branchData : [])
             }
+        } catch (error) {
+            console.error("Error fetching branches:", error)
+            setBranchError(t("error_fetching_branches"))
+            setBranches([]) // Set to empty array on error
+        } finally {
+            setIsLoadingBranches(false)
         }
+    }, [t])
 
-        fetchData()
-    }, [])
+    useEffect(() => {
+        fetchBranchData()
+    }, [fetchBranchData])
 
-    // Filter cabinets based on search and filters
-    const filteredCabinets = cabinets.filter((cabinet) => {
-        const matchesSearch =
-            cabinet.cabinetNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cabinet.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cabinet.description.toLowerCase().includes(searchTerm.toLowerCase())
+    // Fetch staff (doctors and nurses)
+    const fetchStaffData = useCallback(async () => {
+        setIsLoadingStaff(true)
+        setStaffError(null)
+        try {
+            // Fetch doctors (position = doctor)
+            const doctorsFilters = { position: "doctor" }
+            const doctorsData = await apiUsers.fetchUsers(1, 100, doctorsFilters)
+            setDoctors(doctorsData.results || [])
 
-        const matchesBranch = !filterBranchId || cabinet.branchId === Number.parseInt(filterBranchId)
-        const matchesType = !filterType || cabinet.cabinetType === filterType
-
-        return matchesSearch && matchesBranch && matchesType
-    })
-
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value } = e.target
-        setFormData({
-            ...formData,
-            [name]: value,
-        })
-    }
-
-    // Handle equipment selection
-    const handleEquipmentChange = (equipmentId) => {
-        if (selectedEquipments.includes(equipmentId)) {
-            setSelectedEquipments(selectedEquipments.filter((id) => id !== equipmentId))
-        } else {
-            setSelectedEquipments([...selectedEquipments, equipmentId])
+            // Fetch nurses (position = nurse)
+            const nursesFilters = { position: "nurse" }
+            const nursesData = await apiUsers.fetchUsers(1, 100, nursesFilters)
+            setNurses(nursesData.results || [])
+        } catch (error) {
+            console.error("Error fetching staff:", error)
+            setStaffError(t("error_fetching_staff"))
+            setDoctors([])
+            setNurses([])
+        } finally {
+            setIsLoadingStaff(false)
         }
-    }
+    }, [t])
 
-    // Open add cabinet modal
-    const openAddModal = () => {
-        setFormData({
-            cabinetNumber: "",
-            cabinetType: "",
-            branchId: selectedBranch?.id?.toString() || "",
-            doctorId: "",
-            floor: "",
-            capacity: "",
-            status: "available",
-            description: "",
-        })
-        setSelectedEquipments([])
-        setShowAddModal(true)
-    }
+    useEffect(() => {
+        fetchStaffData()
+    }, [fetchStaffData])
 
-    // Open edit cabinet modal
-    const openEditModal = (cabinet) => {
-        setCurrentCabinet(cabinet)
-        setFormData({
-            cabinetNumber: cabinet.cabinetNumber,
-            cabinetType: cabinet.cabinetType,
-            branchId: cabinet.branchId.toString(),
-            doctorId: cabinet.doctorId.toString(),
-            floor: cabinet.floor,
-            capacity: cabinet.capacity,
-            status: cabinet.status,
-            description: cabinet.description,
-        })
-        setSelectedEquipments(cabinet.equipments || [])
-        setShowEditModal(true)
-    }
+    // Fetch cabinets when dependencies change
+    const fetchCabinetsData = useCallback(async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            // Use filterBranch if set, otherwise use selectedBranch if not "all"
+            const branchId = filterBranch || (selectedBranch && selectedBranch !== "all" ? selectedBranch : null)
+            const data = await getCabinets(currentPage, branchId, searchTerm)
 
-    // Open cabinet details modal
-    const openDetailsModal = (cabinet) => {
-        setCurrentCabinet(cabinet)
-        setShowDetailsModal(true)
-    }
-
-    // Handle add cabinet
-    const handleAddCabinet = () => {
-        const selectedBranch = branches.find((branch) => branch.id === Number.parseInt(formData.branchId))
-        const selectedDoctor = doctors.find((doctor) => doctor.id === Number.parseInt(formData.doctorId))
-
-        const newCabinet = {
-            id: Math.floor(Math.random() * 10000),
-            cabinetNumber: formData.cabinetNumber,
-            cabinetType: formData.cabinetType,
-            branchId: Number.parseInt(formData.branchId),
-            branchName: selectedBranch.name,
-            doctorId: Number.parseInt(formData.doctorId),
-            doctorName: selectedDoctor.name,
-            floor: formData.floor,
-            capacity: formData.capacity,
-            status: formData.status,
-            description: formData.description,
-            equipments: selectedEquipments,
-            lastMaintenance: new Date().toISOString().split("T")[0],
-            nextMaintenance: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split("T")[0],
+            setCabinetsData(data.results || [])
+            setTotalItems(data.count || 0)
+            setPageCount(Math.ceil((data.count || 0) / itemsPerPage))
+        } catch (err) {
+            console.error("Error fetching cabinets:", err)
+            setError(err.message || t("error_fetching_cabinets"))
+            setCabinetsData([])
+        } finally {
+            setIsLoading(false)
         }
+    }, [currentPage, itemsPerPage, filterBranch, selectedBranch, searchTerm, t])
 
-        setCabinets([...cabinets, newCabinet])
-        setShowAddModal(false)
-    }
+    useEffect(() => {
+        fetchCabinetsData()
+    }, [fetchCabinetsData])
 
-    // Handle edit cabinet
-    const handleEditCabinet = () => {
-        const selectedBranch = branches.find((branch) => branch.id === Number.parseInt(formData.branchId))
-        const selectedDoctor = doctors.find((doctor) => doctor.id === Number.parseInt(formData.doctorId))
-
-        const updatedCabinet = {
-            ...currentCabinet,
-            cabinetNumber: formData.cabinetNumber,
-            cabinetType: formData.cabinetType,
-            branchId: Number.parseInt(formData.branchId),
-            branchName: selectedBranch.name,
-            doctorId: Number.parseInt(formData.doctorId),
-            doctorName: selectedDoctor.name,
-            floor: formData.floor,
-            capacity: formData.capacity,
-            status: formData.status,
-            description: formData.description,
-            equipments: selectedEquipments,
+    // Fetch statistics
+    const fetchStatisticsData = useCallback(async () => {
+        setIsLoadingStats(true)
+        try {
+            // Use filterBranch if set, otherwise use selectedBranch if not "all"
+            const branchId = filterBranch || (selectedBranch && selectedBranch !== "all" ? selectedBranch : null)
+            let url = ""
+            if (branchId) {
+                url = `?branch_id=${branchId}`
+            }
+            const data = await getCabinetStatistics(url)
+            setStatistics(
+                data || {
+                    total_cabinets: 0,
+                    available_cabinets: 0,
+                    occupied_cabinets: 0,
+                    repair_cabinets: 0,
+                    type_distribution: [],
+                },
+            )
+        } catch (err) {
+            console.error("Error fetching statistics:", err)
+        } finally {
+            setIsLoadingStats(false)
         }
+    }, [filterBranch, selectedBranch])
 
-        const updatedCabinets = cabinets.map((cabinet) => (cabinet.id === currentCabinet.id ? updatedCabinet : cabinet))
+    useEffect(() => {
+        fetchStatisticsData()
+    }, [fetchStatisticsData])
 
-        setCabinets(updatedCabinets)
-        setShowEditModal(false)
-        setCurrentCabinet(null)
-    }
-
-    // Handle delete cabinet
-    const handleDeleteCabinet = (cabinetId) => {
-        if (window.confirm(t("confirm_delete_cabinet"))) {
-            const updatedCabinets = cabinets.filter((cabinet) => cabinet.id !== cabinetId)
-            setCabinets(updatedCabinets)
+    // Get cabinet type icon
+    const getCabinetTypeIcon = (type) => {
+        switch (type) {
+            case "jarrohlik":
+                return <FaUserMd className="cab-type-icon" />
+            case "laboratoriya":
+                return <FaFlask className="cab-type-icon" />
+            case "tezyordam":
+                return <FaAmbulance className="cab-type-icon" />
+            case "stomatalogiya":
+                return <FaTooth className="cab-type-icon" />
+            case "qabulxona":
+                return <FaHospital className="cab-type-icon" />
+            default:
+                return <FaDoorOpen className="cab-type-icon" />
         }
     }
 
     // Get cabinet type label
     const getCabinetTypeLabel = (type) => {
         switch (type) {
-            case "examination":
-                return t("examination_room")
-            case "procedure":
-                return t("procedure_room")
-            case "surgery":
-                return t("surgery_room")
-            case "laboratory":
-                return t("laboratory")
-            case "dental":
-                return t("dental_room")
+            case "jarrohlik":
+                return t("surgery")
+            case "laboratoriya":
+                return t("laboratoriya")
+            case "tezyordam":
+                return t("tezyordam")
+            case "stomatalogiya":
+                return t("stomatalogiya")
+            case "qabulxona":
+                return t("qabulxona")
             default:
                 return type
         }
+    }
+
+    // Handle search
+    const handleSearch = (e) => {
+        setSearchTerm(e.target.value)
+        setCurrentPage(1) // Reset to first page on new search
+    }
+
+    // Toggle filters
+    const toggleFilters = () => {
+        setShowFilters(!showFilters)
+    }
+
+    // Apply filters
+    const applyFilters = () => {
+        setCurrentPage(1) // Reset to first page when applying filters
+        fetchCabinetsData()
+    }
+
+    // Reset filters
+    const resetFilters = () => {
+        setFilterType("all")
+        setFilterFloor("all")
+        setFilterStatus("all")
+        // Only reset filterBranch if selectedBranch is "all"
+        if (!selectedBranch || selectedBranch === "all") {
+            setFilterBranch("")
+        } else {
+            setFilterBranch(selectedBranch)
+        }
+        setSearchTerm("")
+        setCurrentPage(1) // Reset to first page
+    }
+
+    // Filter cabinets based on local filters (type, floor, status)
+    const filteredCabinets = cabinetsData.filter((cabinet) => {
+        // Type filter
+        const matchesType = filterType === "all" || cabinet.type === filterType
+
+        // Floor filter
+        const matchesFloor = filterFloor === "all" || cabinet.floor === filterFloor
+
+        // Status filter
+        const matchesStatus = filterStatus === "all" || cabinet.status === filterStatus
+
+        return matchesType && matchesFloor && matchesStatus
+    })
+
+    // Handle input change for form data
+    const handleInputChange = (e) => {
+        const { name, value } = e.target
+        setFormData({
+            ...formData,
+            [name]: value,
+        })
+
+        // Check if doctor is already assigned to another cabinet
+        if (name === "userDoctor" && value) {
+            const doctorId = Number.parseInt(value)
+            const isAssigned = doctors.some((doctor) => doctor.id === doctorId && doctor.has_cabinet)
+            setShowDoctorWarning(isAssigned)
+        }
+    }
+
+    // Handle nurse selection
+    const handleNurseSelection = (e) => {
+        const nurseId = Number.parseInt(e.target.value)
+
+        if (nurseId) {
+            // Check if nurse is already in the list
+            if (formData.userNurses.includes(nurseId)) {
+                return
+            }
+
+            // Check if nurse is already assigned to another cabinet
+            const isAssigned = nurses.some((nurse) => nurse.id === nurseId && nurse.has_cabinet)
+            setShowNurseWarning(isAssigned)
+
+            // Add nurse to the list
+            setFormData({
+                ...formData,
+                userNurses: [...formData.userNurses, nurseId],
+            })
+        }
+    }
+
+    // Remove nurse from selection
+    const removeNurse = (nurseId) => {
+        setFormData({
+            ...formData,
+            userNurses: formData.userNurses.filter((id) => id !== nurseId),
+        })
+    }
+
+    // Open add modal
+    const openAddModal = () => {
+        // Reset form and fetch fresh data
+        setFormData({
+            name: "",
+            type: "",
+            floor: "1",
+            status: "available",
+            description: "",
+            branch: selectedBranch?.id || "",
+            userDoctor: "",
+            userNurses: [],
+        })
+
+        // Make sure we have the latest staff data
+        fetchStaffData()
+
+        // Show the modal
+        setShowAddModal(true)
+    }
+
+    // Handle add cabinet
+    const handleAddCabinet = async (e) => {
+        e.preventDefault()
+        try {
+            setIsLoading(true)
+
+            // Get selected doctor name for alert
+            let doctorName = ""
+            if (formData.userDoctor) {
+                const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(formData.userDoctor))
+                if (selectedDoctor) {
+                    doctorName = `${selectedDoctor.first_name} ${selectedDoctor.last_name}`
+                }
+            }
+
+            // Prepare data for API
+            const cabinetData = {
+                ...formData,
+                branch: Number.parseInt(formData.branch),
+                user_doctor: formData.userDoctor ? [Number.parseInt(formData.userDoctor)] : [],
+                user_nurse: formData.userNurses.map((id) => Number.parseInt(id)),
+            }
+
+            await createCabinet(cabinetData)
+            setShowAddModal(false)
+
+            // Set success message with doctor name if available
+            let message = t("cabinet_added_successfully")
+            if (doctorName) {
+                message += `. ${t("doctor_assigned")}: ${doctorName}`
+            }
+
+            setSuccessMessage(message)
+            setShowSuccessModal(true)
+
+            // Reset form
+            setFormData({
+                name: "",
+                type: "",
+                floor: "1",
+                status: "available",
+                description: "",
+                branch: selectedBranch?.id || "",
+                userDoctor: "",
+                userNurses: [],
+            })
+
+            // Refresh data
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            setError(err.message || t("error_adding_cabinet"))
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Open edit modal
+    const openEditModal = async (cabinet) => {
+        try {
+            setIsLoading(true)
+
+            // Fetch the latest cabinet data
+            const cabinetData = await getCabinetById(cabinet.id)
+
+            // Make sure we have the latest staff data
+            await fetchStaffData()
+
+            setFormData({
+                name: cabinetData.name,
+                type: cabinetData.type,
+                floor: cabinetData.floor,
+                status: cabinetData.status,
+                description: cabinetData.description,
+                branch: cabinetData.branch,
+                userDoctor: cabinetData.user_doctor && cabinetData.user_doctor.length > 0 ? cabinetData.user_doctor[0].id : "",
+                userNurses: (cabinetData.user_nurse || []).map((nurse) => nurse.id),
+            })
+
+            setCurrentCabinet(cabinetData)
+            setShowEditModal(true)
+        } catch (err) {
+            setError(err.message || t("error_fetching_cabinet_details"))
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Handle update cabinet
+    const handleUpdateCabinet = async (e) => {
+        e.preventDefault()
+        try {
+            setIsLoading(true)
+
+            // Get selected doctor name for alert
+            let doctorName = ""
+            if (formData.userDoctor) {
+                const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(formData.userDoctor))
+                if (selectedDoctor) {
+                    doctorName = `${selectedDoctor.first_name} ${selectedDoctor.last_name}`
+                }
+            }
+
+            // Prepare data for API
+            const cabinetData = {
+                name: formData.name,
+                type: formData.type,
+                floor: formData.floor,
+                status: formData.status,
+                description: formData.description,
+                branch: Number.parseInt(formData.branch),
+                user_doctor: formData.userDoctor ? [Number.parseInt(formData.userDoctor)] : [],
+                user_nurse: formData.userNurses.map((id) => Number.parseInt(id)),
+            }
+
+            await updateCabinet(currentCabinet.id, cabinetData)
+            setShowEditModal(false)
+
+            // Set success message with doctor name if available
+            let message = t("cabinet_updated_successfully")
+            if (doctorName) {
+                message += `. ${t("doctor_assigned")}: ${doctorName}`
+            }
+
+            setSuccessMessage(message)
+            setShowSuccessModal(true)
+
+            // Refresh data
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            setError(err.message || t("error_updating_cabinet"))
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Open cabinet details modal
+    const openDetailsModal = async (cabinet) => {
+        try {
+            setIsLoading(true)
+
+            // Fetch the latest cabinet data
+            const cabinetData = await getCabinetById(cabinet.id)
+
+            setCurrentCabinet(cabinetData)
+            setShowDetailsModal(true)
+        } catch (err) {
+            setError(err.message || t("error_fetching_cabinet_details"))
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Open delete confirmation
+    const openDeleteConfirmation = (cabinet) => {
+        setCabinetToDelete(cabinet)
+        setShowConfirmModal(true)
+    }
+
+    // Handle delete cabinet
+    const handleDeleteCabinet = async () => {
+        try {
+            setIsLoading(true)
+
+            // Make sure we have a valid cabinet ID
+            if (!cabinetToDelete || !cabinetToDelete.id) {
+                setError(t("invalid_cabinet_id"))
+                setShowConfirmModal(false)
+                setIsLoading(false)
+                return
+            }
+
+            // Call the API to delete the cabinet
+            await deleteCabinet(cabinetToDelete.id)
+
+            // Close the modal and show success message
+            setShowConfirmModal(false)
+            setSuccessMessage(t("cabinet_deleted_successfully"))
+            setShowSuccessModal(true)
+
+            // Refresh data after successful deletion
+            fetchCabinetsData()
+            fetchStatisticsData()
+        } catch (err) {
+            console.error("Error deleting cabinet:", err)
+            setError(err.message || t("error_deleting_cabinet"))
+            setShowConfirmModal(false) // Close the modal even on error
+        } finally {
+            setIsLoading(false)
+            setCabinetToDelete(null)
+        }
+    }
+
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page + 1) // API uses 1-based indexing
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(1) // Reset to first page when changing items per page
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        const branch = branches.find((b) => b.id === branchId)
+        return branch ? branch.name : t("unknown_branch")
     }
 
     // Get status label
     const getStatusLabel = (status) => {
         switch (status) {
             case "available":
-                return t("available")
-            case "occupied":
-                return t("occupied")
-            case "maintenance":
-                return t("maintenance")
+                return t("there_is")
+            case "creating":
+                return t("creating")
+            case "repair":
+                return t("repair")
             default:
                 return status
         }
     }
 
-    // Get equipment names by IDs
-    const getEquipmentNames = (equipmentIds) => {
-        return equipmentIds
-            .map((id) => {
-                const equipment = equipments.find((eq) => eq.id === id)
-                return equipment ? equipment.name : ""
-            })
-            .filter(Boolean)
-            .join(", ")
+    // Get status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "available":
+                return <FaCheckCircle className="status-icon available" />
+            case "creating":
+                return <FaUserMd className="status-icon occupied" />
+            case "repair":
+                return <FaTools className="status-icon repair" />
+            default:
+                return <FaExclamationTriangle className="status-icon" />
+        }
+    }
+
+    // Get nurse name by ID
+    const getNurseName = (nurseId) => {
+        const nurse = nurses.find((n) => n.id === nurseId)
+        return nurse ? `${nurse.first_name} ${nurse.last_name}` : t("unknown_nurse")
     }
 
     // Filter doctors by selected branch
     const getFilteredDoctors = () => {
-        if (!formData.branchId) return []
-        return doctors.filter((doctor) => doctor.branchId === Number.parseInt(formData.branchId))
+        if (!formData.branch) return []
+        return doctors.filter((doctor) => doctor.branchId === Number.parseInt(formData.branch))
     }
 
+    const [initialSelectedBranch, setInitialSelectedBranch] = useState(selectedBranch)
+
+    useEffect(() => {
+        setInitialSelectedBranch(selectedBranch)
+    }, [selectedBranch])
+
+    useEffect(() => {
+        if (initialSelectedBranch && initialSelectedBranch !== "all") {
+            setFilterBranch(initialSelectedBranch)
+        } else {
+            setFilterBranch("")
+        }
+    }, [initialSelectedBranch])
+
     // Loading state
-    if (loading) {
+    if (isLoading && !cabinetsData.length) {
         return (
             <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -366,13 +634,18 @@ export default function ACabinets() {
     }
 
     // Error state
-    if (error) {
+    if (error && !cabinetsData.length) {
         return (
             <div className="error-container">
                 <FaExclamationTriangle className="error-icon" />
                 <h2>{t("error_occurred")}</h2>
                 <p>{error}</p>
-                <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                        fetchCabinetsData()
+                    }}
+                >
                     {t("try_again")}
                 </button>
             </div>
@@ -386,131 +659,295 @@ export default function ACabinets() {
                     <FaDoorOpen /> {t("cabinets_management")}
                 </h1>
                 <div className="header-actions">
+                    <button className="btn btn-outline" onClick={() => setShowStatsModal(!showStatsModal)}>
+                        {showStatsModal ? (
+                            <FaTimes />
+                        ) : (
+                            <>
+                                <FaChartBar /> {t("show_stats")}
+                            </>
+                        )}
+                    </button>
                     <button className="btn btn-primary" onClick={openAddModal}>
                         <FaPlus /> {t("add_cabinet")}
                     </button>
-                    <div className="search-box">
-                        <FaSearch />
-                        <input
-                            type="text"
-                            placeholder={t("search_cabinets")}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="filter-dropdown">
-                        <FaHospital />
-                        <select value={filterBranchId} onChange={(e) => setFilterBranchId(e.target.value)}>
-                            <option value="">{t("all_branches")}</option>
-                            {branches.map((branch) => (
-                                <option key={branch.id} value={branch.id}>
-                                    {branch.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="filter-dropdown">
-                        <FaFilter />
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                            <option value="">{t("all_types")}</option>
-                            <option value="examination">{t("examination_room")}</option>
-                            <option value="procedure">{t("procedure_room")}</option>
-                            <option value="surgery">{t("surgery_room")}</option>
-                            <option value="laboratory">{t("laboratory")}</option>
-                            <option value="dental">{t("dental_room")}</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
-            <div className="cabinets-stats">
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FaDoorOpen />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{cabinets.length}</h3>
-                        <p>{t("total_cabinets")}</p>
-                    </div>
+            {showStatsModal && (
+                <div className="cabinets-stats">
+                    {isLoadingStats ? (
+                        <div className="stats-loading">
+                            <div className="loading-spinner"></div>
+                            <p>{t("loading_statistics")}...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="stat-cards">
+                                <div className="stat-card">
+                                    <div className="stat-icon">
+                                        <FaDoorOpen />
+                                    </div>
+                                    <div className="stat-content">
+                                        <h3>{statistics.total_cabinets}</h3>
+                                        <p>{t("total_cabinets")}</p>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon available">
+                                        <FaCheckCircle />
+                                    </div>
+                                    <div className="stat-content">
+                                        <h3>{statistics.available_cabinets}</h3>
+                                        <p>{t("available_cabinets")}</p>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon occupied">
+                                        <FaUserMd />
+                                    </div>
+                                    <div className="stat-content">
+                                        <h3>{statistics.occupied_cabinets}</h3>
+                                        <p>{t("create_cabinet")}</p>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon maintenance">
+                                        <FaTools />
+                                    </div>
+                                    <div className="stat-content">
+                                        <h3>{statistics.repair_cabinets}</h3>
+                                        <p>{t("repair_cabinets")}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {statistics.type_distribution && statistics.type_distribution.length > 0 && (
+                                <div className="type-distribution">
+                                    <h3 className="section-title">
+                                        <FaChartBar className="section-icon" /> {t("type_distribution")}
+                                    </h3>
+                                    <div className="type-bars">
+                                        {statistics.type_distribution.map((type, index) => (
+                                            <div className="type-bar-container" key={index}>
+                                                <div className="type-bar-header">
+                                                    <div className="type-name-container">
+                                                        {getCabinetTypeIcon(type.type)}
+                                                        <span className="type-name">{getCabinetTypeLabel(type.type)}</span>
+                                                    </div>
+                                                    <span className="type-count">{type.count}</span>
+                                                </div>
+                                                <div className="type-bar-wrapper">
+                                                    <div
+                                                        className={`type-bar type-${type.type}`}
+                                                        style={{
+                                                            width: `${(type.count / (statistics.total_cabinets || 1)) * 100}%`,
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon available">
-                        <FaCheckCircle />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{cabinets.filter((cabinet) => cabinet.status === "available").length}</h3>
-                        <p>{t("available_cabinets")}</p>
-                    </div>
+            )}
+
+            <div className="search-filter-container">
+                <div className="search-input-wrapper">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder={t("search_cabinets")}
+                        value={searchTerm}
+                        onChange={handleSearch}
+                    />
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon occupied">
-                        <FaUserMd />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{cabinets.filter((cabinet) => cabinet.status === "occupied").length}</h3>
-                        <p>{t("occupied_cabinets")}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon maintenance">
-                        <FaExclamationTriangle />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{cabinets.filter((cabinet) => cabinet.status === "maintenance").length}</h3>
-                        <p>{t("maintenance_cabinets")}</p>
-                    </div>
-                </div>
+                <button className={`filter-toggle ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
+                    <FaFilter /> {t("filters")}
+                </button>
             </div>
+
+            {showFilters && (
+                <div className="filters">
+                    {(!selectedBranch || selectedBranch === "all") && (
+                        <div className="filter-group">
+                            <label>{t("branch")}:</label>
+                            <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
+                                <option value="">{t("all_branches")}</option>
+                                {branches.map((branch) => (
+                                    <option key={branch.id} value={branch.id}>
+                                        {branch.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    <div className="filter-group">
+                        <label>{t("type")}:</label>
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                            <option value="all">{t("all")}</option>
+                            <option value="jarrohlik">{t("surgery")}</option>
+                            <option value="laboratoriya">{t("laboratoriya")}</option>
+                            <option value="tezyordam">{t("tezyordam")}</option>
+                            <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                            <option value="qabulxona">{t("qabulxona")}</option>
+                        </select>
+                    </div>
+                    <div className="filter-group">
+                        <label>{t("floor")}:</label>
+                        <select value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)}>
+                            <option value="all">{t("all")}</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                    <div className="filter-group">
+                        <label>{t("status")}:</label>
+                        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <option value="all">{t("all")}</option>
+                            <option value="available">{t("there_is")}</option>
+                            <option value="creating">{t("creating")}</option>
+                            <option value="repair">{t("repair")}</option>
+                        </select>
+                    </div>
+                    <div className="filter-actions">
+                        <button className="btn btn-outline" onClick={resetFilters}>
+                            {t("reset")}
+                        </button>
+                        <button className="btn btn-primary" onClick={applyFilters}>
+                            {t("apply")}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="cabinets-grid">
+                {isLoading && cabinetsData.length > 0 ? (
+                    <div className="loading-overlay">
+                        <div className="loading-spinner"></div>
+                    </div>
+                ) : null}
+
                 {filteredCabinets.length > 0 ? (
-                    filteredCabinets.map((cabinet) => (
-                        <div key={cabinet.id} className={`cabinet-card status-${cabinet.status}`}>
-                            <div className="cabinet-header">
-                                <h3>
-                                    {t("cabinet")} {cabinet.cabinetNumber}
-                                </h3>
-                                <span className={`status-badge ${cabinet.status}`}>{getStatusLabel(cabinet.status)}</span>
-                            </div>
-                            <div className="cabinet-body">
-                                <div className="cabinet-info">
-                                    <p>
-                                        <FaRegHospital /> {cabinet.branchName}
-                                    </p>
-                                    <p>
-                                        <FaUserMd /> {cabinet.doctorName}
-                                    </p>
-                                    <p>
-                                        <FaRegClipboard /> {getCabinetTypeLabel(cabinet.cabinetType)}
-                                    </p>
-                                </div>
-                                <div className="cabinet-description">{cabinet.description}</div>
-                                <div className="cabinet-maintenance">
-                                    <p>
-                                        <FaRegCalendarCheck /> {t("last_maintenance")}: {cabinet.lastMaintenance}
-                                    </p>
-                                    <p>
-                                        <FaRegClock /> {t("next_maintenance")}: {cabinet.nextMaintenance}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="cabinet-actions">
-                                <button className="btn btn-sm btn-outline" onClick={() => openDetailsModal(cabinet)}>
-                                    <FaInfoCircle /> {t("details")}
-                                </button>
-                                <button className="btn btn-sm btn-primary" onClick={() => openEditModal(cabinet)}>
-                                    <FaEdit /> {t("edit")}
-                                </button>
-                                <button className="btn btn-sm btn-danger" onClick={() => handleDeleteCabinet(cabinet.id)}>
-                                    <FaTrash /> {t("delete")}
-                                </button>
-                            </div>
+                    <>
+                        <div className="cabinets-table-container">
+                            <table className="cabinets-table">
+                                <thead>
+                                    <tr>
+                                        <th>{t("name")}</th>
+                                        <th>{t("type")}</th>
+                                        <th>{t("floor")}</th>
+                                        <th>{t("status")}</th>
+                                        <th>{t("branch")}</th>
+                                        <th>{t("doctor")}</th>
+                                        <th>{t("nurse")}</th>
+                                        <th>{t("equipment")}</th>
+                                        <th>{t("actions")}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredCabinets.map((cabinet) => (
+                                        <tr key={cabinet.id}>
+                                            <td>{cabinet.name}</td>
+                                            <td>
+                                                <div className="cabinet-type">
+                                                    {getCabinetTypeIcon(cabinet.type)}
+                                                    <span>{getCabinetTypeLabel(cabinet.type)}</span>
+                                                </div>
+                                            </td>
+                                            <td>{cabinet.floor}</td>
+                                            <td>
+                                                <div className="cabinet-status">
+                                                    {getStatusIcon(cabinet.status)}
+                                                    <span className={`status-badge ${cabinet.status}`}>{getStatusLabel(cabinet.status)}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="cabinet-branch">
+                                                    <FaBuilding className="branch-icon" />
+                                                    {getBranchName(cabinet.branch)}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {cabinet.user_doctor && cabinet.user_doctor.length > 0 ? (
+                                                    <div className="cabinet-staff">
+                                                        {cabinet.user_doctor.map((doctor) => (
+                                                            <div key={doctor.id} className="staff-item">
+                                                                <FaUserMd className="staff-icon" />
+                                                                {`${doctor.first_name} ${doctor.last_name}`}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="no-staff">{t("no_doctor_assigned")}</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                {cabinet.user_nurse && cabinet.user_nurse.length > 0 ? (
+                                                    <div className="cabinet-staff">
+                                                        {cabinet.user_nurse.map((nurse) => (
+                                                            <div key={nurse.id} className="staff-item">
+                                                                <FaUserNurse className="staff-icon" />
+                                                                {`${nurse.first_name} ${nurse.last_name}`}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="no-staff">{t("no_nurse_assigned")}</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="cabinet-equipment">{cabinet.description || t("no_equipment")}</div>
+                                            </td>
+                                            <td>
+                                                <div className="cabinet-actions">
+                                                    <button
+                                                        className="action-btn info"
+                                                        onClick={() => openDetailsModal(cabinet)}
+                                                        title={t("details")}
+                                                    >
+                                                        <FaInfoCircle />
+                                                    </button>
+                                                    <button className="action-btn edit" onClick={() => openEditModal(cabinet)} title={t("edit")}>
+                                                        <FaEdit />
+                                                    </button>
+                                                    <button
+                                                        className="action-btn delete"
+                                                        onClick={() => openDeleteConfirmation(cabinet)}
+                                                        title={t("delete")}
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    ))
+
+                        <div className="pagination-container">
+                            <Pagination
+                                pageCount={pageCount}
+                                currentPage={currentPage - 1} // Convert to 0-based for component
+                                onPageChange={handlePageChange}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={totalItems}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
+                        </div>
+                    </>
                 ) : (
-                    <div className="no-results">
-                        <FaExclamationTriangle />
+                    <div className="no-data">
+                        <FaExclamationTriangle className="no-data-icon" />
                         <p>{t("no_cabinets_found")}</p>
+                        {error && <p className="error-message">{error}</p>}
                     </div>
                 )}
             </div>
@@ -520,330 +957,286 @@ export default function ACabinets() {
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-header">
-                            <h3>{t("add_new_cabinet")}</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
-                                ×
+                            <h2>{t("add_cabinet")}</h2>
+                            <button className="modal-close" onClick={() => setShowAddModal(false)}>
+                                <FaTimes />
                             </button>
                         </div>
+                        <form onSubmit={handleAddCabinet} className="cabinet-form">
+                            <div className="form-group">
+                                <label htmlFor="name">{t("name")}</label>
+                                <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+                            </div>
 
-                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="branch">{t("branch")}</label>
+                                <select id="branch" name="branch" value={formData.branch} onChange={handleInputChange} required>
+                                    <option value="">{t("select_branch")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="cabinetNumber">{t("cabinet_number")}</label>
-                                    <input
-                                        type="text"
-                                        id="cabinetNumber"
-                                        name="cabinetNumber"
-                                        value={formData.cabinetNumber}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
+                                    <label htmlFor="type">{t("type")}</label>
+                                    <select id="type" name="type" value={formData.type} onChange={handleInputChange} required>
+                                        <option value="">{t("select_type")}</option>
+                                        <option value="jarrohlik">{t("surgery")}</option>
+                                        <option value="laboratoriya">{t("laboratoriya")}</option>
+                                        <option value="tezyordam">{t("tezyordam")}</option>
+                                        <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                                        <option value="qabulxona">{t("qabulxona")}</option>
+                                    </select>
                                 </div>
+
                                 <div className="form-group">
                                     <label htmlFor="floor">{t("floor")}</label>
-                                    <input
-                                        type="text"
-                                        id="floor"
-                                        name="floor"
-                                        value={formData.floor}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="branchId">{t("branch")}</label>
-                                    <select id="branchId" name="branchId" value={formData.branchId} onChange={handleInputChange} required>
-                                        <option value="">{t("select_branch")}</option>
-                                        {branches.map((branch) => (
-                                            <option key={branch.id} value={branch.id}>
-                                                {branch.name}
-                                            </option>
-                                        ))}
+                                    <select id="floor" name="floor" value={formData.floor} onChange={handleInputChange} required>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
                                     </select>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="doctorId">{t("doctor")}</label>
-                                    <select
-                                        id="doctorId"
-                                        name="doctorId"
-                                        value={formData.doctorId}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={!formData.branchId}
-                                    >
-                                        <option value="">{t("select_doctor")}</option>
-                                        {getFilteredDoctors().map((doctor) => (
-                                            <option key={doctor.id} value={doctor.id}>
-                                                {doctor.name} ({doctor.specialization})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="cabinetType">{t("cabinet_type")}</label>
-                                    <select
-                                        id="cabinetType"
-                                        name="cabinetType"
-                                        value={formData.cabinetType}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">{t("select_type")}</option>
-                                        <option value="examination">{t("examination_room")}</option>
-                                        <option value="procedure">{t("procedure_room")}</option>
-                                        <option value="surgery">{t("surgery_room")}</option>
-                                        <option value="laboratory">{t("laboratory")}</option>
-                                        <option value="dental">{t("dental_room")}</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="capacity">{t("capacity")}</label>
-                                    <input
-                                        type="number"
-                                        id="capacity"
-                                        name="capacity"
-                                        value={formData.capacity}
-                                        onChange={handleInputChange}
-                                        min="1"
-                                        required
-                                    />
                                 </div>
                             </div>
 
                             <div className="form-group">
                                 <label htmlFor="status">{t("status")}</label>
                                 <select id="status" name="status" value={formData.status} onChange={handleInputChange} required>
-                                    <option value="available">{t("available")}</option>
-                                    <option value="occupied">{t("occupied")}</option>
-                                    <option value="maintenance">{t("maintenance")}</option>
+                                    <option value="available">{t("there_is")}</option>
+                                    <option value="creating">{t("creating")}</option>
+                                    <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="description">{t("description")}</label>
+                                <label htmlFor="userDoctor">{t("doctor")}</label>
+                                <select
+                                    id="userDoctor"
+                                    name="userDoctor"
+                                    value={formData.userDoctor || ""}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="">{t("select_doctor")}</option>
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showDoctorWarning && (
+                                    <div className="warning">
+                                        <FaInfoCircle /> {t("doctor_already_assigned_warning")}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="userNurses">{t("nurses")}</label>
+                                <select id="userNurses" name="userNurses" value="" onChange={handleNurseSelection}>
+                                    <option value="">{t("select_nurse")}</option>
+                                    {nurses.map((nurse) => (
+                                        <option key={nurse.id} value={nurse.id}>
+                                            {nurse.first_name} {nurse.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showNurseWarning && (
+                                    <div className="warning">
+                                        <FaInfoCircle /> {t("nurse_already_assigned_warning")}
+                                    </div>
+                                )}
+
+                                {formData.userNurses.length > 0 && (
+                                    <div className="selected-items">
+                                        <h4>{t("selected_nurses")}</h4>
+                                        <ul>
+                                            {formData.userNurses.map((nurseId) => (
+                                                <li key={nurseId}>
+                                                    {getNurseName(nurseId)}
+                                                    <button type="button" className="remove-item" onClick={() => removeNurse(nurseId)}>
+                                                        <FaTimes />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="description">{t("equipment")}</label>
                                 <textarea
                                     id="description"
                                     name="description"
                                     value={formData.description}
                                     onChange={handleInputChange}
-                                    rows="3"
+                                    rows={3}
+                                    placeholder={t("enter_equipment_details")}
                                 ></textarea>
                             </div>
 
-                            <div className="form-group">
-                                <label>{t("equipment")}</label>
-                                <div className="equipment-checkboxes">
-                                    {equipments.map((equipment) => (
-                                        <div key={equipment.id} className="checkbox-item">
-                                            <input
-                                                type="checkbox"
-                                                id={`equipment-${equipment.id}`}
-                                                checked={selectedEquipments.includes(equipment.id)}
-                                                onChange={() => handleEquipmentChange(equipment.id)}
-                                            />
-                                            <label htmlFor={`equipment-${equipment.id}`}>
-                                                {equipment.name} ({equipment.type})
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="form-actions">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    {t("cancel")}
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                                    {isLoading ? t("adding") : t("add")}
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
-                                {t("cancel")}
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleAddCabinet}
-                                disabled={
-                                    !formData.cabinetNumber ||
-                                    !formData.cabinetType ||
-                                    !formData.branchId ||
-                                    !formData.doctorId ||
-                                    !formData.floor ||
-                                    !formData.capacity
-                                }
-                            >
-                                {t("add_cabinet")}
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
 
             {/* Edit Cabinet Modal */}
-            {showEditModal && (
+            {showEditModal && currentCabinet && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-header">
-                            <h3>{t("edit_cabinet")}</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
-                                ×
+                            <h2>{t("edit_cabinet")}</h2>
+                            <button className="modal-close" onClick={() => setShowEditModal(false)}>
+                                <FaTimes />
                             </button>
                         </div>
+                        <form onSubmit={handleUpdateCabinet} className="cabinet-form">
+                            <div className="form-group">
+                                <label htmlFor="edit-name">{t("name")}</label>
+                                <input
+                                    type="text"
+                                    id="edit-name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
 
-                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="edit-branch">{t("branch")}</label>
+                                <select id="edit-branch" name="branch" value={formData.branch} onChange={handleInputChange} required>
+                                    <option value="">{t("select_branch")}</option>
+                                    {branches.map((branch) => (
+                                        <option key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="edit-cabinetNumber">{t("cabinet_number")}</label>
-                                    <input
-                                        type="text"
-                                        id="edit-cabinetNumber"
-                                        name="cabinetNumber"
-                                        value={formData.cabinetNumber}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
+                                    <label htmlFor="edit-type">{t("type")}</label>
+                                    <select id="edit-type" name="type" value={formData.type} onChange={handleInputChange} required>
+                                        <option value="">{t("select_type")}</option>
+                                        <option value="jarrohlik">{t("surgery")}</option>
+                                        <option value="laboratoriya">{t("laboratoriya")}</option>
+                                        <option value="tezyordam">{t("tezyordam")}</option>
+                                        <option value="stomatalogiya">{t("stomatalogiya")}</option>
+                                        <option value="qabulxona">{t("qabulxona")}</option>
+                                    </select>
                                 </div>
+
                                 <div className="form-group">
                                     <label htmlFor="edit-floor">{t("floor")}</label>
-                                    <input
-                                        type="text"
-                                        id="edit-floor"
-                                        name="floor"
-                                        value={formData.floor}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="edit-branchId">{t("branch")}</label>
-                                    <select
-                                        id="edit-branchId"
-                                        name="branchId"
-                                        value={formData.branchId}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">{t("select_branch")}</option>
-                                        {branches.map((branch) => (
-                                            <option key={branch.id} value={branch.id}>
-                                                {branch.name}
-                                            </option>
-                                        ))}
+                                    <select id="edit-floor" name="floor" value={formData.floor} onChange={handleInputChange} required>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
                                     </select>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="edit-doctorId">{t("doctor")}</label>
-                                    <select
-                                        id="edit-doctorId"
-                                        name="doctorId"
-                                        value={formData.doctorId}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">{t("select_doctor")}</option>
-                                        {doctors.map((doctor) => (
-                                            <option key={doctor.id} value={doctor.id}>
-                                                {doctor.name} ({doctor.specialization})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="edit-cabinetType">{t("cabinet_type")}</label>
-                                    <select
-                                        id="edit-cabinetType"
-                                        name="cabinetType"
-                                        value={formData.cabinetType}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">{t("select_type")}</option>
-                                        <option value="examination">{t("examination_room")}</option>
-                                        <option value="procedure">{t("procedure_room")}</option>
-                                        <option value="surgery">{t("surgery_room")}</option>
-                                        <option value="laboratory">{t("laboratory")}</option>
-                                        <option value="dental">{t("dental_room")}</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="edit-capacity">{t("capacity")}</label>
-                                    <input
-                                        type="number"
-                                        id="edit-capacity"
-                                        name="capacity"
-                                        value={formData.capacity}
-                                        onChange={handleInputChange}
-                                        min="1"
-                                        required
-                                    />
                                 </div>
                             </div>
 
                             <div className="form-group">
                                 <label htmlFor="edit-status">{t("status")}</label>
                                 <select id="edit-status" name="status" value={formData.status} onChange={handleInputChange} required>
-                                    <option value="available">{t("available")}</option>
-                                    <option value="occupied">{t("occupied")}</option>
-                                    <option value="maintenance">{t("maintenance")}</option>
+                                    <option value="available">{t("there_is")}</option>
+                                    <option value="creating">{t("creating")}</option>
+                                    <option value="repair">{t("repair")}</option>
                                 </select>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="edit-description">{t("description")}</label>
+                                <label htmlFor="edit-userDoctor">{t("doctor")}</label>
+                                <select
+                                    id="edit-userDoctor"
+                                    name="userDoctor"
+                                    value={formData.userDoctor || ""}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="">{t("select_doctor")}</option>
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showDoctorWarning && (
+                                    <div className="warning">
+                                        <FaInfoCircle /> {t("doctor_already_assigned_warning")}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="edit-userNurses">{t("nurses")}</label>
+                                <select id="edit-userNurses" name="userNurses" value="" onChange={handleNurseSelection}>
+                                    <option value="">{t("select_nurse")}</option>
+                                    {nurses.map((nurse) => (
+                                        <option key={nurse.id} value={nurse.id}>
+                                            {nurse.first_name} {nurse.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {showNurseWarning && (
+                                    <div className="warning">
+                                        <FaInfoCircle /> {t("nurse_already_assigned_warning")}
+                                    </div>
+                                )}
+
+                                {formData.userNurses.length > 0 && (
+                                    <div className="selected-items">
+                                        <h4>{t("selected_nurses")}</h4>
+                                        <ul>
+                                            {formData.userNurses.map((nurseId) => (
+                                                <li key={nurseId}>
+                                                    {getNurseName(nurseId)}
+                                                    <button type="button" className="remove-item" onClick={() => removeNurse(nurseId)}>
+                                                        <FaTimes />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="edit-description">{t("equipment")}</label>
                                 <textarea
                                     id="edit-description"
                                     name="description"
                                     value={formData.description}
                                     onChange={handleInputChange}
-                                    rows="3"
+                                    rows={3}
+                                    placeholder={t("enter_equipment_details")}
                                 ></textarea>
                             </div>
 
-                            <div className="form-group">
-                                <label>{t("equipment")}</label>
-                                <div className="equipment-checkboxes">
-                                    {equipments.map((equipment) => (
-                                        <div key={equipment.id} className="checkbox-item">
-                                            <input
-                                                type="checkbox"
-                                                id={`edit-equipment-${equipment.id}`}
-                                                checked={selectedEquipments.includes(equipment.id)}
-                                                onChange={() => handleEquipmentChange(equipment.id)}
-                                            />
-                                            <label htmlFor={`edit-equipment-${equipment.id}`}>
-                                                {equipment.name} ({equipment.type})
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="form-actions">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
+                                    {t("cancel")}
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                                    {isLoading ? t("saving") : t("save")}
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
-                                {t("cancel")}
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleEditCabinet}
-                                disabled={
-                                    !formData.cabinetNumber ||
-                                    !formData.cabinetType ||
-                                    !formData.branchId ||
-                                    !formData.doctorId ||
-                                    !formData.floor ||
-                                    !formData.capacity
-                                }
-                            >
-                                {t("save")}
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -854,38 +1247,30 @@ export default function ACabinets() {
                     <div className="modal">
                         <div className="modal-header">
                             <h3>
-                                {t("cabinet")} {currentCabinet.cabinetNumber} {t("details")}
+                                {t("cabinet")} {currentCabinet.name} {t("details")}
                             </h3>
-                            <button className="close-btn" onClick={() => setShowDetailsModal(false)}>
-                                ×
+                            <button className="modal-close" onClick={() => setShowDetailsModal(false)}>
+                                <FaTimes />
                             </button>
                         </div>
 
                         <div className="modal-body">
                             <div className="cabinet-details">
                                 <div className="detail-row">
-                                    <div className="detail-label">{t("cabinet_number")}:</div>
-                                    <div className="detail-value">{currentCabinet.cabinetNumber}</div>
+                                    <div className="detail-label">{t("name")}:</div>
+                                    <div className="detail-value">{currentCabinet.name}</div>
                                 </div>
                                 <div className="detail-row">
-                                    <div className="detail-label">{t("cabinet_type")}:</div>
-                                    <div className="detail-value">{getCabinetTypeLabel(currentCabinet.cabinetType)}</div>
+                                    <div className="detail-label">{t("type")}:</div>
+                                    <div className="detail-value">{getCabinetTypeLabel(currentCabinet.type)}</div>
                                 </div>
                                 <div className="detail-row">
                                     <div className="detail-label">{t("branch")}:</div>
-                                    <div className="detail-value">{currentCabinet.branchName}</div>
-                                </div>
-                                <div className="detail-row">
-                                    <div className="detail-label">{t("doctor")}:</div>
-                                    <div className="detail-value">{currentCabinet.doctorName}</div>
+                                    <div className="detail-value">{getBranchName(currentCabinet.branch)}</div>
                                 </div>
                                 <div className="detail-row">
                                     <div className="detail-label">{t("floor")}:</div>
                                     <div className="detail-value">{currentCabinet.floor}</div>
-                                </div>
-                                <div className="detail-row">
-                                    <div className="detail-label">{t("capacity")}:</div>
-                                    <div className="detail-value">{currentCabinet.capacity}</div>
                                 </div>
                                 <div className="detail-row">
                                     <div className="detail-label">{t("status")}:</div>
@@ -896,24 +1281,26 @@ export default function ACabinets() {
                                     </div>
                                 </div>
                                 <div className="detail-row">
-                                    <div className="detail-label">{t("description")}:</div>
-                                    <div className="detail-value">{currentCabinet.description}</div>
-                                </div>
-                                <div className="detail-row">
-                                    <div className="detail-label">{t("equipment")}:</div>
+                                    <div className="detail-label">{t("doctor")}:</div>
                                     <div className="detail-value">
-                                        {currentCabinet.equipments && currentCabinet.equipments.length > 0
-                                            ? getEquipmentNames(currentCabinet.equipments)
-                                            : t("no_equipment")}
+                                        {currentCabinet.user_doctor && currentCabinet.user_doctor.length > 0
+                                            ? currentCabinet.user_doctor
+                                                .map((doctor) => `${doctor.first_name} ${doctor.last_name}`)
+                                                .join(", ")
+                                            : t("no_doctor_assigned")}
                                     </div>
                                 </div>
                                 <div className="detail-row">
-                                    <div className="detail-label">{t("last_maintenance")}:</div>
-                                    <div className="detail-value">{currentCabinet.lastMaintenance}</div>
+                                    <div className="detail-label">{t("nurses")}:</div>
+                                    <div className="detail-value">
+                                        {currentCabinet.user_nurse && currentCabinet.user_nurse.length > 0
+                                            ? currentCabinet.user_nurse.map((nurse) => `${nurse.first_name} ${nurse.last_name}`).join(", ")
+                                            : t("no_nurse_assigned")}
+                                    </div>
                                 </div>
                                 <div className="detail-row">
-                                    <div className="detail-label">{t("next_maintenance")}:</div>
-                                    <div className="detail-value">{currentCabinet.nextMaintenance}</div>
+                                    <div className="detail-label">{t("equipment")}:</div>
+                                    <div className="detail-value">{currentCabinet.description || t("no_equipment")}</div>
                                 </div>
                             </div>
                         </div>
@@ -922,14 +1309,44 @@ export default function ACabinets() {
                             <button className="btn btn-primary" onClick={() => setShowDetailsModal(false)}>
                                 {t("close")}
                             </button>
-                            <button className="btn btn-outline" onClick={() => openEditModal(currentCabinet)}>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => {
+                                    setShowDetailsModal(false)
+                                    openEditModal(currentCabinet)
+                                }}
+                            >
                                 <FaEdit /> {t("edit")}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Confirm Delete Modal */}
+            {showConfirmModal && (
+                <ConfirmModal
+                    isOpen={showConfirmModal}
+                    title={t("confirm_delete")}
+                    message={t("confirm_delete_cabinet_message", { name: cabinetToDelete?.name })}
+                    confirmText={t("delete")}
+                    cancelText={t("cancel")}
+                    onConfirm={handleDeleteCabinet}
+                    onCancel={() => setShowConfirmModal(false)}
+                    isLoading={isLoading}
+                    type="danger"
+                />
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <SuccessModal
+                    isOpen={showSuccessModal}
+                    message={successMessage}
+                    buttonText={t("ok")}
+                    onClose={() => setShowSuccessModal(false)}
+                />
+            )}
         </div>
     )
 }
-
