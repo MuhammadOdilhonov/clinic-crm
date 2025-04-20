@@ -59,7 +59,7 @@ export default function Tasks() {
     const [staff, setStaff] = useState([])
     const [showFilters, setShowFilters] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
 
     // Fetch tasks based on view
     const fetchTasks = async () => {
@@ -68,6 +68,9 @@ export default function Tasks() {
             let tasksData
             const formattedDate =
                 currentDate instanceof Date ? currentDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0]
+
+            // Ensure page is at least 1
+            const validPage = Math.max(1, currentPage)
 
             // Different API calls based on view
             switch (view) {
@@ -92,7 +95,7 @@ export default function Tasks() {
                         branch: selectedBranch !== "all" ? selectedBranch : undefined,
                         search: searchQuery || undefined,
                     }
-                    tasksData = await apiTasks.fetchTasks(currentPage, itemsPerPage, filters)
+                    tasksData = await apiTasks.fetchTasks(validPage, itemsPerPage, filters)
                     break
                 default:
                     tasksData = await apiTasks.fetchMonthlyTasks(formattedDate, selectedBranch)
@@ -286,7 +289,6 @@ export default function Tasks() {
             return taskDate.getMonth() === monthDate.getMonth() && taskDate.getFullYear() === monthDate.getFullYear()
         })
 
-        // Save month data
         setSelectedDay({
             date: monthDate,
             isMonth: true,
@@ -364,16 +366,31 @@ export default function Tasks() {
 
     // Handle task deletion
     const handleDeleteTask = (taskId) => {
-        setSelectedTask(tasks.find((task) => task.id === taskId))
-        setShowDeleteConfirm(true)
+        const task = tasks.find((task) => task.id === taskId)
+        if (task) {
+            setSelectedTask(task)
+            setShowDeleteConfirm(true)
+        }
     }
 
-    const pageCount = Math.ceil(totalTasks / itemsPerPage)
+    // Calculate page count and ensure it's at least 1
+    const pageCount = Math.max(1, Math.ceil(totalTasks / itemsPerPage))
 
+    // Handle page change with validation
+    const handlePageChange = (page) => {
+        // API uses 1-based pagination, but react-paginate uses 0-based indexing
+        setCurrentPage(page + 1)
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(1) // Reset to first page when items per page changes
+    }
 
     // Confirm task deletion
     const confirmDeleteTask = async () => {
-        if (!selectedTask) return
+        if (!selectedTask || !selectedTask.id) return
 
         try {
             await apiTasks.deleteTask(selectedTask.id)
@@ -517,18 +534,6 @@ export default function Tasks() {
                                 <option value="low">{t("low")}</option>
                             </select>
                         </div>
-
-                        <div className="filter-group">
-                            <label>{t("assignee")}:</label>
-                            <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                {staff.map((person) => (
-                                    <option key={person.id} value={person.id.toString()}>
-                                        {person.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
                 )}
 
@@ -615,26 +620,12 @@ export default function Tasks() {
                                 <div className="pagination-container">
                                     <Pagination
                                         pageCount={pageCount}
-                                        currentPage={currentPage}
-                                        onPageChange={setCurrentPage}
+                                        currentPage={currentPage - 1}
+                                        onPageChange={(page) => handlePageChange(page)}
                                         itemsPerPage={itemsPerPage}
                                         totalItems={totalTasks}
+                                        onItemsPerPageChange={handleItemsPerPageChange}
                                     />
-                                    <div className="items-per-page">
-                                        <label>{t("items_per_page")}:</label>
-                                        <select
-                                            value={itemsPerPage}
-                                            onChange={(e) => {
-                                                setItemsPerPage(Number(e.target.value))
-                                                setCurrentPage(1)
-                                            }}
-                                        >
-                                            <option value="10">10</option>
-                                            <option value="20">20</option>
-                                            <option value="50">50</option>
-                                            <option value="100">100</option>
-                                        </select>
-                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -715,8 +706,11 @@ export default function Tasks() {
             )}
 
             {showDeleteConfirm && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                <div className="modal-overlay" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div
+                        className="modal-content"
+                        style={{ backgroundColor: "white", borderRadius: "8px", maxWidth: "500px", width: "100%" }}
+                    >
                         <ConfirmModal
                             title={t("confirm_delete")}
                             message={t("confirm_delete_task_message")}

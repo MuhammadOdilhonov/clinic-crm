@@ -13,8 +13,11 @@ const fetchTasks = async (page = 1, limit = 10, filters = {}) => {
         // Build query parameters
         const queryParams = new URLSearchParams()
 
+        // Ensure page is at least 1
+        const validPage = Math.max(1, page)
+
         // Add pagination params
-        queryParams.append("page", page)
+        queryParams.append("page", validPage)
         queryParams.append("page_size", limit)
 
         // Add filters if provided
