@@ -70,11 +70,11 @@ export default function Profile() {
 
                 // First, get user data from localStorage as a backup
                 let localUserData = null
-                const storedData = localStorage.getItem("authData")
+                const storedData = localStorage.getItem("user")
 
                 if (storedData) {
                     const parsedData = JSON.parse(storedData)
-                    localUserData = parsedData.user
+                    localUserData = parsedData
                 }
 
                 // Try to fetch from API
