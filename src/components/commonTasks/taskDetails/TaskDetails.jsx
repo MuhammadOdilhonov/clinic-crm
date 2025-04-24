@@ -17,7 +17,7 @@ export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusC
         switch (status) {
             case "pending":
                 return t("pending")
-            case "in-progress":
+            case "in_progress":
                 return t("in_progress")
             case "completed":
                 return t("completed")
@@ -96,7 +96,7 @@ export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusC
                     )}
 
                     {task.status === "pending" && (
-                        <button className="btn-primary" onClick={() => onStatusChange("in-progress")}>
+                        <button className="btn-primary" onClick={() => onStatusChange("in_progress")}>
                             <FaSpinner /> {t("start_task")}
                         </button>
                     )}

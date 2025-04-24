@@ -590,7 +590,7 @@ export default function DocSchedule() {
             case "confirmed":
                 return "status-confirmed"
             case "in_progress":
-                return "status-in-progress"
+                return "status-in_progress"
             case "completed":
                 return "status-completed"
             case "cancelled":
@@ -1159,7 +1159,7 @@ export default function DocSchedule() {
                                         <div className="detail-row">
                                             <span className="detail-label">{t("new_status")}:</span>
                                             <span
-                                                className={`detail-value status-badge ${currentAppointment.status === "confirmed" ? "status-in-progress" : "status-completed"
+                                                className={`detail-value status-badge ${currentAppointment.status === "confirmed" ? "status-in_progress" : "status-completed"
                                                     }`}
                                             >
                                                 {currentAppointment.status === "confirmed" ? (

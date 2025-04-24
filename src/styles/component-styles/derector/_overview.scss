@@ -306,7 +306,7 @@ $patients-color: #8b5cf6;
         color: $income-color;
     }
 
-    &.in-progress {
+    &.in_progress {
         background-color: rgba($accent-color, 0.1);
         color: $accent-color;
     }

@@ -165,7 +165,7 @@ export default function DirectorDashboard() {
             time: "11:45",
             doctor: "Dr. Aziz Karimov",
             department: "Kardiologiya",
-            status: "in-progress",
+            status: "in_progress",
         },
         {
             id: 4,
@@ -432,7 +432,7 @@ export default function DirectorDashboard() {
                                         <td>
                                             <div className={`status-badge ${appointment.status}`}>
                                                 {appointment.status === "completed" && "Yakunlangan"}
-                                                {appointment.status === "in-progress" && "Jarayonda"}
+                                                {appointment.status === "in_progress" && "Jarayonda"}
                                                 {appointment.status === "pending" && "Kutilmoqda"}
                                             </div>
                                         </td>
@@ -477,7 +477,7 @@ export default function DirectorDashboard() {
                                         <td>
                                             <div className={`status-badge ${task.status}`}>
                                                 {task.status === "completed" && "Bajarilgan"}
-                                                {task.status === "in-progress" && "Jarayonda"}
+                                                {task.status === "in_progress" && "Jarayonda"}
                                                 {task.status === "pending" && "Kutilmoqda"}
                                             </div>
                                         </td>

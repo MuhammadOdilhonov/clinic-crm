@@ -61,7 +61,7 @@ export default function DayTasksList({ day, tasks, onClose, onTaskClick, onAddTa
                                 </div>
                                 <div className={`task-status ${task.status}`}>
                                     {task.status === "completed" && t("completed")}
-                                    {task.status === "in-progress" && t("in_progress")}
+                                    {task.status === "in_progress" && t("in_progress")}
                                     {task.status === "pending" && t("pending")}
                                 </div>
                             </div>

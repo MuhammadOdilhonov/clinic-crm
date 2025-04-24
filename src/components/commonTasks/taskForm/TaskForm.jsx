@@ -176,7 +176,7 @@ export default function TaskForm({ task, staff, initialDate, onSubmit, onCancel 
                     <label htmlFor="status">{t("status")}</label>
                     <select id="status" name="status" value={formData.status} onChange={handleChange}>
                         <option value="pending">{t("pending")}</option>
-                        <option value="in-progress">{t("in_progress")}</option>
+                        <option value="in_progress">{t("in_progress")}</option>
                         <option value="completed">{t("completed")}</option>
                     </select>
                 </div>

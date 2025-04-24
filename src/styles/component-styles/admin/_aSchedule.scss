@@ -84,6 +84,8 @@ $transition: all 0.3s ease;
         padding: 1rem;
         margin-bottom: 1.5rem;
         display: flex;
+        justify-content: center;
+        align-items: center;
         flex-wrap: wrap;
         gap: 1rem;
 
@@ -164,6 +166,7 @@ $transition: all 0.3s ease;
                     border-radius: $border-radius;
                     background-color: white;
                     color: $text-color;
+                    padding-left: 30px;
 
                     &:focus {
                         outline: none;
@@ -257,7 +260,7 @@ $transition: all 0.3s ease;
                         border-left-color: $warning-color;
                     }
 
-                    &.in-progress {
+                    &.in_progress {
                         border-left-color: $info-color;
                     }
 
@@ -311,7 +314,7 @@ $transition: all 0.3s ease;
                                 color: $warning-color;
                             }
 
-                            &.in-progress {
+                            &.in_progress {
                                 background-color: rgba($info-color, 0.1);
                                 color: $info-color;
                             }
@@ -400,7 +403,7 @@ $transition: all 0.3s ease;
                         color: $warning-color;
                     }
 
-                    &.in-progress {
+                    &.in_progress {
                         background-color: rgba($info-color, 0.1);
                         color: $info-color;
                     }

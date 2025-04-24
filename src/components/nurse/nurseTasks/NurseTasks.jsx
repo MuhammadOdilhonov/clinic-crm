@@ -94,7 +94,7 @@ export default function NurseTasks() {
                     description: "Rustam Khasanov, 201-xona, jarohatni bog'lash va tozalash",
                     startDate: new Date(2023, 4, 18, 11, 0),
                     endDate: new Date(2023, 4, 18, 11, 30),
-                    status: "in-progress",
+                    status: "in_progress",
                     priority: "medium",
                     assignee: {
                         id: 103,
@@ -461,7 +461,7 @@ export default function NurseTasks() {
                             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                                 <option value="all">{t("all")}</option>
                                 <option value="pending">{t("pending")}</option>
-                                <option value="in-progress">{t("in_progress")}</option>
+                                <option value="in_progress">{t("in_progress")}</option>
                                 <option value="completed">{t("completed")}</option>
                             </select>
                         </div>
@@ -500,7 +500,7 @@ export default function NurseTasks() {
                                             <h3 className="task-title">{task.title}</h3>
                                             <div className={`status-badge ${task.status}`}>
                                                 {task.status === "completed" && t("completed")}
-                                                {task.status === "in-progress" && t("in_progress")}
+                                                {task.status === "in_progress" && t("in_progress")}
                                                 {task.status === "pending" && t("pending")}
                                             </div>
                                         </div>

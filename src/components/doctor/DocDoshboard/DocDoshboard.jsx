@@ -88,7 +88,7 @@ export default function DocDashboard() {
             patientName: "Sardor Aliyev",
             time: "11:45",
             reason: "Yurak ritmi buzilishi",
-            status: "in-progress",
+            status: "in_progress",
         },
         {
             id: 4,
@@ -235,7 +235,7 @@ export default function DocDashboard() {
                                     <td>
                                         <div className={`status-badge ${appointment.status}`}>
                                             {appointment.status === "completed" && t("completed")}
-                                            {appointment.status === "in-progress" && t("in_progress")}
+                                            {appointment.status === "in_progress" && t("in_progress")}
                                             {appointment.status === "pending" && t("pending")}
                                         </div>
                                     </td>

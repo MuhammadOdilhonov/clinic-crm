@@ -673,8 +673,8 @@ export default function ASchedule() {
             case "completed":
                 return "completed"
             case "progress":
-            case "in-progress":
-                return "in-progress"
+            case "in_progress":
+                return "in_progress"
             case "expected":
             case "pending":
                 return "pending"
@@ -700,7 +700,7 @@ export default function ASchedule() {
                 return t("cancelled")
             case "pending":
                 return t("pending")
-            case "in-progress":
+            case "in_progress":
                 return t("in_progress")
             case "completed":
                 return t("completed")

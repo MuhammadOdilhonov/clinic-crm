@@ -88,7 +88,7 @@ export default function ADashboard() {
             time: "11:45",
             doctor: "Dr. Aziz Karimov",
             department: "Kardiologiya",
-            status: "in-progress",
+            status: "in_progress",
         },
         {
             id: 4,
@@ -282,7 +282,7 @@ export default function ADashboard() {
                                     <td>
                                         <div className={`status-badge ${appointment.status}`}>
                                             {appointment.status === "completed" && t("completed")}
-                                            {appointment.status === "in-progress" && t("in_progress")}
+                                            {appointment.status === "in_progress" && t("in_progress")}
                                             {appointment.status === "pending" && t("pending")}
                                         </div>
                                     </td>
