@@ -1,161 +1,286 @@
 "use client"
 
-import { useState } from "react"
-import { FaSave, FaGlobe, FaBuilding, FaMoneyBillWave, FaUserCog, FaBell, FaLock } from "react-icons/fa"
+import { useState, useEffect } from "react"
+import {
+    FaSave,
+    FaGlobe,
+    FaBuilding,
+    FaPlus,
+    FaEdit,
+    FaTrash,
+    FaCheck,
+    FaTimes,
+    FaSpinner,
+    FaHospital,
+    FaMapMarkerAlt,
+    FaPhone,
+    FaEnvelope,
+    FaIdCard,
+} from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
+import apiSettings from "../../../api/apiSettings"
 
 export default function Settings() {
     const { selectedBranch } = useAuth()
-    const { language, changeLanguage, t } = useLanguage()
+    const { language, t } = useLanguage()
 
     const [activeTab, setActiveTab] = useState("general")
+    const [isLoading, setIsLoading] = useState(false)
+    const [saveLoading, setSaveLoading] = useState(false)
+    const [message, setMessage] = useState({ type: "", text: "" })
 
     // General settings
-    const [generalSettings, setGeneralSettings] = useState({
-        clinicName: "Klinika CRM",
-        address: "Toshkent sh., Chilonzor tumani, 7-mavze",
-        phone: "+998 90 123 45 67",
-        email: "info@klinika-crm.uz",
-        website: "www.klinika-crm.uz",
-        workingHours: "09:00 - 18:00",
-        workingDays: "Dushanba - Shanba",
+    const [clinicData, setClinicData] = useState({
+        id: null,
+        name: "",
+        phone_number: "",
+        license_number: "",
+        is_active: true,
     })
 
     // Branch settings
-    const [branchSettings, setBranchSettings] = useState({
-        branch1: {
-            name: "1-Filial",
-            address: "Toshkent sh., Chilonzor tumani, 7-mavze",
-            phone: "+998 90 123 45 67",
-            email: "filial1@klinika-crm.uz",
-        },
-        branch2: {
-            name: "2-Filial",
-            address: "Toshkent sh., Yunusobod tumani, 19-mavze",
-            phone: "+998 90 234 56 78",
-            email: "filial2@klinika-crm.uz",
-        },
-        branch3: {
-            name: "3-Filial",
-            address: "Toshkent sh., Mirzo Ulug'bek tumani, 5-mavze",
-            phone: "+998 90 345 67 89",
-            email: "filial3@klinika-crm.uz",
-        },
+    const [branches, setBranches] = useState([])
+    const [editingBranch, setEditingBranch] = useState(null)
+    const [isAddingBranch, setIsAddingBranch] = useState(false)
+    const [newBranch, setNewBranch] = useState({
+        name: "",
+        address: "",
+        phone_number: "",
+        email: "",
     })
 
-    // Financial settings
-    const [financialSettings, setFinancialSettings] = useState({
-        currency: "so'm",
-        taxRate: 12,
-        paymentMethods: ["Naqd", "Karta", "Bank o'tkazmasi"],
-        invoicePrefix: "INV-",
-        invoiceFooter: "Rahmat! Bizni tanlaganingiz uchun minnatdormiz.",
-    })
-
-    // User settings
-    const [userSettings, setUserSettings] = useState({
-        name: "Director",
-        email: "director@example.com",
-        phone: "+998 90 123 45 67",
-        language: language,
-        notifications: true,
-        twoFactorAuth: false,
-    })
-
-    // Notification settings
-    const [notificationSettings, setNotificationSettings] = useState({
-        emailNotifications: true,
-        smsNotifications: false,
-        newPatientNotification: true,
-        appointmentReminder: true,
-        financialReports: true,
-        systemUpdates: true,
-    })
-
-    // Security settings
-    const [securitySettings, setSecuritySettings] = useState({
-        passwordExpiry: 90,
-        loginAttempts: 5,
-        sessionTimeout: 30,
-        requireStrongPassword: true,
-    })
-
-    // Handle general settings change
-    const handleGeneralSettingsChange = (e) => {
-        const { name, value } = e.target
-        setGeneralSettings({
-            ...generalSettings,
-            [name]: value,
-        })
-    }
-
-    // Handle branch settings change
-    const handleBranchSettingsChange = (branch, e) => {
-        const { name, value } = e.target
-        setBranchSettings({
-            ...branchSettings,
-            [branch]: {
-                ...branchSettings[branch],
-                [name]: value,
-            },
-        })
-    }
-
-    // Handle financial settings change
-    const handleFinancialSettingsChange = (e) => {
-        const { name, value } = e.target
-        setFinancialSettings({
-            ...financialSettings,
-            [name]: value,
-        })
-    }
-
-    // Handle user settings change
-    const handleUserSettingsChange = (e) => {
-        const { name, value, type, checked } = e.target
-
-        if (name === "language") {
-            changeLanguage(value)
+    // Fetch clinic data
+    useEffect(() => {
+        const fetchClinicData = async () => {
+            setIsLoading(true)
+            try {
+                const data = await apiSettings.fetchClinicSettings()
+                setClinicData(data)
+            } catch (error) {
+                console.error("Klinika ma'lumotlarini olishda xatolik:", error)
+                setMessage({ type: "error", text: "Klinika ma'lumotlarini olishda xatolik yuz berdi" })
+            } finally {
+                setIsLoading(false)
+            }
         }
 
-        setUserSettings({
-            ...userSettings,
-            [name]: type === "checkbox" ? checked : value,
-        })
-    }
+        fetchClinicData()
+    }, [])
 
-    // Handle notification settings change
-    const handleNotificationSettingsChange = (e) => {
-        const { name, checked } = e.target
-        setNotificationSettings({
-            ...notificationSettings,
-            [name]: checked,
-        })
-    }
+    // Fetch branches
+    useEffect(() => {
+        const fetchBranches = async () => {
+            setIsLoading(true)
+            try {
+                const data = await apiSettings.fetchBranches()
+                setBranches(data)
+            } catch (error) {
+                console.error("Filiallarni olishda xatolik:", error)
+                setMessage({ type: "error", text: "Filiallarni olishda xatolik yuz berdi" })
+            } finally {
+                setIsLoading(false)
+            }
+        }
 
-    // Handle security settings change
-    const handleSecuritySettingsChange = (e) => {
+        if (activeTab === "branches") {
+            fetchBranches()
+        }
+    }, [activeTab])
+
+    // Handle clinic data change
+    const handleClinicDataChange = (e) => {
         const { name, value, type, checked } = e.target
-        setSecuritySettings({
-            ...securitySettings,
+        setClinicData({
+            ...clinicData,
             [name]: type === "checkbox" ? checked : value,
         })
     }
 
-    // Handle save settings
-    const handleSaveSettings = () => {
-        alert(t("settingsSaved"))
+    // Handle save clinic settings
+    const handleSaveClinicSettings = async () => {
+        if (!clinicData.id) {
+            setMessage({ type: "error", text: "Klinika ID si topilmadi" })
+            return
+        }
+
+        setSaveLoading(true)
+        try {
+            await apiSettings.updateClinicSettings(clinicData.id, clinicData)
+            setMessage({ type: "success", text: "Klinika ma'lumotlari muvaffaqiyatli saqlandi" })
+
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setMessage({ type: "", text: "" })
+            }, 3000)
+        } catch (error) {
+            console.error("Klinika ma'lumotlarini saqlashda xatolik:", error)
+            setMessage({ type: "error", text: "Klinika ma'lumotlarini saqlashda xatolik yuz berdi" })
+        } finally {
+            setSaveLoading(false)
+        }
+    }
+
+    // Handle branch data change
+    const handleBranchDataChange = (e) => {
+        const { name, value } = e.target
+
+        if (editingBranch !== null) {
+            // Update existing branch
+            const updatedBranches = branches.map((branch) => {
+                if (branch.id === editingBranch) {
+                    return { ...branch, [name]: value }
+                }
+                return branch
+            })
+            setBranches(updatedBranches)
+        } else if (isAddingBranch) {
+            // Update new branch
+            setNewBranch({
+                ...newBranch,
+                [name]: value,
+            })
+        }
+    }
+
+    // Start editing branch
+    const handleEditBranch = (branchId) => {
+        setEditingBranch(branchId)
+        setIsAddingBranch(false)
+    }
+
+    // Cancel editing branch
+    const handleCancelEdit = () => {
+        setEditingBranch(null)
+        setIsAddingBranch(false)
+
+        // Reset new branch form
+        setNewBranch({
+            name: "",
+            address: "",
+            phone_number: "",
+            email: "",
+        })
+
+        // Refresh branches to get original data
+        if (activeTab === "branches") {
+            apiSettings
+                .fetchBranches()
+                .then((data) => {
+                    setBranches(data)
+                })
+                .catch((error) => {
+                    console.error("Filiallarni qayta olishda xatolik:", error)
+                })
+        }
+    }
+
+    // Save branch changes
+    const handleSaveBranch = async (branchId) => {
+        setSaveLoading(true)
+        try {
+            const branchToUpdate = branches.find((branch) => branch.id === branchId)
+            await apiSettings.updateBranch(branchId, branchToUpdate)
+
+            setMessage({ type: "success", text: "Filial ma'lumotlari muvaffaqiyatli saqlandi" })
+            setEditingBranch(null)
+
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setMessage({ type: "", text: "" })
+            }, 3000)
+        } catch (error) {
+            console.error("Filial ma'lumotlarini saqlashda xatolik:", error)
+            setMessage({ type: "error", text: "Filial ma'lumotlarini saqlashda xatolik yuz berdi" })
+        } finally {
+            setSaveLoading(false)
+        }
+    }
+
+    // Delete branch
+    const handleDeleteBranch = async (branchId) => {
+        if (!window.confirm(t("confirmDelete"))) {
+            return
+        }
+
+        setSaveLoading(true)
+        try {
+            await apiSettings.deleteBranch(branchId)
+
+            // Remove from state
+            const updatedBranches = branches.filter((branch) => branch.id !== branchId)
+            setBranches(updatedBranches)
+
+            setMessage({ type: "success", text: "Filial muvaffaqiyatli o'chirildi" })
+
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setMessage({ type: "", text: "" })
+            }, 3000)
+        } catch (error) {
+            console.error("Filialni o'chirishda xatolik:", error)
+            setMessage({ type: "error", text: "Filialni o'chirishda xatolik yuz berdi" })
+        } finally {
+            setSaveLoading(false)
+        }
+    }
+
+    // Start adding new branch
+    const handleAddBranch = () => {
+        setIsAddingBranch(true)
+        setEditingBranch(null)
+    }
+
+    // Save new branch
+    const handleSaveNewBranch = async () => {
+        // Validate required fields
+        if (!newBranch.name || !newBranch.address || !newBranch.phone_number) {
+            setMessage({ type: "error", text: "Iltimos, barcha majburiy maydonlarni to'ldiring" })
+            return
+        }
+
+        setSaveLoading(true)
+        try {
+            const createdBranch = await apiSettings.createBranch(newBranch)
+
+            // Add to state
+            setBranches([...branches, createdBranch])
+
+            // Reset form
+            setNewBranch({
+                name: "",
+                address: "",
+                phone_number: "",
+                email: "",
+            })
+
+            setIsAddingBranch(false)
+            setMessage({ type: "success", text: "Yangi filial muvaffaqiyatli yaratildi" })
+
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setMessage({ type: "", text: "" })
+            }, 3000)
+        } catch (error) {
+            console.error("Yangi filial yaratishda xatolik:", error)
+            setMessage({ type: "error", text: "Yangi filial yaratishda xatolik yuz berdi" })
+        } finally {
+            setSaveLoading(false)
+        }
     }
 
     return (
         <div className="director-settings">
             <div className="page-header">
                 <h1 className="page-title">{t("settings")}</h1>
-                <button className="btn btn-primary btn-icon" onClick={handleSaveSettings}>
-                    <FaSave /> {t("save")}
-                </button>
             </div>
+
+            {message.text && (
+                <div className={`alert alert-${message.type}`}>
+                    {message.type === "success" ? <FaCheck className="alert-icon" /> : <FaTimes className="alert-icon" />}
+                    <span>{message.text}</span>
+                </div>
+            )}
 
             <div className="settings-container">
                 <div className="settings-sidebar">
@@ -171,506 +296,389 @@ export default function Settings() {
                     >
                         <FaBuilding /> {t("branchSettings")}
                     </button>
-                    <button
-                        className={`settings-tab ${activeTab === "financial" ? "active" : ""}`}
-                        onClick={() => setActiveTab("financial")}
-                    >
-                        <FaMoneyBillWave /> {t("financialSettings")}
-                    </button>
-                    <button
-                        className={`settings-tab ${activeTab === "user" ? "active" : ""}`}
-                        onClick={() => setActiveTab("user")}
-                    >
-                        <FaUserCog /> {t("userSettings")}
-                    </button>
-                    <button
-                        className={`settings-tab ${activeTab === "notifications" ? "active" : ""}`}
-                        onClick={() => setActiveTab("notifications")}
-                    >
-                        <FaBell /> {t("notificationSettings")}
-                    </button>
-                    <button
-                        className={`settings-tab ${activeTab === "security" ? "active" : ""}`}
-                        onClick={() => setActiveTab("security")}
-                    >
-                        <FaLock /> {t("securitySettings")}
-                    </button>
                 </div>
 
                 <div className="settings-content">
-                    {/* General Settings */}
-                    {activeTab === "general" && (
-                        <div className="settings-panel">
-                            <h2>{t("generalSettings")}</h2>
-
-                            <div className="form-group">
-                                <label>{t("clinicName")}</label>
-                                <input
-                                    type="text"
-                                    name="clinicName"
-                                    value={generalSettings.clinicName}
-                                    onChange={handleGeneralSettingsChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>{t("address")}</label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={generalSettings.address}
-                                    onChange={handleGeneralSettingsChange}
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>{t("phone")}</label>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        value={generalSettings.phone}
-                                        onChange={handleGeneralSettingsChange}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t("email")}</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={generalSettings.email}
-                                        onChange={handleGeneralSettingsChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>{t("website")}</label>
-                                <input
-                                    type="text"
-                                    name="website"
-                                    value={generalSettings.website}
-                                    onChange={handleGeneralSettingsChange}
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>{t("workingHours")}</label>
-                                    <input
-                                        type="text"
-                                        name="workingHours"
-                                        value={generalSettings.workingHours}
-                                        onChange={handleGeneralSettingsChange}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t("workingDays")}</label>
-                                    <input
-                                        type="text"
-                                        name="workingDays"
-                                        value={generalSettings.workingDays}
-                                        onChange={handleGeneralSettingsChange}
-                                    />
-                                </div>
+                    {isLoading ? (
+                        <div className="loading-container">
+                            <div className="loading-spinner">
+                                <FaSpinner className="spinner-icon" />
+                                <span>Ma'lumotlar yuklanmoqda...</span>
                             </div>
                         </div>
-                    )}
-
-                    {/* Branch Settings */}
-                    {activeTab === "branches" && (
-                        <div className="settings-panel">
-                            <h2>{t("branchSettings")}</h2>
-
-                            <div className="branch-settings">
-                                <div className="branch-card">
-                                    <h3>{t("branch1")}</h3>
-
-                                    <div className="form-group">
-                                        <label>{t("branchName")}</label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={branchSettings.branch1.name}
-                                            onChange={(e) => handleBranchSettingsChange("branch1", e)}
-                                        />
+                    ) : (
+                        <>
+                            {/* General Settings */}
+                            {activeTab === "general" && (
+                                <div className="settings-panel">
+                                    <div className="panel-header">
+                                        <h2>{t("generalSettings")}</h2>
+                                        <button
+                                            className={`btn btn-primary ${saveLoading ? "btn-loading" : ""}`}
+                                            onClick={handleSaveClinicSettings}
+                                            disabled={saveLoading}
+                                        >
+                                            {saveLoading ? (
+                                                <>
+                                                    <FaSpinner className="spinner-icon" />
+                                                    <span>Saqlanmoqda...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaSave />
+                                                    <span>{t("save")}</span>
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label>{t("address")}</label>
-                                        <input
-                                            type="text"
-                                            name="address"
-                                            value={branchSettings.branch1.address}
-                                            onChange={(e) => handleBranchSettingsChange("branch1", e)}
-                                        />
-                                    </div>
+                                    <div className="settings-card">
+                                        <div className="card-header">
+                                            <FaHospital className="card-icon" />
+                                            <h3>Klinika ma'lumotlari</h3>
+                                        </div>
 
-                                    <div className="form-group">
-                                        <label>{t("phone")}</label>
-                                        <input
-                                            type="text"
-                                            name="phone"
-                                            value={branchSettings.branch1.phone}
-                                            onChange={(e) => handleBranchSettingsChange("branch1", e)}
-                                        />
-                                    </div>
+                                        <div className="form-group">
+                                            <label htmlFor="clinic-name">{t("clinicName")}</label>
+                                            <div className="input-with-icon">
+                                                <FaHospital className="input-icon" />
+                                                <input
+                                                    id="clinic-name"
+                                                    type="text"
+                                                    name="name"
+                                                    value={clinicData.name}
+                                                    onChange={handleClinicDataChange}
+                                                    placeholder="Klinika nomini kiriting"
+                                                />
+                                            </div>
+                                        </div>
 
-                                    <div className="form-group">
-                                        <label>{t("email")}</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={branchSettings.branch1.email}
-                                            onChange={(e) => handleBranchSettingsChange("branch1", e)}
-                                        />
-                                    </div>
-                                </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label htmlFor="clinic-phone">{t("phone")}</label>
+                                                <div className="input-with-icon">
+                                                    <FaPhone className="input-icon" />
+                                                    <input
+                                                        id="clinic-phone"
+                                                        type="text"
+                                                        name="phone_number"
+                                                        value={clinicData.phone_number}
+                                                        onChange={handleClinicDataChange}
+                                                        placeholder="+998 XX XXX XX XX"
+                                                    />
+                                                </div>
+                                            </div>
 
-                                <div className="branch-card">
-                                    <h3>{t("branch2")}</h3>
+                                            <div className="form-group">
+                                                <label htmlFor="clinic-license">{t("licenseNumber")}</label>
+                                                <div className="input-with-icon">
+                                                    <FaIdCard className="input-icon" />
+                                                    <input
+                                                        id="clinic-license"
+                                                        type="text"
+                                                        name="license_number"
+                                                        value={clinicData.license_number}
+                                                        onChange={handleClinicDataChange}
+                                                        placeholder="Litsenziya raqamini kiriting"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                    <div className="form-group">
-                                        <label>{t("branchName")}</label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={branchSettings.branch2.name}
-                                            onChange={(e) => handleBranchSettingsChange("branch2", e)}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>{t("address")}</label>
-                                        <input
-                                            type="text"
-                                            name="address"
-                                            value={branchSettings.branch2.address}
-                                            onChange={(e) => handleBranchSettingsChange("branch2", e)}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>{t("phone")}</label>
-                                        <input
-                                            type="text"
-                                            name="phone"
-                                            value={branchSettings.branch2.phone}
-                                            onChange={(e) => handleBranchSettingsChange("branch2", e)}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>{t("email")}</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={branchSettings.branch2.email}
-                                            onChange={(e) => handleBranchSettingsChange("branch2", e)}
-                                        />
+                                        <div className="form-group checkbox-group">
+                                            <input
+                                                type="checkbox"
+                                                id="is_active"
+                                                name="is_active"
+                                                checked={clinicData.is_active}
+                                                onChange={handleClinicDataChange}
+                                            />
+                                            <label htmlFor="is_active">{t("isActive")}</label>
+                                        </div>
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="branch-card">
-                                    <h3>{t("branch3")}</h3>
-
-                                    <div className="form-group">
-                                        <label>{t("branchName")}</label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={branchSettings.branch3.name}
-                                            onChange={(e) => handleBranchSettingsChange("branch3", e)}
-                                        />
+                            {/* Branch Settings */}
+                            {activeTab === "branches" && (
+                                <div className="settings-panel">
+                                    <div className="panel-header">
+                                        <h2>{t("branchSettings")}</h2>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleAddBranch}
+                                            disabled={isAddingBranch || editingBranch !== null || saveLoading}
+                                        >
+                                            <FaPlus />
+                                            <span>{t("addBranch")}</span>
+                                        </button>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label>{t("address")}</label>
-                                        <input
-                                            type="text"
-                                            name="address"
-                                            value={branchSettings.branch3.address}
-                                            onChange={(e) => handleBranchSettingsChange("branch3", e)}
-                                        />
+                                    {/* New Branch Form */}
+                                    {isAddingBranch && (
+                                        <div className="branch-card new-branch">
+                                            <div className="card-header">
+                                                <FaPlus className="card-icon" />
+                                                <h3>{t("newBranch")}</h3>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor="new-branch-name">{t("branchName")} *</label>
+                                                <div className="input-with-icon">
+                                                    <FaBuilding className="input-icon" />
+                                                    <input
+                                                        id="new-branch-name"
+                                                        type="text"
+                                                        name="name"
+                                                        value={newBranch.name}
+                                                        onChange={handleBranchDataChange}
+                                                        placeholder="Filial nomini kiriting"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor="new-branch-address">{t("address")} *</label>
+                                                <div className="input-with-icon">
+                                                    <FaMapMarkerAlt className="input-icon" />
+                                                    <input
+                                                        id="new-branch-address"
+                                                        type="text"
+                                                        name="address"
+                                                        value={newBranch.address}
+                                                        onChange={handleBranchDataChange}
+                                                        placeholder="Filial manzilini kiriting"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor="new-branch-phone">{t("phone")} *</label>
+                                                <div className="input-with-icon">
+                                                    <FaPhone className="input-icon" />
+                                                    <input
+                                                        id="new-branch-phone"
+                                                        type="text"
+                                                        name="phone_number"
+                                                        value={newBranch.phone_number}
+                                                        onChange={handleBranchDataChange}
+                                                        placeholder="+998 XX XXX XX XX"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor="new-branch-email">{t("email")}</label>
+                                                <div className="input-with-icon">
+                                                    <FaEnvelope className="input-icon" />
+                                                    <input
+                                                        id="new-branch-email"
+                                                        type="email"
+                                                        name="email"
+                                                        value={newBranch.email}
+                                                        onChange={handleBranchDataChange}
+                                                        placeholder="example@domain.com"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="form-actions">
+                                                <button
+                                                    className={`btn btn-success ${saveLoading ? "btn-loading" : ""}`}
+                                                    onClick={handleSaveNewBranch}
+                                                    disabled={saveLoading}
+                                                >
+                                                    {saveLoading ? (
+                                                        <>
+                                                            <FaSpinner className="spinner-icon" />
+                                                            <span>Saqlanmoqda...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaSave />
+                                                            <span>Saqlash</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <button className="btn btn-danger" onClick={handleCancelEdit}>
+                                                    <FaTimes />
+                                                    <span>Bekor qilish</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="branch-grid">
+                                        {branches.length === 0 ? (
+                                            <div className="no-data">
+                                                <FaBuilding className="no-data-icon" />
+                                                <p>{t("noBranchesFound")}</p>
+                                                <button className="btn btn-primary" onClick={handleAddBranch}>
+                                                    <FaPlus />
+                                                    <span>{t("addBranch")}</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            branches.map((branch) => (
+                                                <div className={`branch-card ${editingBranch === branch.id ? "editing" : ""}`} key={branch.id}>
+                                                    <div className="card-header">
+                                                        <FaBuilding className="card-icon" />
+                                                        <h3>{branch.name}</h3>
+                                                    </div>
+
+                                                    <div className="branch-content">
+                                                        <div className="form-group">
+                                                            <label>{t("branchName")}</label>
+                                                            {editingBranch === branch.id ? (
+                                                                <div className="input-with-icon">
+                                                                    <FaBuilding className="input-icon" />
+                                                                    <input
+                                                                        type="text"
+                                                                        name="name"
+                                                                        value={branch.name}
+                                                                        onChange={handleBranchDataChange}
+                                                                        placeholder="Filial nomini kiriting"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="info-field">
+                                                                    <FaBuilding className="field-icon" />
+                                                                    <p>{branch.name}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label>{t("address")}</label>
+                                                            {editingBranch === branch.id ? (
+                                                                <div className="input-with-icon">
+                                                                    <FaMapMarkerAlt className="input-icon" />
+                                                                    <input
+                                                                        type="text"
+                                                                        name="address"
+                                                                        value={branch.address}
+                                                                        onChange={handleBranchDataChange}
+                                                                        placeholder="Filial manzilini kiriting"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="info-field">
+                                                                    <FaMapMarkerAlt className="field-icon" />
+                                                                    <p>{branch.address}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label>{t("phone")}</label>
+                                                            {editingBranch === branch.id ? (
+                                                                <div className="input-with-icon">
+                                                                    <FaPhone className="input-icon" />
+                                                                    <input
+                                                                        type="text"
+                                                                        name="phone_number"
+                                                                        value={branch.phone_number}
+                                                                        onChange={handleBranchDataChange}
+                                                                        placeholder="+998 XX XXX XX XX"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="info-field">
+                                                                    <FaPhone className="field-icon" />
+                                                                    <p>{branch.phone_number}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label>{t("email")}</label>
+                                                            {editingBranch === branch.id ? (
+                                                                <div className="input-with-icon">
+                                                                    <FaEnvelope className="input-icon" />
+                                                                    <input
+                                                                        type="email"
+                                                                        name="email"
+                                                                        value={branch.email}
+                                                                        onChange={handleBranchDataChange}
+                                                                        placeholder="example@domain.com"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="info-field">
+                                                                    <FaEnvelope className="field-icon" />
+                                                                    <p>{branch.email || "—"}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label>{t("clinic")}</label>
+                                                            <div className="info-field">
+                                                                <FaHospital className="field-icon" />
+                                                                <p>{branch.clinic}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="branch-actions">
+                                                        {editingBranch === branch.id ? (
+                                                            <>
+                                                                <button
+                                                                    className={`btn btn-success ${saveLoading ? "btn-loading" : ""}`}
+                                                                    onClick={() => handleSaveBranch(branch.id)}
+                                                                    disabled={saveLoading}
+                                                                >
+                                                                    {saveLoading ? (
+                                                                        <>
+                                                                            <FaSpinner className="spinner-icon" />
+                                                                            <span>Saqlanmoqda...</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <FaSave />
+                                                                            <span>Saqlash</span>
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                                <button className="btn btn-danger" onClick={handleCancelEdit}>
+                                                                    <FaTimes />
+                                                                    <span>Bekor qilish</span>
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    onClick={() => handleEditBranch(branch.id)}
+                                                                    disabled={editingBranch !== null || isAddingBranch || saveLoading}
+                                                                >
+                                                                    <FaEdit />
+                                                                    <span>Tahrirlash</span>
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-danger"
+                                                                    onClick={() => handleDeleteBranch(branch.id)}
+                                                                    disabled={editingBranch !== null || isAddingBranch || saveLoading}
+                                                                >
+                                                                    <FaTrash />
+                                                                    <span>O'chirish</span>
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
-
-                                    <div className="form-group">
-                                        <label>{t("phone")}</label>
-                                        <input
-                                            type="text"
-                                            name="phone"
-                                            value={branchSettings.branch3.phone}
-                                            onChange={(e) => handleBranchSettingsChange("branch3", e)}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>{t("email")}</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={branchSettings.branch3.email}
-                                            onChange={(e) => handleBranchSettingsChange("branch3", e)}
-                                        />
-                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Financial Settings */}
-                    {activeTab === "financial" && (
-                        <div className="settings-panel">
-                            <h2>{t("financialSettings")}</h2>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>{t("currency")}</label>
-                                    <input
-                                        type="text"
-                                        name="currency"
-                                        value={financialSettings.currency}
-                                        onChange={handleFinancialSettingsChange}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t("taxRate")} (%)</label>
-                                    <input
-                                        type="number"
-                                        name="taxRate"
-                                        value={financialSettings.taxRate}
-                                        onChange={handleFinancialSettingsChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>To'lov usullari (vergul bilan ajrating)</label>
-                                <input
-                                    type="text"
-                                    name="paymentMethods"
-                                    value={financialSettings.paymentMethods.join(", ")}
-                                    onChange={(e) => {
-                                        setFinancialSettings({
-                                            ...financialSettings,
-                                            paymentMethods: e.target.value.split(", "),
-                                        })
-                                    }}
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Hisob-faktura prefiksi</label>
-                                    <input
-                                        type="text"
-                                        name="invoicePrefix"
-                                        value={financialSettings.invoicePrefix}
-                                        onChange={handleFinancialSettingsChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Hisob-faktura pastki qismi</label>
-                                <textarea
-                                    name="invoiceFooter"
-                                    value={financialSettings.invoiceFooter}
-                                    onChange={handleFinancialSettingsChange}
-                                    rows={3}
-                                ></textarea>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* User Settings */}
-                    {activeTab === "user" && (
-                        <div className="settings-panel">
-                            <h2>{t("userSettings")}</h2>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>{t("fullName")}</label>
-                                    <input type="text" name="name" value={userSettings.name} onChange={handleUserSettingsChange} />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t("email")}</label>
-                                    <input type="email" name="email" value={userSettings.email} onChange={handleUserSettingsChange} />
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>{t("phone")}</label>
-                                    <input type="text" name="phone" value={userSettings.phone} onChange={handleUserSettingsChange} />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t("language")}</label>
-                                    <select name="language" value={userSettings.language} onChange={handleUserSettingsChange}>
-                                        <option value="uz">O'zbek</option>
-                                        <option value="ru">Русский</option>
-                                        <option value="en">English</option>
-                                        <option value="kz">Қазақша</option>
-                                        <option value="zh">China</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="notifications"
-                                    name="notifications"
-                                    checked={userSettings.notifications}
-                                    onChange={handleUserSettingsChange}
-                                />
-                                <label htmlFor="notifications">Bildirishnomalarni yoqish</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="twoFactorAuth"
-                                    name="twoFactorAuth"
-                                    checked={userSettings.twoFactorAuth}
-                                    onChange={handleUserSettingsChange}
-                                />
-                                <label htmlFor="twoFactorAuth">Ikki faktorli autentifikatsiyani yoqish</label>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Notification Settings */}
-                    {activeTab === "notifications" && (
-                        <div className="settings-panel">
-                            <h2>{t("notificationSettings")}</h2>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="emailNotifications"
-                                    name="emailNotifications"
-                                    checked={notificationSettings.emailNotifications}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="emailNotifications">Email orqali bildirishnomalar</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="smsNotifications"
-                                    name="smsNotifications"
-                                    checked={notificationSettings.smsNotifications}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="smsNotifications">SMS orqali bildirishnomalar</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="newPatientNotification"
-                                    name="newPatientNotification"
-                                    checked={notificationSettings.newPatientNotification}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="newPatientNotification">Yangi mijoz qo'shilganda bildirishnoma</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="appointmentReminder"
-                                    name="appointmentReminder"
-                                    checked={notificationSettings.appointmentReminder}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="appointmentReminder">Qabul eslatmalari</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="financialReports"
-                                    name="financialReports"
-                                    checked={notificationSettings.financialReports}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="financialReports">Moliyaviy hisobotlar</label>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="systemUpdates"
-                                    name="systemUpdates"
-                                    checked={notificationSettings.systemUpdates}
-                                    onChange={handleNotificationSettingsChange}
-                                />
-                                <label htmlFor="systemUpdates">Tizim yangilanishlari</label>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Security Settings */}
-                    {activeTab === "security" && (
-                        <div className="settings-panel">
-                            <h2>{t("securitySettings")}</h2>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Parol muddati (kunlar)</label>
-                                    <input
-                                        type="number"
-                                        name="passwordExpiry"
-                                        value={securitySettings.passwordExpiry}
-                                        onChange={handleSecuritySettingsChange}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Kirish urinishlari</label>
-                                    <input
-                                        type="number"
-                                        name="loginAttempts"
-                                        value={securitySettings.loginAttempts}
-                                        onChange={handleSecuritySettingsChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Sessiya vaqti (daqiqalar)</label>
-                                    <input
-                                        type="number"
-                                        name="sessionTimeout"
-                                        value={securitySettings.sessionTimeout}
-                                        onChange={handleSecuritySettingsChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="requireStrongPassword"
-                                    name="requireStrongPassword"
-                                    checked={securitySettings.requireStrongPassword}
-                                    onChange={handleSecuritySettingsChange}
-                                />
-                                <label htmlFor="requireStrongPassword">Kuchli parol talab qilish</label>
-                            </div>
-                        </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
         </div>
     )
-};
+}

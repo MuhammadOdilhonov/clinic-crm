@@ -83,7 +83,7 @@ export default function Sidebar(isOpen, toggleSidebar) {
     const [currentFeature, setCurrentFeature] = useState("")
 
     // List of features under construction (can be expanded)
-    const underConstructionFeatures = ["lid", "finance", "doctors", "nurses", "rooms", ]
+    const underConstructionFeatures = ["lid", "finance", "doctors", "nurses", "rooms",]
 
     // Close sidebar on route change in mobile view
     useEffect(() => {
@@ -516,12 +516,17 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                     <FaUserCog /> <span>{t("profile")}</span>
                                 </NavLink>
                             </li>
+                            {
+                                hasRole("director") && (
 
-                            <li>
-                                <NavLink to="/dashboard/director/settings" className={({ isActive }) => (isActive ? "active" : "")}>
-                                    <FaCog /> <span>{t("settings")}</span>
-                                </NavLink>
-                            </li>
+                                    <li>
+                                        <NavLink to="/dashboard/director/settings" className={({ isActive }) => (isActive ? "active" : "")}>
+                                            <FaCog /> <span>{t("settings")}</span>
+                                        </NavLink>
+                                    </li>
+                                )
+                            }
+
 
                             <li>
                                 <button className="logout-button" onClick={handleLogout}>
