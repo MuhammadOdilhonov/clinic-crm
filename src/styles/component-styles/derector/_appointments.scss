@@ -12,7 +12,7 @@ $success-color: #10b981;
 $warning-color: #f59e0b;
 $info-color: #0ea5e9;
 $border-radius: 12px;
-$box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+$box_shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 $transition: all 0.3s ease;
 $sidebar-width: 450px;
 
@@ -212,7 +212,7 @@ $sidebar-width: 450px;
             padding: 1.5rem;
             background-color: white;
             border-radius: $border-radius;
-            box-shadow: $box-shadow;
+            box-shadow: $box_shadow;
             animation: appointmentsSlideDown 0.3s ease;
 
             @media (max-width: 768px) {
@@ -311,7 +311,7 @@ $sidebar-width: 450px;
     .appointments-dashboard-card {
         background-color: white;
         border-radius: $border-radius;
-        box-shadow: $box-shadow;
+        box-shadow: $box_shadow;
         margin-bottom: 1.75rem;
         overflow: hidden;
         transition: transform $transition, box-shadow $transition;
@@ -328,7 +328,7 @@ $sidebar-width: 450px;
 
     // Table styles
     .appointments-table-responsive {
-        overflow-x: auto;
+        // overflow-x: auto;
         padding: 0.5rem 0;
         max-width: 100%;
 
@@ -419,24 +419,34 @@ $sidebar-width: 450px;
             font-size: 0.7rem;
         }
 
-        &.pending {
+        &.expected {
             background-color: rgba($warning-color, 0.1);
             color: $warning-color;
+            border: 1px solid rgba($warning-color, 0.3);
         }
 
-        &.confirmed {
+        &.accepted {
             background-color: rgba($info-color, 0.1);
             color: $info-color;
+            border: 1px solid rgba($info-color, 0.3);
         }
 
-        &.completed {
+        &.progress {
+            background-color: rgba($primary-color, 0.1);
+            color: $primary-color;
+            border: 1px solid rgba($primary-color, 0.3);
+        }
+
+        &.finished {
             background-color: rgba($success-color, 0.1);
             color: $success-color;
+            border: 1px solid rgba($success-color, 0.3);
         }
 
         &.cancelled {
             background-color: rgba($error-color, 0.1);
             color: $error-color;
+            border: 1px solid rgba($error-color, 0.3);
         }
     }
 
@@ -810,39 +820,67 @@ $sidebar-width: 450px;
 
                 .time-slots-container {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
                     gap: 0.75rem;
-                    margin-top: 0.5rem;
+                    margin-top: 0.75rem;
 
                     .time-slot {
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         gap: 0.5rem;
-                        padding: 0.75rem;
+                        padding: 0.75rem 0.5rem;
                         border-radius: $border-radius;
                         border: 1px solid $border-color;
                         background-color: white;
                         cursor: pointer;
-                        transition: $transition;
+                        transition: all 0.3s ease;
+                        font-size: 0.9rem;
+                        position: relative;
+                        overflow: hidden;
+
+                        &:before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: linear-gradient(to right bottom, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+                            opacity: 0;
+                            transition: opacity 0.3s ease;
+                        }
 
                         .time-icon {
-                            font-size: 0.9rem;
+                            font-size: 0.85rem;
                             color: $text-color;
+                            position: relative;
+                            z-index: 2;
                         }
 
                         &:hover:not(.booked) {
                             border-color: $primary-color;
-                            background-color: rgba($primary-color, 0.05);
+                            transform: translateY(-3px);
+                            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+
+                            &:before {
+                                opacity: 1;
+                            }
                         }
 
                         &.selected {
-                            background-color: $primary-color;
+                            background: linear-gradient(to right bottom, $primary-color, $secondary-color);
                             border-color: $primary-color;
                             color: white;
+                            transform: translateY(-3px);
+                            box-shadow: 0 5px 15px rgba($primary-color, 0.3);
 
                             .time-icon {
                                 color: white;
+                            }
+
+                            &:before {
+                                opacity: 0;
                             }
                         }
 
@@ -851,7 +889,7 @@ $sidebar-width: 450px;
                             border-color: $warning-color;
                             color: $warning-color;
                             cursor: not-allowed;
-                            opacity: 0.7;
+                            opacity: 0.8;
 
                             .time-icon {
                                 color: $warning-color;
@@ -865,6 +903,8 @@ $sidebar-width: 450px;
                         padding: 1rem;
                         color: rgba($text-color, 0.6);
                         font-style: italic;
+                        background-color: rgba($light-gray, 0.3);
+                        border-radius: $border-radius;
                     }
                 }
             }
@@ -891,30 +931,19 @@ $sidebar-width: 450px;
                 display: flex;
                 justify-content: space-between;
                 gap: 1rem;
-                margin-top: 1rem;
-
-                @media (max-width: 576px) {
-                    flex-direction: column-reverse;
-                    gap: 0.75rem;
-                }
-
-                @media (max-width: 320px) {
-                    gap: 0.5rem;
-                }
+                margin-top: 1.5rem;
 
                 .appointments-btn {
-                    @media (max-width: 576px) {
-                        width: 100%;
-                    }
+                    flex: 1;
+                    justify-content: center;
+                    font-weight: 600;
 
-                    @media (max-width: 320px) {
-                        padding: 0.5rem 1rem;
-                        font-size: 0.85rem;
-                    }
+                    &.appointments-btn-primary {
+                        background: linear-gradient(to right, $primary-color, $secondary-color);
 
-                    &:disabled {
-                        opacity: 0.5;
-                        cursor: not-allowed;
+                        &:hover {
+                            background: linear-gradient(to right, darken($primary-color, 5%), darken($secondary-color, 5%));
+                        }
                     }
                 }
             }
@@ -1111,26 +1140,32 @@ $sidebar-width: 450px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: $transition;
+    position: relative;
 
     &:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     }
 
-    &.pending {
+    &.expected {
         border-left: 3px solid $warning-color;
     }
 
-    &.confirmed {
+    &.accepted {
         border-left: 3px solid $info-color;
     }
 
-    &.completed {
+    &.progress {
+        border-left: 3px solid $primary-color;
+    }
+
+    &.finished {
         border-left: 3px solid $success-color;
     }
 
     &.cancelled {
         border-left: 3px solid $error-color;
+        opacity: 0.7;
     }
 
     .appointments-calendar-time {
@@ -1158,6 +1193,12 @@ $sidebar-width: 450px;
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
         }
+    }
+
+    .appointment-actions {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
     }
 }
 
@@ -1384,8 +1425,6 @@ $sidebar-width: 450px;
             background-color: $primary-color;
             border-color: $primary-color;
             color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba($primary-color, 0.3);
 
             .time-icon {
                 color: white;
@@ -1535,5 +1574,462 @@ $sidebar-width: 450px;
                 background: linear-gradient(to right, darken($primary-color, 5%), darken($secondary-color, 5%));
             }
         }
+    }
+}
+
+// Add these styles for the action dropdown menu
+.appointments-action-dropdown {
+    position: relative;
+    display: inline-block;
+
+    .appointments-action-dropdown-toggle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background-color: rgba($light-gray, 0.5);
+        color: $text-color;
+        cursor: pointer;
+        transition: $transition;
+
+        &:hover {
+            background-color: rgba($primary-color, 0.1);
+            color: $primary-color;
+        }
+    }
+
+    .appointments-action-dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        margin-top: 5px;
+        background-color: white;
+        border-radius: $border-radius;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        min-width: 180px;
+        z-index: 1000;
+        overflow: visible;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+
+        // Fix for right-side overflow
+        &.dropdown-left {
+            right: auto;
+            left: 0;
+        }
+
+        .appointments-action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: none;
+            color: $text-color;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: $transition;
+
+            &:hover {
+                background-color: rgba($light-gray, 0.5);
+            }
+
+            &.delete:hover {
+                background-color: rgba($error-color, 0.1);
+                color: $error-color;
+            }
+
+            &.status-accept:hover {
+                background-color: rgba($success-color, 0.1);
+                color: $success-color;
+            }
+
+            &.status-cancel:hover {
+                background-color: rgba($warning-color, 0.1);
+                color: $warning-color;
+            }
+        }
+    }
+
+    &:hover,
+    &:focus-within {
+        .appointments-action-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    }
+}
+
+// Improve the sidebar animations
+.appointments-sidebar {
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.active {
+        transform: translateX(0);
+    }
+}
+
+.appointments-sidebar-overlay {
+    backdrop-filter: blur(3px);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+// Enhance the appointment view card
+.appointment-view-card {
+    border-radius: $border-radius;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    animation: cardFadeIn 0.5s ease;
+
+    .appointment-status-indicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.5rem 1.25rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom-left-radius: $border-radius;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+
+        &.expected {
+            background: linear-gradient(to right, $warning-color, darken($warning-color, 10%));
+        }
+
+        &.accepted {
+            background: linear-gradient(to right, $info-color, darken($info-color, 10%));
+        }
+
+        &.progress {
+            background: linear-gradient(to right, $primary-color, darken($primary-color, 10%));
+        }
+
+        &.finished {
+            background: linear-gradient(to right, $success-color, darken($success-color, 10%));
+        }
+
+        &.cancelled {
+            background: linear-gradient(to right, $error-color, darken($error-color, 10%));
+        }
+    }
+
+    .appointment-view-header {
+        background: linear-gradient(to right, rgba($primary-color, 0.05), rgba($primary-color, 0.1));
+        padding: 2rem 1.5rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+
+        &:before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba($primary-color, 0.05);
+        }
+
+        &:after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba($primary-color, 0.05);
+        }
+
+        .appointment-view-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(to right bottom, $primary-color, $secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.75rem;
+            box-shadow: 0 5px 15px rgba($primary-color, 0.3);
+        }
+
+        .appointment-view-title {
+            h3 {
+                font-size: 1.4rem;
+                font-weight: 700;
+                margin-bottom: 0.75rem;
+                color: $dark-color;
+            }
+
+            .appointment-view-subtitle {
+                background-color: rgba(white, 0.7);
+                padding: 0.5rem 0.75rem;
+                border-radius: 30px;
+                display: inline-flex;
+                align-items: center;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+        }
+    }
+
+    .appointment-view-details {
+        padding: 1.75rem;
+
+        .appointment-view-section {
+            margin-bottom: 1.75rem;
+            padding-bottom: 1.75rem;
+            border-bottom: 1px solid rgba($border-color, 0.5);
+            animation: sectionFadeIn 0.5s ease;
+            animation-fill-mode: both;
+
+            @for $i from 1 through 4 {
+                &:nth-child(#{$i}) {
+                    animation-delay: #{$i * 0.1}s;
+                }
+            }
+
+            h4 {
+                font-size: 1.15rem;
+                font-weight: 600;
+                color: $dark-color;
+                margin-bottom: 1.25rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+
+                svg {
+                    color: $primary-color;
+                    background-color: rgba($primary-color, 0.1);
+                    padding: 0.5rem;
+                    border-radius: 50%;
+                    box-shadow: 0 2px 5px rgba($primary-color, 0.2);
+                }
+            }
+
+            .appointment-view-info {
+                display: flex;
+                margin-bottom: 0.75rem;
+                padding: 0.5rem 0;
+                border-bottom: 1px dashed rgba($border-color, 0.3);
+
+                &:last-child {
+                    margin-bottom: 0;
+                    border-bottom: none;
+                }
+
+                .info-label {
+                    width: 40%;
+                    font-weight: 500;
+                    color: rgba($text-color, 0.8);
+                }
+
+                .info-value {
+                    width: 60%;
+                    color: $dark-color;
+                    font-weight: 600;
+                }
+            }
+        }
+    }
+
+    .appointment-view-actions {
+        background: linear-gradient(to right, rgba($light-gray, 0.3), rgba($light-gray, 0.5));
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+
+        .appointments-btn {
+            flex: 1;
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            }
+
+            &:active {
+                transform: translateY(-1px);
+            }
+
+            &.appointments-btn-primary {
+                background: linear-gradient(to right, $primary-color, $secondary-color);
+            }
+        }
+    }
+}
+
+// Add animations
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes sectionFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+// Time change modal
+.time-change-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+    animation: fadeIn 0.3s ease;
+}
+
+.time-change-modal {
+    background-color: white;
+    border-radius: $border-radius;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+
+    .time-change-modal-header {
+        background: linear-gradient(to right, $primary-color, $secondary-color);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h3 {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: $transition;
+
+            &:hover {
+                opacity: 1;
+                transform: rotate(90deg);
+            }
+        }
+    }
+
+    .time-change-modal-body {
+        padding: 1.5rem;
+
+        .appointment-info {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid $border-color;
+
+            .info-row {
+                display: flex;
+                margin-bottom: 0.75rem;
+
+                .info-label {
+                    width: 40%;
+                    font-weight: 500;
+                    color: rgba($text-color, 0.8);
+                }
+
+                .info-value {
+                    width: 60%;
+                    color: $dark-color;
+                    font-weight: 600;
+                }
+            }
+        }
+
+        .time-selection {
+            h4 {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: $dark-color;
+                margin-bottom: 1rem;
+            }
+        }
+    }
+
+    .time-change-modal-footer {
+        background-color: rgba($light-gray, 0.3);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+
+        @media (max-width: 576px) {
+            flex-direction: column-reverse;
+            gap: 0.75rem;
+        }
+
+        .appointments-btn {
+            @media (max-width: 576px) {
+                width: 100%;
+            }
+
+            &.appointments-btn-primary {
+                background: linear-gradient(to right, $primary-color, $secondary-color);
+            }
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

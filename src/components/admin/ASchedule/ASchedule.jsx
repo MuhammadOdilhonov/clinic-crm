@@ -20,6 +20,9 @@ import {
     FaBuilding,
     FaExclamationCircle,
     FaMoneyBillWave, // Fixed: Added missing import
+    FaEllipsisV,
+    FaCheck,
+    FaTimes,
 } from "react-icons/fa"
 import apiAppointments from "../../../api/apiAppointments"
 
@@ -65,6 +68,11 @@ export default function ASchedule() {
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [totalItems, setTotalItems] = useState(0)
     const [timeError, setTimeError] = useState("")
+    // Add the time change modal functionality
+    // First, add a new state for the time change modal
+    const [showTimeChangeModal, setShowTimeChangeModal] = useState(false)
+    const [timeChangeAppointment, setTimeChangeAppointment] = useState(null)
+    const [newTime, setNewTime] = useState("")
 
     // Fetch appointments, doctors, patients, and rooms data
     useEffect(() => {
@@ -329,6 +337,8 @@ export default function ASchedule() {
 
     // Open edit appointment modal
     const openEditModal = async (appointment) => {
+        if (!appointment || !appointment.id) return
+
         try {
             // Fetch the latest appointment data from the server
             const latestAppointmentData = await apiAppointments.fetchAppointmentById(appointment.id)
@@ -541,6 +551,126 @@ export default function ASchedule() {
         })
     }
 
+    // Add this function after the handleEditTimeSelect function
+    const openTimeChangeModal = async (appointment) => {
+        if (!appointment || !appointment.id) return
+
+        try {
+            // Fetch the latest appointment data
+            const latestAppointmentData = await apiAppointments.fetchAppointmentById(appointment.id)
+
+            // Format date and time for the form
+            let formattedDate = ""
+            let formattedTime = ""
+
+            if (latestAppointmentData.date) {
+                try {
+                    const dateObj = new Date(latestAppointmentData.date)
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split("T")[0]
+                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                    }
+                } catch (error) {
+                    console.error("Error formatting date/time:", error)
+                }
+            }
+
+            // Transform API data to match component structure
+            const transformedAppointment = {
+                id: latestAppointmentData.id,
+                patientId: latestAppointmentData.customer.toString(),
+                patientName: latestAppointmentData.customer_name,
+                doctorId: latestAppointmentData.doctor.toString(),
+                doctorName: latestAppointmentData.doctor_name,
+                roomId: latestAppointmentData.room.toString(),
+                roomName: latestAppointmentData.room_name,
+                date: formattedDate,
+                time: formattedTime,
+                status: latestAppointmentData.status,
+                diagnosis: latestAppointmentData.diognosis || "",
+                notes: latestAppointmentData.comment || "",
+                branch: latestAppointmentData.branch.toString(),
+                payment_amount: latestAppointmentData.payment_amount || "",
+            }
+
+            setTimeChangeAppointment(transformedAppointment)
+            setNewTime(transformedAppointment.time || "")
+
+            // Fetch busy times for the selected date, doctor, and room
+            if (formattedDate && transformedAppointment.doctorId && transformedAppointment.roomId) {
+                const params = {
+                    branchId: transformedAppointment.branch,
+                    doctorId: transformedAppointment.doctorId,
+                    cabinetId: transformedAppointment.roomId,
+                    date: formattedDate,
+                }
+
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData)
+            }
+
+            setShowTimeChangeModal(true)
+        } catch (error) {
+            console.error("Error opening time change modal:", error)
+            alert("Error loading appointment details for time change")
+        }
+    }
+
+    // Add this function to handle time selection in the time change modal
+    const handleTimeChangeSelect = (time) => {
+        setTimeError("")
+        setNewTime(time)
+    }
+
+    // Add this function to save the time change
+    const saveTimeChange = async () => {
+        if (!timeChangeAppointment || !newTime) return
+
+        try {
+            // Format date and time for API
+            const formattedDate = `${timeChangeAppointment.date}T${newTime}:00Z`
+
+            const appointmentData = {
+                branch: Number.parseInt(timeChangeAppointment.branch),
+                customer: Number.parseInt(timeChangeAppointment.patientId),
+                doctor: Number.parseInt(timeChangeAppointment.doctorId),
+                room: Number.parseInt(timeChangeAppointment.roomId),
+                full_date: formattedDate,
+                status: timeChangeAppointment.status,
+                comment: timeChangeAppointment.notes || "",
+                diognosis: timeChangeAppointment.diagnosis || "",
+                payment_amount: timeChangeAppointment.payment_amount || "",
+                organs: {},
+            }
+
+            console.log("Updated appointment time data:", appointmentData)
+            await apiAppointments.updateAppointment(timeChangeAppointment.id, appointmentData)
+
+            // Refresh appointments list
+            fetchAppointments()
+
+            // Close modal
+            closeTimeChangeModal()
+
+            // Show success message
+            alert("Appointment time successfully updated")
+        } catch (err) {
+            console.error("Error updating appointment time:", err)
+            alert("Error updating appointment time")
+        }
+    }
+
+    // Add this function to close the time change modal
+    const closeTimeChangeModal = () => {
+        setShowTimeChangeModal(false)
+        setTimeChangeAppointment(null)
+        setNewTime("")
+        setTimeError("")
+    }
+
     // Next step in appointment creation
     const nextStep = () => {
         setStep(step + 1)
@@ -569,8 +699,8 @@ export default function ASchedule() {
             payment_amount: newAppointment.payment_amount || "",
             organs: {},
         }
-        console.log(appointmentData);
-        
+        console.log(appointmentData)
+
         try {
             // Format date and time for API
             const formattedDate = `${newAppointment.date}T${newAppointment.time}:00Z`
@@ -649,6 +779,19 @@ export default function ASchedule() {
                 console.error("Error deleting appointment:", err)
                 alert("Error deleting appointment")
             }
+        }
+    }
+
+    // Handle status change
+    const handleStatusChange = async (id, status) => {
+        try {
+            await apiAppointments.updateAppointmentStatus(id, status)
+
+            // Refresh appointments list
+            fetchAppointments()
+        } catch (err) {
+            console.error("Qabul holatini yangilashda xatolik:", err)
+            alert("Qabul holatini yangilashda xatolik yuz berdi")
         }
     }
 
@@ -1165,21 +1308,44 @@ export default function ASchedule() {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div className="action-buttons">
-                                                        <button
-                                                            className="btn-icon edit"
-                                                            title={t("edit")}
-                                                            onClick={() => openEditModal(appointment)}
-                                                        >
-                                                            <FaEdit />
+                                                    <div className="action-dropdown">
+                                                        <button className="action-dropdown-toggle">
+                                                            <FaEllipsisV />
                                                         </button>
-                                                        <button
-                                                            className="btn-icon delete"
-                                                            title={t("delete")}
-                                                            onClick={() => handleDeleteAppointment(appointment.id)}
-                                                        >
-                                                            <FaTrash />
-                                                        </button>
+                                                        <div className="action-dropdown-menu">
+                                                            <button
+                                                                className="action-item"
+                                                                title={t("edit")}
+                                                                onClick={() => openEditModal(appointment)}
+                                                            >
+                                                                <FaEdit /> {t("edit")}
+                                                            </button>
+                                                            {appointment.status === "expected" && (
+                                                                <button
+                                                                    className="action-item status-accept"
+                                                                    title={t("accept")}
+                                                                    onClick={() => handleStatusChange(appointment.id, "accepted")}
+                                                                >
+                                                                    <FaCheck /> {t("accept")}
+                                                                </button>
+                                                            )}
+                                                            {appointment.status === "expected" && (
+                                                                <button
+                                                                    className="action-item status-cancel"
+                                                                    title={t("cancel")}
+                                                                    onClick={() => handleStatusChange(appointment.id, "cancelled")}
+                                                                >
+                                                                    <FaTimes /> {t("cancel")}
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                className="action-item delete"
+                                                                title={t("delete")}
+                                                                onClick={() => handleDeleteAppointment(appointment.id)}
+                                                            >
+                                                                <FaTrash /> {t("delete")}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>

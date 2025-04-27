@@ -21,6 +21,8 @@ import {
     FaMoneyBillWave,
     FaSpinner,
     FaNotesMedical,
+    FaEllipsisV,
+    FaCheck,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
@@ -89,6 +91,12 @@ export default function Appointments() {
     // State for view mode
     const [currentView, setCurrentView] = useState("table") // table, calendar
     const [startDate, setStartDate] = useState(new Date())
+
+    // Add the time change modal functionality
+    // First, add a new state for the time change modal
+    const [showTimeChangeModal, setShowTimeChangeModal] = useState(false)
+    const [timeChangeAppointment, setTimeChangeAppointment] = useState(null)
+    const [newTime, setNewTime] = useState("")
 
     // Load appointments when component mounts or when branch/filters change
     useEffect(() => {
@@ -285,23 +293,23 @@ export default function Appointments() {
 
     // Handle edit appointment input change
     const handleEditAppointmentChange = async (e) => {
-        const { name, value } = e.target;
-        setTimeError("");
+        const { name, value } = e.target
+        setTimeError("")
 
         // Create updated appointment data
         const updatedAppointment = {
             ...currentAppointment,
             [name]: value,
-        };
+        }
 
         // Handle branch change - reset dependent fields
         if (name === "branch") {
-            updatedAppointment.customer = "";
-            updatedAppointment.doctor = "";
-            updatedAppointment.room = "";
+            updatedAppointment.customer = ""
+            updatedAppointment.doctor = ""
+            updatedAppointment.room = ""
 
             // Fetch new filter data for the selected branch
-            await fetchFilterData(value);
+            await fetchFilterData(value)
         }
 
         // Handle doctor or room change - update busy times
@@ -312,20 +320,20 @@ export default function Appointments() {
                     doctorId: updatedAppointment.doctor,
                     cabinetId: updatedAppointment.room,
                     date: updatedAppointment.formattedDate,
-                };
+                }
 
-                const busyTimesData = await apiAppointments.fetchBusyTimes(params);
-                setBusyTimes(busyTimesData);
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
 
                 // Generate available time slots
-                generateTimeSlots(busyTimesData);
+                generateTimeSlots(busyTimesData)
             }
         }
 
         // Handle date change - update busy times and reset time
         if (name === "date") {
-            updatedAppointment.time = "";
-            updatedAppointment.formattedDate = value;
+            updatedAppointment.time = ""
+            updatedAppointment.formattedDate = value
 
             if (updatedAppointment.doctor && updatedAppointment.room) {
                 const params = {
@@ -333,27 +341,115 @@ export default function Appointments() {
                     doctorId: updatedAppointment.doctor,
                     cabinetId: updatedAppointment.room,
                     date: value,
-                };
+                }
 
-                const busyTimesData = await apiAppointments.fetchBusyTimes(params);
-                setBusyTimes(busyTimesData);
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
 
                 // Generate available time slots
-                generateTimeSlots(busyTimesData);
+                generateTimeSlots(busyTimesData)
             }
         }
 
-        setCurrentAppointment(updatedAppointment);
-    };
+        setCurrentAppointment(updatedAppointment)
+    }
 
     // Add a function to handle time selection in edit mode
     const handleEditTimeSelect = (time) => {
-        setTimeError("");
+        setTimeError("")
         setCurrentAppointment({
             ...currentAppointment,
             time: time,
-        });
-    };
+        })
+    }
+
+    // Add this function after the handleEditTimeSelect function
+    const openTimeChangeModal = async (appointment) => {
+        if (!appointment || !appointment.id) return
+
+        try {
+            // Fetch the latest appointment data
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
+
+            if (latestAppointmentData) {
+                setTimeChangeAppointment(latestAppointmentData)
+                setNewTime(latestAppointmentData.time || "")
+
+                // Fetch busy times for the selected date, doctor, and room
+                if (latestAppointmentData.formattedDate && latestAppointmentData.doctor && latestAppointmentData.room) {
+                    const params = {
+                        branchId: latestAppointmentData.branch,
+                        doctorId: latestAppointmentData.doctor,
+                        cabinetId: latestAppointmentData.room,
+                        date: latestAppointmentData.formattedDate,
+                    }
+
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                    setBusyTimes(busyTimesData)
+
+                    // Generate available time slots
+                    generateTimeSlots(busyTimesData)
+                }
+
+                setShowTimeChangeModal(true)
+            }
+        } catch (error) {
+            console.error("Error opening time change modal:", error)
+            alert("Qabulni vaqtini o'zgartirishda xatolik yuz berdi")
+        }
+    }
+
+    // Add this function to handle time selection in the time change modal
+    const handleTimeChangeSelect = (time) => {
+        setTimeError("")
+        setNewTime(time)
+    }
+
+    // Add this function to save the time change
+    const saveTimeChange = async () => {
+        if (!timeChangeAppointment || !newTime) return
+
+        try {
+            // Format date and time for API
+            const formattedDate = `${timeChangeAppointment.formattedDate}T${newTime}:00Z`
+
+            const appointmentData = {
+                branch: Number.parseInt(timeChangeAppointment.branch),
+                customer: Number.parseInt(timeChangeAppointment.customer),
+                doctor: Number.parseInt(timeChangeAppointment.doctor),
+                room: Number.parseInt(timeChangeAppointment.room),
+                full_date: formattedDate,
+                status: timeChangeAppointment.status,
+                comment: timeChangeAppointment.comment || "",
+                diognosis: timeChangeAppointment.diognosis || "",
+                payment_amount: timeChangeAppointment.payment_amount || "",
+                organs: timeChangeAppointment.organs || {},
+            }
+
+            console.log("Yangilangan vaqt ma'lumotlari:", appointmentData)
+            await apiAppointments.updateAppointment(timeChangeAppointment.id, appointmentData)
+
+            // Refresh appointments list
+            fetchAppointments()
+
+            // Close modal
+            closeTimeChangeModal()
+
+            // Show success message
+            alert("Qabul vaqti muvaffaqiyatli o'zgartirildi")
+        } catch (err) {
+            console.error("Qabul vaqtini o'zgartirishda xatolik:", err)
+            alert("Qabul vaqtini o'zgartirishda xatolik yuz berdi")
+        }
+    }
+
+    // Add this function to close the time change modal
+    const closeTimeChangeModal = () => {
+        setShowTimeChangeModal(false)
+        setTimeChangeAppointment(null)
+        setNewTime("")
+        setTimeError("")
+    }
 
     // Open add sidebar
     const openAddSidebar = () => {
@@ -420,17 +516,19 @@ export default function Appointments() {
 
     // Open edit sidebar
     const openEditSidebar = async (appointment) => {
-        setEditLoading(true);
+        if (!appointment || !appointment.id) return
+
+        setEditLoading(true)
         try {
             // Fetch the latest appointment data from the server
-            const latestAppointmentData = await fetchAppointmentById(appointment.id);
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
 
             if (latestAppointmentData) {
                 // Set the current appointment data
-                setCurrentAppointment(latestAppointmentData);
+                setCurrentAppointment(latestAppointmentData)
 
                 // Fetch filter data for the branch
-                await fetchFilterData(latestAppointmentData.branch);
+                await fetchFilterData(latestAppointmentData.branch)
 
                 // Fetch busy times for the selected date, doctor, and room
                 if (latestAppointmentData.formattedDate && latestAppointmentData.doctor && latestAppointmentData.room) {
@@ -439,24 +537,24 @@ export default function Appointments() {
                         doctorId: latestAppointmentData.doctor,
                         cabinetId: latestAppointmentData.room,
                         date: latestAppointmentData.formattedDate,
-                    };
+                    }
 
-                    const busyTimesData = await apiAppointments.fetchBusyTimes(params);
-                    setBusyTimes(busyTimesData);
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                    setBusyTimes(busyTimesData)
 
                     // Generate available time slots
-                    generateTimeSlots(busyTimesData);
+                    generateTimeSlots(busyTimesData)
                 }
 
-                setShowEditSidebar(true);
+                setShowEditSidebar(true)
             }
         } catch (error) {
-            console.error("Error opening edit sidebar:", error);
-            alert("Qabulni tahrirlashda xatolik yuz berdi");
+            console.error("Error opening edit sidebar:", error)
+            alert("Qabulni tahrirlashda xatolik yuz berdi")
         } finally {
-            setEditLoading(false);
+            setEditLoading(false)
         }
-    };
+    }
 
     // Close edit sidebar
     const closeEditSidebar = () => {
@@ -517,48 +615,48 @@ export default function Appointments() {
 
     // Update appointment
     const updateAppointment = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
 
         try {
             // Extract date and time from the current appointment
-            let date = "";
-            let time = "";
+            let date = ""
+            let time = ""
 
             // Use the formatted date if available
             if (currentAppointment.formattedDate) {
-                date = currentAppointment.formattedDate;
+                date = currentAppointment.formattedDate
             } else if (currentAppointment.date) {
                 if (typeof currentAppointment.date === "string" && currentAppointment.date.includes("T")) {
-                    date = currentAppointment.date.split("T")[0];
+                    date = currentAppointment.date.split("T")[0]
                 } else {
-                    date = new Date(currentAppointment.date).toISOString().split("T")[0];
+                    date = new Date(currentAppointment.date).toISOString().split("T")[0]
                 }
             } else {
-                date = new Date().toISOString().split("T")[0];
+                date = new Date().toISOString().split("T")[0]
             }
 
             // Use the time input value or extract from date
             if (currentAppointment.time) {
-                time = currentAppointment.time;
+                time = currentAppointment.time
             } else if (currentAppointment.formattedTime) {
-                time = currentAppointment.formattedTime;
+                time = currentAppointment.formattedTime
             } else if (
                 currentAppointment.date &&
                 typeof currentAppointment.date === "string" &&
                 currentAppointment.date.includes("T")
             ) {
-                const timePart = currentAppointment.date.split("T")[1];
+                const timePart = currentAppointment.date.split("T")[1]
                 if (timePart && timePart.length >= 5) {
-                    time = timePart.substring(0, 5);
+                    time = timePart.substring(0, 5)
                 } else {
-                    time = "00:00";
+                    time = "00:00"
                 }
             } else {
-                time = "00:00";
+                time = "00:00"
             }
 
             // Format date and time for API
-            const formattedDate = `${date}T${time}:00Z`;
+            const formattedDate = `${date}T${time}:00Z`
 
             const appointmentData = {
                 branch: Number.parseInt(currentAppointment.branch),
@@ -571,21 +669,21 @@ export default function Appointments() {
                 diognosis: currentAppointment.diognosis || "",
                 payment_amount: currentAppointment.payment_amount || "",
                 organs: currentAppointment.organs || {},
-            };
+            }
 
-            console.log("Yangilangan qabul ma'lumotlari:", appointmentData);
-            await apiAppointments.updateAppointment(currentAppointment.id, appointmentData);
+            console.log("Yangilangan qabul ma'lumotlari:", appointmentData)
+            await apiAppointments.updateAppointment(currentAppointment.id, appointmentData)
 
             // Refresh appointments list
-            fetchAppointments();
+            fetchAppointments()
 
             // Close sidebar
-            closeEditSidebar();
+            closeEditSidebar()
         } catch (err) {
-            console.error("Qabulni yangilashda xatolik:", err);
-            alert("Qabulni yangilashda xatolik yuz berdi");
+            console.error("Qabulni yangilashda xatolik:", err)
+            alert("Qabulni yangilashda xatolik yuz berdi")
         }
-    };
+    }
 
     // Delete appointment
     const deleteAppointment = async (id) => {
@@ -599,6 +697,23 @@ export default function Appointments() {
                 console.error("Qabulni o'chirishda xatolik:", err)
                 alert("Qabulni o'chirishda xatolik yuz berdi")
             }
+        }
+    }
+
+    // Handle status change
+    const handleStatusChange = async (id, status) => {
+        try {
+            await apiAppointments.updateAppointmentStatus(id, status)
+
+            // Show success message
+            const statusText = status === "accepted" ? t("accepted") : t("cancelled")
+            alert(`${t("appointment_status_updated_to")} ${statusText}`)
+
+            // Refresh appointments list
+            fetchAppointments()
+        } catch (err) {
+            console.error("Qabul holatini yangilashda xatolik:", err)
+            alert("Qabul holatini yangilashda xatolik yuz berdi")
         }
     }
 
@@ -1134,34 +1249,70 @@ export default function Appointments() {
                                                 </td>
                                             )}
                                             <td onClick={(e) => e.stopPropagation()}>
-                                                <div className="appointments-action-buttons">
-                                                    <button
-                                                        className="appointments-btn-icon view"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            openViewSidebar(appointment)
-                                                        }}
-                                                    >
-                                                        <FaEye />
+                                                <div className="appointments-action-dropdown">
+                                                    <button className="appointments-action-dropdown-toggle">
+                                                        <FaEllipsisV />
                                                     </button>
-                                                    <button
-                                                        className="appointments-btn-icon edit"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            openEditSidebar(appointment)
-                                                        }}
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button
-                                                        className="appointments-btn-icon delete"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            deleteAppointment(appointment.id)
-                                                        }}
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
+                                                    <div className="appointments-action-dropdown-menu">
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openViewSidebar(appointment)
+                                                            }}
+                                                        >
+                                                            <FaEye /> {t("view")}
+                                                        </button>
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openEditSidebar(appointment)
+                                                            }}
+                                                        >
+                                                            <FaEdit /> {t("edit")}
+                                                        </button>
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openTimeChangeModal(appointment)
+                                                            }}
+                                                        >
+                                                            <FaClock /> {t("change_time")}
+                                                        </button>
+                                                        {appointment.status === "expected" && (
+                                                            <button
+                                                                className="appointments-action-item status-accept"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleStatusChange(appointment.id, "accepted")
+                                                                }}
+                                                            >
+                                                                <FaCheck /> {t("accept")}
+                                                            </button>
+                                                        )}
+                                                        {appointment.status === "expected" && (
+                                                            <button
+                                                                className="appointments-action-item status-cancel"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleStatusChange(appointment.id, "cancelled")
+                                                                }}
+                                                            >
+                                                                <FaTimes /> {t("cancel")}
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            className="appointments-action-item delete"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                deleteAppointment(appointment.id)
+                                                            }}
+                                                        >
+                                                            <FaTrash /> {t("delete")}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1317,7 +1468,9 @@ export default function Appointments() {
                                         </div>
                                         <div className="appointment-view-info">
                                             <span className="info-label">{t("specialization")}:</span>
-                                            <span className="info-value">{currentAppointment.doctor_specialization || t("not_specified")}</span>
+                                            <span className="info-value">
+                                                {currentAppointment.doctor_specialization || t("not_specified")}
+                                            </span>
                                         </div>
                                     </div>
 
@@ -1370,8 +1523,8 @@ export default function Appointments() {
                                         type="button"
                                         className="appointments-btn appointments-btn-primary"
                                         onClick={() => {
-                                            closeViewSidebar();
-                                            openEditSidebar(currentAppointment);
+                                            closeViewSidebar()
+                                            openEditSidebar(currentAppointment)
                                         }}
                                     >
                                         <FaEdit /> {t("edit")}
@@ -1596,6 +1749,88 @@ export default function Appointments() {
                     </>
                 ) : null}
             </div>
+
+            {/* Time Change Modal */}
+            {showTimeChangeModal && timeChangeAppointment && (
+                <div className="time-change-modal-overlay">
+                    <div className="time-change-modal">
+                        <div className="time-change-modal-header">
+                            <h3>{t("change_appointment_time")}</h3>
+                            <button className="close-btn" onClick={closeTimeChangeModal}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="time-change-modal-body">
+                            <div className="appointment-info">
+                                <div className="info-row">
+                                    <div className="info-label">{t("patient")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.customer_name}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("doctor")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.doctor_name}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("room")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.room_name}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("date")}:</div>
+                                    <div className="info-value">
+                                        {timeChangeAppointment.formattedDate || formatDateForDisplay(timeChangeAppointment.date)}
+                                    </div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("current_time")}:</div>
+                                    <div className="info-value">
+                                        {timeChangeAppointment.time || formatTimeForDisplay(timeChangeAppointment.date)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="time-selection">
+                                <h4>{t("select_new_time")}</h4>
+                                {timeError && (
+                                    <div className="time-error">
+                                        <FaExclamationCircle /> {timeError}
+                                    </div>
+                                )}
+                                <div className="time-slots-container">
+                                    {availableTimes.map((slot, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            className={`time-slot ${slot.isBooked && timeChangeAppointment.time !== slot.time ? "booked" : ""
+                                                } ${newTime === slot.time ? "selected" : ""}`}
+                                            onClick={() =>
+                                                (!slot.isBooked || timeChangeAppointment.time === slot.time) &&
+                                                handleTimeChangeSelect(slot.time)
+                                            }
+                                            disabled={slot.isBooked && timeChangeAppointment.time !== slot.time}
+                                        >
+                                            <FaClock className="time-icon" />
+                                            {slot.time}
+                                        </button>
+                                    ))}
+                                    {availableTimes.length === 0 && <div className="no-times-message">{t("no_available_times")}</div>}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="time-change-modal-footer">
+                            <button className="appointments-btn appointments-btn-secondary" onClick={closeTimeChangeModal}>
+                                {t("cancel")}
+                            </button>
+                            <button
+                                className="appointments-btn appointments-btn-primary"
+                                onClick={saveTimeChange}
+                                disabled={!newTime}
+                            >
+                                {t("save_changes")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

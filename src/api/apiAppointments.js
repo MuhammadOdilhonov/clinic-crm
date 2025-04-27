@@ -77,10 +77,21 @@ export const createAppointment = async (appointmentData) => {
 // Qabulni yangilash
 export const updateAppointment = async (id, appointmentData) => {
     try {
-        const response = await client.put(`/meetings/${id}/`, appointmentData)
+        const response = await client.patch(`/meetings/${id}/`, appointmentData)
         return response.data
     } catch (error) {
         console.error("Qabulni yangilashda xatolik:", error)
+        throw error
+    }
+}
+
+// Add a new function to update only the appointment status
+export const updateAppointmentStatus = async (id, status) => {
+    try {
+        const response = await client.patch(`/meetings/${id}/`, { status })
+        return response.data
+    } catch (error) {
+        console.error("Qabul holatini yangilashda xatolik:", error)
         throw error
     }
 }
@@ -103,5 +114,6 @@ export default {
     fetchBusyTimes,
     createAppointment,
     updateAppointment,
+    updateAppointmentStatus,
     deleteAppointment,
 }
