@@ -432,21 +432,6 @@ export default function Sidebar(isOpen, toggleSidebar) {
                                             <FaCalendarAlt /> <span>{t("schedule")}</span>
                                         </NavLink>
                                     </li>
-
-                                    <li>
-                                        <NavLink to="/dashboard/doctor/patients" className={({ isActive }) => (isActive ? "active" : "")}>
-                                            <FaClipboardList /> <span>{t("patients")}</span>
-                                        </NavLink>
-                                    </li>
-
-                                    <li>
-                                        <NavLink
-                                            to="/dashboard/doctor/availability"
-                                            className={({ isActive }) => (isActive ? "active" : "")}
-                                        >
-                                            <FaUserMd /> <span>{t("availability")}</span>
-                                        </NavLink>
-                                    </li>
                                 </>
                             )}
 

@@ -38,8 +38,6 @@ import PatientDetails from "../../components/patientDetails/PatientDetails"
 import ASchedule from "../../components/admin/ASchedule/ASchedule"
 import ACabinets from "../../components/admin/ACabinet/ACabinets"
 import DocSchedule from "../../components/doctor/DocSchedule/DocSchedule"
-import DocPatients from "../../components/doctor/DocPatients/DocPatients"
-import DocAvailability from "../../components/doctor/DocAvailability/DocAvailability"
 import NursePatientCare from "../../components/nurse/nursePatientCare/NursePatientCare"
 import NurseVitalSigns from "../../components/nurse/nurseVitalSigns/NurseVitalSigns"
 import NurseMedications from "../../components/nurse/nurseMedications/NurseMedications"
@@ -367,10 +365,8 @@ export default function Dashboard() {
 
                         {/* Doctor Routes */}
                         <Route path="/doctor" element={<DoctorDashboard />} />
-                        <Route path="/doctor/schedule" element={<DocSchedule />} />
-                        <Route path="/doctor/patients" element={<DocPatients />} />
-                        <Route path="/doctor/availability" element={<DocAvailability />} />
                         <Route path="/doctor/tasks" element={<DocTasks />} />
+                        <Route path="/doctor/schedule" element={<DocSchedule />} />
 
                         {/* Nurse Routes */}
                         <Route path="/nurse" element={<NurseDashboard />} />
