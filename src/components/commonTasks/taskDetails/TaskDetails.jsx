@@ -1,11 +1,61 @@
-import { FaTimes, FaEdit, FaTrash, FaCheck, FaSpinner, FaClock } from "react-icons/fa"
+"use client"
+
+import {
+    FaTimes,
+    FaEdit,
+    FaTrash,
+    FaCheck,
+    FaSpinner,
+    FaClock,
+    FaCalendarAlt,
+    FaUser,
+    FaFlag,
+    FaClock as FaTime,
+    FaInfoCircle,
+} from "react-icons/fa"
 import { useLanguage } from "../../../contexts/LanguageContext"
 
 export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusChange }) {
     const { t } = useLanguage()
 
     // Format date for display
-    const formatDateTime = (date) => {
+    const formatDate = (dateString) => {
+        if (!dateString) return ""
+        return new Intl.DateTimeFormat(navigator.language, {
+            dateStyle: "medium",
+        }).format(new Date(dateString))
+    }
+
+    // Format time for display
+    const formatTime = (timeString) => {
+        if (!timeString) return ""
+        // Если timeString - это строка времени в формате "HH:MM:SS"
+        if (timeString.includes(":")) {
+            const [hours, minutes] = timeString.split(":")
+            return `${hours}:${minutes}`
+        }
+        // Если timeString - это объект Date
+        return new Intl.DateTimeFormat(navigator.language, {
+            timeStyle: "short",
+        }).format(new Date(timeString))
+    }
+
+    // Format datetime for display
+    const formatDateTime = (dateString, timeString) => {
+        if (!dateString) return ""
+
+        let date
+        if (typeof dateString === "string" && timeString && typeof timeString === "string") {
+            // Если у нас отдельные строки для даты и времени
+            date = new Date(`${dateString}T${timeString}`)
+        } else if (dateString instanceof Date) {
+            // Если у нас объект Date
+            date = dateString
+        } else {
+            // Если у нас строка ISO
+            date = new Date(dateString)
+        }
+
         return new Intl.DateTimeFormat(navigator.language, {
             dateStyle: "medium",
             timeStyle: "short",
@@ -40,6 +90,47 @@ export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusC
         }
     }
 
+    // Получаем данные о назначенном пользователе
+    const getAssigneeName = () => {
+        if (task.assignee_data) {
+            return `${task.assignee_data.first_name} ${task.assignee_data.last_name}`
+        } else if (task.assignee && typeof task.assignee === "object" && task.assignee.name) {
+            return task.assignee.name
+        } else {
+            return t("unknown")
+        }
+    }
+
+    // Получаем данные о создателе задачи
+    const getCreatedByName = () => {
+        if (task.created_by) {
+            return `${task.created_by.first_name} ${task.created_by.last_name}`
+        } else if (task.createdBy && task.createdBy.name) {
+            return task.createdBy.name
+        } else {
+            return t("unknown")
+        }
+    }
+
+    // Получаем роль пользователя
+    const getUserRole = (user) => {
+        if (!user) return ""
+
+        const role = user.role
+        switch (role) {
+            case "doctor":
+                return t("doctor")
+            case "nurse":
+                return t("nurse")
+            case "director":
+                return t("director")
+            case "admin":
+                return t("admin")
+            default:
+                return role
+        }
+    }
+
     return (
         <div className="task-details-modal">
             <div className="task-details-content">
@@ -61,30 +152,83 @@ export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusC
 
                     <div className="detail-section">
                         <h3>{t("details")}</h3>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("start_time")}:</div>
-                            <div className="detail-value">{formatDateTime(task.startDate)}</div>
+                            <div className="detail-label">
+                                <FaCalendarAlt className="detail-icon" /> {t("start_date")}:
+                            </div>
+                            <div className="detail-value">{formatDate(task.start_date || task.startDate)}</div>
                         </div>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("end_time")}:</div>
-                            <div className="detail-value">{formatDateTime(task.endDate)}</div>
+                            <div className="detail-label">
+                                <FaTime className="detail-icon" /> {t("start_time")}:
+                            </div>
+                            <div className="detail-value">{formatTime(task.start_time || (task.startDate && task.startDate))}</div>
                         </div>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("priority")}:</div>
-                            <div className="detail-value">{getPriorityText(task.priority)}</div>
+                            <div className="detail-label">
+                                <FaCalendarAlt className="detail-icon" /> {t("end_date")}:
+                            </div>
+                            <div className="detail-value">{formatDate(task.end_date || task.endDate)}</div>
                         </div>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("assignee")}:</div>
-                            <div className="detail-value">{task.assignee.name}</div>
+                            <div className="detail-label">
+                                <FaTime className="detail-icon" /> {t("end_time")}:
+                            </div>
+                            <div className="detail-value">{formatTime(task.end_time || (task.endDate && task.endDate))}</div>
                         </div>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("created_by")}:</div>
-                            <div className="detail-value">{task.createdBy.name}</div>
+                            <div className="detail-label">
+                                <FaFlag className="detail-icon" /> {t("priority")}:
+                            </div>
+                            <div className="detail-value">
+                                <span className={`priority-badge ${task.priority}-priority`}>{getPriorityText(task.priority)}</span>
+                            </div>
                         </div>
+
                         <div className="detail-row">
-                            <div className="detail-label">{t("created_at")}:</div>
-                            <div className="detail-value">{formatDateTime(task.createdAt)}</div>
+                            <div className="detail-label">
+                                <FaUser className="detail-icon" /> {t("assignee")}:
+                            </div>
+                            <div className="detail-value">
+                                <div className="user-info">
+                                    <span className="user-name">{getAssigneeName()}</span>
+                                    {task.assignee_data && <span className="user-role">{getUserRole(task.assignee_data)}</span>}
+                                </div>
+                            </div>
                         </div>
+
+                        <div className="detail-row">
+                            <div className="detail-label">
+                                <FaUser className="detail-icon" /> {t("created_by")}:
+                            </div>
+                            <div className="detail-value">
+                                <div className="user-info">
+                                    <span className="user-name">{getCreatedByName()}</span>
+                                    {task.created_by && <span className="user-role">{getUserRole(task.created_by)}</span>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="detail-row">
+                            <div className="detail-label">
+                                <FaClock className="detail-icon" /> {t("created_at")}:
+                            </div>
+                            <div className="detail-value">{formatDateTime(task.created_at || task.createdAt)}</div>
+                        </div>
+
+                        {task.id && (
+                            <div className="detail-row">
+                                <div className="detail-label">
+                                    <FaInfoCircle className="detail-icon" /> {t("task_id")}:
+                                </div>
+                                <div className="detail-value">#{task.id}</div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -119,4 +263,3 @@ export default function TaskDetails({ task, onClose, onEdit, onDelete, onStatusC
         </div>
     )
 }
-

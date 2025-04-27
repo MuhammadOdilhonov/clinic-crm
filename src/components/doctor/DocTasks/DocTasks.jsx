@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
     FaTasks,
     FaCalendarAlt,
@@ -18,12 +18,15 @@ import { useLanguage } from "../../../contexts/LanguageContext"
 import TaskCalendar from "../../commonTasks/taskCalendar/TaskCalendar"
 import TaskForm from "../../commonTasks/taskForm/TaskForm"
 import TaskDetails from "../../commonTasks/taskDetails/TaskDetails"
+import Pagination from "../../pagination/Pagination"
+import apiTasks from "../../../api/apiTasks"
 
 export default function DocTasks() {
-    const { user, selectedBranch } = useAuth()
+    const { user } = useAuth()
     const { t } = useLanguage()
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState("calendar") // calendar, list
+    const [calendarView, setCalendarView] = useState("month") // month, week, day, year
     const [currentDate, setCurrentDate] = useState(new Date())
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showTaskDetails, setShowTaskDetails] = useState(false)
@@ -36,129 +39,148 @@ export default function DocTasks() {
     const [newTaskDate, setNewTaskDate] = useState(null)
     const [selectedDay, setSelectedDay] = useState(null)
 
-    useEffect(() => {
+    // Используем ID филиала доктора вместо selectedBranch
+    const doctorBranch = user.branch_id || user.branchId || null
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
+    const [totalPages, setTotalPages] = useState(0)
+
+    // Fetch tasks based on current filters and pagination
+    const fetchTasks = useCallback(async () => {
         setLoading(true)
+        try {
+            // Prepare filters
+            const filters = {
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                priority: priorityFilter !== "all" ? priorityFilter : undefined,
+                search: searchQuery || undefined,
+                // Используем ID филиала доктора
+                branch: doctorBranch,
+                // Для доктора показываем только его задачи
+                assignee: user.id,
+            }
 
-        // Simulate API call to fetch tasks
-        setTimeout(() => {
-            // Mock tasks data for doctor
-            const mockTasks = [
-                {
-                    id: 1,
-                    title: "Bemorni ko'rikdan o'tkazish",
-                    description: "Alisher Karimov, yurak kasalligi bilan davolanayotgan bemor",
-                    startDate: new Date(2023, 4, 18, 10, 0),
-                    endDate: new Date(2023, 4, 18, 10, 30),
-                    status: "completed",
-                    priority: "high",
-                    assignee: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdAt: new Date(2023, 4, 17),
-                },
-                {
-                    id: 2,
-                    title: "Tibbiy konferensiyaga tayyorgarlik",
-                    description: "Yurak kasalliklari bo'yicha ma'ruza tayyorlash",
-                    startDate: new Date(2023, 4, 19, 14, 0),
-                    endDate: new Date(2023, 4, 19, 16, 0),
-                    status: "in_progress",
-                    priority: "medium",
-                    assignee: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdAt: new Date(2023, 4, 16),
-                },
-                {
-                    id: 3,
-                    title: "Yangi dori-darmonlarni o'rganish",
-                    description: "Yurak kasalliklari uchun yangi dori-darmonlar haqida ma'lumot to'plash",
-                    startDate: new Date(2023, 4, 20, 9, 0),
-                    endDate: new Date(2023, 4, 20, 11, 0),
-                    status: "pending",
-                    priority: "low",
-                    assignee: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdAt: new Date(2023, 4, 15),
-                },
-                {
-                    id: 4,
-                    title: "Hamshiralar bilan yig'ilish",
-                    description: "Bemorlarni parvarish qilish bo'yicha ko'rsatmalar berish",
-                    startDate: new Date(2023, 4, 21, 13, 0),
-                    endDate: new Date(2023, 4, 21, 14, 0),
-                    status: "pending",
-                    priority: "medium",
-                    assignee: {
-                        id: 101,
-                        name: "Dr. Aziz Karimov",
-                        role: "doctor",
-                    },
-                    createdBy: {
-                        id: 1,
-                        name: "Sardor Alimov",
-                        role: "director",
-                    },
-                    createdAt: new Date(2023, 4, 18),
-                },
-            ]
+            // Fetch tasks from API
+            const response = await apiTasks.fetchTasks(currentPage + 1, itemsPerPage)
 
-            // Mock staff data - Shifokor faqat o'zi va unga biriktirilgan hamshiralarni ko'radi
+            // Format dates for each task
+            const formattedTasks = response.results.map((task) => ({
+                ...task,
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                startDate: new Date(`${task.start_date}T${task.start_time}`),
+                endDate: new Date(`${task.end_date}T${task.end_time}`),
+                status: task.status,
+                priority: task.priority,
+                assignee: task.assignee,
+                createdBy: task.created_by,
+                createdAt: new Date(task.created_at),
+            }))
+
+            setTasks(formattedTasks)
+            setTotalItems(response.count)
+            setTotalPages(Math.ceil(response.count / itemsPerPage))
+        } catch (error) {
+            console.error("Error fetching tasks:", error)
+        } finally {
+            setLoading(false)
+        }
+    }, [currentPage, itemsPerPage, searchQuery, statusFilter, priorityFilter, doctorBranch, user.id])
+
+    // Fetch calendar tasks based on view and date
+    const fetchCalendarTasks = useCallback(async () => {
+        setLoading(true)
+        try {
+            let response
+
+            // Fetch tasks based on calendar view
+            if (calendarView === "day") {
+                response = await apiTasks.fetchDailyTasks(currentDate, doctorBranch)
+            } else if (calendarView === "week") {
+                response = await apiTasks.fetchWeeklyTasks(currentDate, doctorBranch)
+            } else if (calendarView === "month") {
+                response = await apiTasks.fetchMonthlyTasks(currentDate, doctorBranch)
+            } else if (calendarView === "year") {
+                response = await apiTasks.fetchYearlyTasks(currentDate, doctorBranch)
+            }
+
+            // Format dates for each task
+            const formattedTasks = response.map((task) => ({
+                ...task,
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                startDate: new Date(`${task.start_date}T${task.start_time}`),
+                endDate: new Date(`${task.end_date}T${task.end_time}`),
+                status: task.status,
+                priority: task.priority,
+                assignee: task.assignee,
+                createdBy: task.created_by,
+                createdAt: new Date(task.created_at),
+            }))
+
+            setTasks(formattedTasks)
+        } catch (error) {
+            console.error(`Error fetching ${calendarView} tasks:`, error)
+        } finally {
+            setLoading(false)
+        }
+    }, [calendarView, currentDate, doctorBranch])
+
+    // Fetch staff data
+    const fetchStaffData = useCallback(async () => {
+        try {
+            // В реальном приложении здесь будет API запрос для получения списка персонала
+            // Для примера используем моковые данные, но в реальном приложении нужно заменить на API
+
+            // Моковые данные для персонала - в реальном приложении заменить на API запрос
             const mockStaff = [
                 {
-                    id: 101,
-                    name: "Dr. Aziz Karimov",
+                    id: user.id,
+                    name: user.name || "Dr. " + user.first_name + " " + user.last_name,
                     role: "doctor",
                     department: "Kardiologiya",
                 },
-                {
-                    id: 103,
-                    name: "Nilufar Rahimova",
-                    role: "nurse",
-                    department: "Kardiologiya",
-                },
-                {
-                    id: 106,
-                    name: "Zarina Aliyeva",
-                    role: "nurse",
-                    department: "Kardiologiya",
-                },
+                // Другие сотрудники, если нужно
             ]
 
-            setTasks(mockTasks)
             setStaff(mockStaff)
-            setLoading(false)
-        }, 800)
-    }, [selectedBranch])
+        } catch (error) {
+            console.error("Error fetching staff data:", error)
+        }
+    }, [user])
+
+    // Initial data loading
+    useEffect(() => {
+        fetchStaffData()
+    }, [fetchStaffData])
+
+    // Fetch tasks when filters, pagination or view changes
+    useEffect(() => {
+        if (view === "list") {
+            fetchTasks()
+        } else {
+            fetchCalendarTasks()
+        }
+    }, [view, fetchTasks, fetchCalendarTasks])
+
+    // Fetch tasks when calendar view or date changes
+    useEffect(() => {
+        if (view === "calendar") {
+            fetchCalendarTasks()
+        }
+    }, [calendarView, currentDate, view, fetchCalendarTasks])
 
     // Filter tasks based on search query and filters
     const filteredTasks = tasks.filter((task) => {
         // Search query filter
         const matchesSearch =
             task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchQuery.toLowerCase())
+            (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()))
 
         // Status filter
         const matchesStatus = statusFilter === "all" || task.status === statusFilter
@@ -172,10 +194,14 @@ export default function DocTasks() {
     // Navigate to previous month/week/day
     const handlePrevious = () => {
         const newDate = new Date(currentDate)
-        if (view === "calendar") {
+        if (calendarView === "month") {
             newDate.setMonth(newDate.getMonth() - 1)
-        } else {
+        } else if (calendarView === "week") {
             newDate.setDate(newDate.getDate() - 7)
+        } else if (calendarView === "day") {
+            newDate.setDate(newDate.getDate() - 1)
+        } else if (calendarView === "year") {
+            newDate.setFullYear(newDate.getFullYear() - 1)
         }
         setCurrentDate(newDate)
     }
@@ -183,19 +209,23 @@ export default function DocTasks() {
     // Navigate to next month/week/day
     const handleNext = () => {
         const newDate = new Date(currentDate)
-        if (view === "calendar") {
+        if (calendarView === "month") {
             newDate.setMonth(newDate.getMonth() + 1)
-        } else {
+        } else if (calendarView === "week") {
             newDate.setDate(newDate.getDate() + 7)
+        } else if (calendarView === "day") {
+            newDate.setDate(newDate.getDate() + 1)
+        } else if (calendarView === "year") {
+            newDate.setFullYear(newDate.getFullYear() + 1)
         }
         setCurrentDate(newDate)
     }
 
     // Format date for display
     const formatDateRange = () => {
-        if (view === "calendar") {
+        if (calendarView === "month") {
             return new Intl.DateTimeFormat(navigator.language, { month: "long", year: "numeric" }).format(currentDate)
-        } else {
+        } else if (calendarView === "week") {
             const startOfWeek = new Date(currentDate)
             let dayOfWeek = currentDate.getDay()
             if (dayOfWeek === 0) dayOfWeek = 7
@@ -206,6 +236,15 @@ export default function DocTasks() {
             endOfWeek.setDate(startOfWeek.getDate() + 6)
 
             return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`
+        } else if (calendarView === "day") {
+            return new Intl.DateTimeFormat(navigator.language, {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            }).format(currentDate)
+        } else if (calendarView === "year") {
+            return new Intl.DateTimeFormat(navigator.language, { year: "numeric" }).format(currentDate)
         }
     }
 
@@ -222,17 +261,62 @@ export default function DocTasks() {
     }
 
     // Open task form for editing an existing task
-    const handleEditTask = (task) => {
-        setSelectedTask({ ...task })
-        setShowTaskForm(true)
-        setShowTaskDetails(false)
+    const handleEditTask = async (task) => {
+        try {
+            // Fetch full task details
+            const taskDetails = await apiTasks.fetchTaskById(task.id)
+
+            // Format dates
+            const formattedTask = {
+                ...taskDetails,
+                id: taskDetails.id,
+                title: taskDetails.title,
+                description: taskDetails.description,
+                startDate: new Date(`${taskDetails.start_date}T${taskDetails.start_time}`),
+                endDate: new Date(`${taskDetails.end_date}T${taskDetails.end_time}`),
+                status: taskDetails.status,
+                priority: taskDetails.priority,
+                assignee: taskDetails.assignee,
+                createdBy: taskDetails.created_by,
+                createdAt: new Date(taskDetails.created_at),
+            }
+
+            setSelectedTask(formattedTask)
+            setShowTaskForm(true)
+            setShowTaskDetails(false)
+        } catch (error) {
+            console.error(`Error fetching task details for ID ${task.id}:`, error)
+        }
     }
 
     // Open task details modal
-    const handleViewTask = (task) => {
+    const handleViewTask = async (task) => {
         if (!task) return
-        setSelectedTask({ ...task })
-        setShowTaskDetails(true)
+
+        try {
+            // Fetch full task details
+            const taskDetails = await apiTasks.fetchTaskById(task.id)
+
+            // Format dates
+            const formattedTask = {
+                ...taskDetails,
+                id: taskDetails.id,
+                title: taskDetails.title,
+                description: taskDetails.description,
+                startDate: new Date(`${taskDetails.start_date}T${taskDetails.start_time}`),
+                endDate: new Date(`${taskDetails.end_date}T${taskDetails.end_time}`),
+                status: taskDetails.status,
+                priority: taskDetails.priority,
+                assignee: taskDetails.assignee,
+                createdBy: taskDetails.created_by,
+                createdAt: new Date(taskDetails.created_at),
+            }
+
+            setSelectedTask(formattedTask)
+            setShowTaskDetails(true)
+        } catch (error) {
+            console.error(`Error fetching task details for ID ${task.id}:`, error)
+        }
     }
 
     // Handle day click in calendar
@@ -265,42 +349,100 @@ export default function DocTasks() {
         handleAddTask(dayDate)
     }
 
+    // Handle month click in year view
+    const handleMonthClick = (month) => {
+        if (!month) return
+
+        // Set the current date to the selected month
+        setCurrentDate(new Date(month.date))
+
+        // Change view to month
+        setCalendarView("month")
+    }
+
     // Handle task form submission
-    const handleTaskSubmit = (taskData) => {
-        if (selectedTask) {
-            // Update existing task
-            setTasks(tasks.map((task) => (task.id === selectedTask.id ? { ...task, ...taskData } : task)))
-        } else {
-            // Create new task
-            const newTask = {
-                id: tasks.length + 1,
-                ...taskData,
-                createdBy: {
-                    id: user.id,
-                    name: user.name,
-                    role: user.role,
-                },
-                createdAt: new Date(),
+    const handleTaskSubmit = async (taskData) => {
+        try {
+            if (selectedTask) {
+                // Update existing task
+                await apiTasks.updateTask(selectedTask.id, taskData)
+            } else {
+                // Create new task
+                await apiTasks.createTask(taskData)
             }
-            setTasks([...tasks, newTask])
+
+            // Refresh tasks
+            if (view === "list") {
+                fetchTasks()
+            } else {
+                fetchCalendarTasks()
+            }
+
+            setShowTaskForm(false)
+            setNewTaskDate(null)
+        } catch (error) {
+            console.error("Error saving task:", error)
+            alert(t("error_saving_task"))
         }
-        setShowTaskForm(false)
-        setNewTaskDate(null)
     }
 
     // Handle task deletion
-    const handleDeleteTask = (taskId) => {
-        setTasks(tasks.filter((task) => task.id !== taskId))
-        setShowTaskDetails(false)
+    const handleDeleteTask = async (taskId) => {
+        try {
+            await apiTasks.deleteTask(taskId)
+
+            // Refresh tasks
+            if (view === "list") {
+                fetchTasks()
+            } else {
+                fetchCalendarTasks()
+            }
+
+            setShowTaskDetails(false)
+        } catch (error) {
+            console.error(`Error deleting task with ID ${taskId}:`, error)
+            alert(t("error_deleting_task"))
+        }
     }
 
     // Handle task status change
-    const handleStatusChange = (taskId, newStatus) => {
-        setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
-        setShowTaskDetails(false)
+    const handleStatusChange = async (taskId, newStatus) => {
+        try {
+            // Fetch current task data
+            const taskDetails = await apiTasks.fetchTaskById(taskId)
+
+            // Update status
+            await apiTasks.updateTask(taskId, {
+                ...taskDetails,
+                status: newStatus,
+            })
+
+            // Refresh tasks
+            if (view === "list") {
+                fetchTasks()
+            } else {
+                fetchCalendarTasks()
+            }
+
+            setShowTaskDetails(false)
+        } catch (error) {
+            console.error(`Error updating task status for ID ${taskId}:`, error)
+            alert(t("error_updating_task"))
+        }
     }
 
-    if (loading) {
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+    }
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page when changing items per page
+    }
+
+    if (loading && tasks.length === 0) {
         return (
             <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -329,6 +471,35 @@ export default function DocTasks() {
                             <FaListUl /> {t("list_view")}
                         </button>
                     </div>
+
+                    {view === "calendar" && (
+                        <div className="calendar-view-controls">
+                            <button
+                                className={`btn-sm ${calendarView === "day" ? "btn-primary" : "btn-outline"}`}
+                                onClick={() => setCalendarView("day")}
+                            >
+                                {t("day")}
+                            </button>
+                            <button
+                                className={`btn-sm ${calendarView === "week" ? "btn-primary" : "btn-outline"}`}
+                                onClick={() => setCalendarView("week")}
+                            >
+                                {t("week")}
+                            </button>
+                            <button
+                                className={`btn-sm ${calendarView === "month" ? "btn-primary" : "btn-outline"}`}
+                                onClick={() => setCalendarView("month")}
+                            >
+                                {t("month")}
+                            </button>
+                            <button
+                                className={`btn-sm ${calendarView === "year" ? "btn-primary" : "btn-outline"}`}
+                                onClick={() => setCalendarView("year")}
+                            >
+                                {t("year")}
+                            </button>
+                        </div>
+                    )}
 
                     <div className="date-navigation">
                         <button className="btn-icon" onClick={handlePrevious}>
@@ -391,9 +562,10 @@ export default function DocTasks() {
                         <TaskCalendar
                             tasks={filteredTasks}
                             currentDate={currentDate}
-                            view="month"
+                            view={calendarView}
                             onTaskClick={handleViewTask}
                             onDayClick={handleDayClick}
+                            onMonthClick={handleMonthClick}
                         />
                     </div>
                 ) : (
@@ -434,6 +606,18 @@ export default function DocTasks() {
                                 <p>{t("no_tasks_found")}</p>
                             </div>
                         )}
+
+                        {/* Pagination */}
+                        {view === "list" && (
+                            <Pagination
+                                pageCount={totalPages}
+                                currentPage={currentPage}
+                                onPageChange={handlePageChange}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={totalItems}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
+                        )}
                     </div>
                 )}
             </div>
@@ -450,7 +634,6 @@ export default function DocTasks() {
                                 setShowTaskForm(false)
                                 setNewTaskDate(null)
                             }}
-                            canAssignToNurses={true} // Shifokor hamshiralarga vazifa berishi mumkin
                         />
                     </div>
                 </div>

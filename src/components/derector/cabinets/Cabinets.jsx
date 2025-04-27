@@ -130,12 +130,12 @@ export default function Cabinets() {
         setStaffError(null)
         try {
             // Fetch doctors (position = doctor)
-            const doctorsFilters = { position: "doctor" }
+            const doctorsFilters = { role: "doctor" }
             const doctorsData = await apiUsers.fetchUsers(1, 100, doctorsFilters)
             setDoctors(doctorsData.results || [])
 
             // Fetch nurses (position = nurse)
-            const nursesFilters = { position: "nurse" }
+            const nursesFilters = { role: "nurse" }
             const nursesData = await apiUsers.fetchUsers(1, 100, nursesFilters)
             setNurses(nursesData.results || [])
         } catch (error) {

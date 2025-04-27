@@ -130,14 +130,14 @@ export default function ACabinets() {
         setIsLoadingStaff(true)
         setStaffError(null)
         try {
-            // Fetch doctors (position = doctor)
-            const doctorsFilters = { position: "doctor" }
-            const doctorsData = await apiUsers.fetchUsers(1, 100, doctorsFilters)
+            // Fetch all doctors (role = doctor) without additional filters
+            const doctorsData = await apiUsers.fetchUsers(1, 100, { role: "doctor" })
             setDoctors(doctorsData.results || [])
+            console.log("doctor>>",doctorsData.results);
+            
 
-            // Fetch nurses (position = nurse)
-            const nursesFilters = { position: "nurse" }
-            const nursesData = await apiUsers.fetchUsers(1, 100, nursesFilters)
+            // Fetch all nurses (role = nurse) without additional filters
+            const nursesData = await apiUsers.fetchUsers(1, 100, { role: "nurse" })
             setNurses(nursesData.results || [])
         } catch (error) {
             console.error("Error fetching staff:", error)
@@ -291,7 +291,7 @@ export default function ACabinets() {
         return matchesType && matchesFloor && matchesStatus
     })
 
-    // Handle input change for form data
+    // Обновить функцию handleInputChange, чтобы правильно обрабатывать выбор доктора
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData({
@@ -302,12 +302,20 @@ export default function ACabinets() {
         // Check if doctor is already assigned to another cabinet
         if (name === "userDoctor" && value) {
             const doctorId = Number.parseInt(value)
-            const isAssigned = doctors.some((doctor) => doctor.id === doctorId && doctor.has_cabinet)
+            const selectedDoctor = doctors.find((doctor) => doctor.id === doctorId)
+            // Показывать предупреждение только если доктор уже назначен и это не текущий кабинет
+            const isAssigned =
+                selectedDoctor &&
+                selectedDoctor.has_cabinet &&
+                (!currentCabinet ||
+                    !currentCabinet.user_doctor ||
+                    !currentCabinet.user_doctor.some((doc) => doc.id === doctorId))
             setShowDoctorWarning(isAssigned)
         }
     }
 
     // Handle nurse selection
+    // Обновить функцию handleNurseSelection, чтобы правильно обрабатывать выбор медсестры
     const handleNurseSelection = (e) => {
         const nurseId = Number.parseInt(e.target.value)
 
@@ -318,7 +326,14 @@ export default function ACabinets() {
             }
 
             // Check if nurse is already assigned to another cabinet
-            const isAssigned = nurses.some((nurse) => nurse.id === nurseId && nurse.has_cabinet)
+            const selectedNurse = nurses.find((nurse) => nurse.id === nurseId)
+            // Показывать предупреждение только если медсестра уже назначена и это не текущий кабинет
+            const isAssigned =
+                selectedNurse &&
+                selectedNurse.has_cabinet &&
+                (!currentCabinet ||
+                    !currentCabinet.user_nurse ||
+                    !currentCabinet.user_nurse.some((nurse) => nurse.id === nurseId))
             setShowNurseWarning(isAssigned)
 
             // Add nurse to the list
@@ -426,6 +441,12 @@ export default function ACabinets() {
             // Make sure we have the latest staff data
             await fetchStaffData()
 
+            // Правильно установить ID доктора и медсестер
+            const doctorId =
+                cabinetData.user_doctor && cabinetData.user_doctor.length > 0 ? cabinetData.user_doctor[0].id : ""
+
+            const nurseIds = (cabinetData.user_nurse || []).map((nurse) => nurse.id)
+
             setFormData({
                 name: cabinetData.name,
                 type: cabinetData.type,
@@ -433,8 +454,8 @@ export default function ACabinets() {
                 status: cabinetData.status,
                 description: cabinetData.description,
                 branch: cabinetData.branch,
-                userDoctor: cabinetData.user_doctor && cabinetData.user_doctor.length > 0 ? cabinetData.user_doctor[0].id : "",
-                userNurses: (cabinetData.user_nurse || []).map((nurse) => nurse.id),
+                userDoctor: doctorId,
+                userNurses: nurseIds,
             })
 
             setCurrentCabinet(cabinetData)
@@ -601,12 +622,6 @@ export default function ACabinets() {
     const getNurseName = (nurseId) => {
         const nurse = nurses.find((n) => n.id === nurseId)
         return nurse ? `${nurse.first_name} ${nurse.last_name}` : t("unknown_nurse")
-    }
-
-    // Filter doctors by selected branch
-    const getFilteredDoctors = () => {
-        if (!formData.branch) return []
-        return doctors.filter((doctor) => doctor.branchId === Number.parseInt(formData.branch))
     }
 
     const [initialSelectedBranch, setInitialSelectedBranch] = useState(selectedBranch)
@@ -1025,6 +1040,7 @@ export default function ACabinets() {
                                     {doctors.map((doctor) => (
                                         <option key={doctor.id} value={doctor.id}>
                                             {doctor.first_name} {doctor.last_name}
+                                            {doctor.has_cabinet ? ` (${t("already_assigned")})` : ""}
                                         </option>
                                     ))}
                                 </select>
@@ -1042,6 +1058,7 @@ export default function ACabinets() {
                                     {nurses.map((nurse) => (
                                         <option key={nurse.id} value={nurse.id}>
                                             {nurse.first_name} {nurse.last_name}
+                                            {nurse.has_cabinet ? ` (${t("already_assigned")})` : ""}
                                         </option>
                                     ))}
                                 </select>
@@ -1173,6 +1190,9 @@ export default function ACabinets() {
                                     {doctors.map((doctor) => (
                                         <option key={doctor.id} value={doctor.id}>
                                             {doctor.first_name} {doctor.last_name}
+                                            {doctor.has_cabinet && doctor.id !== Number(formData.userDoctor)
+                                                ? ` (${t("already_assigned")})`
+                                                : ""}
                                         </option>
                                     ))}
                                 </select>
@@ -1190,6 +1210,9 @@ export default function ACabinets() {
                                     {nurses.map((nurse) => (
                                         <option key={nurse.id} value={nurse.id}>
                                             {nurse.first_name} {nurse.last_name}
+                                            {nurse.has_cabinet && !formData.userNurses.includes(nurse.id)
+                                                ? ` (${t("already_assigned")})`
+                                                : ""}
                                         </option>
                                     ))}
                                 </select>
