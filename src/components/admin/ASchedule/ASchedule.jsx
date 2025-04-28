@@ -5,46 +5,66 @@ import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import {
     FaCalendarAlt,
-    FaPlus,
     FaEdit,
     FaTrash,
     FaUserMd,
-    FaExclamationTriangle,
     FaFilter,
     FaSearch,
-    FaChevronLeft,
-    FaChevronRight,
     FaUser,
     FaDoorOpen,
     FaClock,
     FaBuilding,
     FaExclamationCircle,
-    FaMoneyBillWave, // Fixed: Added missing import
+    FaMoneyBillWave,
     FaEllipsisV,
     FaCheck,
     FaTimes,
+    FaSpinner,
+    FaCalendarDay,
+    FaCalendarPlus,
+    FaTable,
+    FaEye,
+    FaNotesMedical,
 } from "react-icons/fa"
 import apiAppointments from "../../../api/apiAppointments"
+import Pagination from "../../pagination/Pagination"
 
 export default function ASchedule() {
     const { selectedBranch } = useAuth()
     const { t } = useLanguage()
-    const [currentDate, setCurrentDate] = useState(new Date())
-    const [currentView, setCurrentView] = useState("week") // week, day
+
+    // State for appointments data
     const [appointments, setAppointments] = useState([])
-    const [doctors, setDoctors] = useState([])
-    const [patients, setPatients] = useState([])
-    const [rooms, setRooms] = useState([])
-    const [filteredAppointments, setFilteredAppointments] = useState([])
-    const [filterDoctor, setFilterDoctor] = useState("all")
-    const [filterStatus, setFilterStatus] = useState("all")
-    const [searchTerm, setSearchTerm] = useState("")
-    const [showAddModal, setShowAddModal] = useState(false)
-    const [showEditModal, setShowEditModal] = useState(false)
-    const [selectedAppointment, setSelectedAppointment] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [totalItems, setTotalItems] = useState(0)
+
+    // State for pagination
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    // State for search and filters
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterStatus, setFilterStatus] = useState("all")
+    const [filterDate, setFilterDate] = useState("")
+    const [filterDoctor, setFilterDoctor] = useState("all")
+    const [filterBranch, setFilterBranch] = useState(selectedBranch)
+    const [showFilters, setShowFilters] = useState(false)
+
+    // State for view mode
+    const [currentView, setCurrentView] = useState("table") // table, calendar
+    const [currentDate, setCurrentDate] = useState(new Date())
+
+    // State for sidebars
+    const [showAddSidebar, setShowAddSidebar] = useState(false)
+    const [showEditSidebar, setShowEditSidebar] = useState(false)
+    const [showViewSidebar, setShowViewSidebar] = useState(false)
+    const [currentAppointment, setCurrentAppointment] = useState(null)
+    const [editLoading, setEditLoading] = useState(false)
+
+    // State for new appointment
     const [newAppointment, setNewAppointment] = useState({
+        branch: selectedBranch === "all" ? "" : selectedBranch,
         patientId: "",
         doctorId: "",
         roomId: "",
@@ -53,43 +73,46 @@ export default function ASchedule() {
         status: "expected",
         diagnosis: "",
         notes: "",
-        branch: selectedBranch === "all" ? "" : selectedBranch,
+        payment_amount: "",
     })
-    const [step, setStep] = useState(1)
-    const [availableTimes, setAvailableTimes] = useState([])
-    const [busyTimes, setBusyTimes] = useState([])
+
+    // State for filter data
     const [filterData, setFilterData] = useState({
         branches: [],
         customers: [],
         doctors: [],
         cabinets: [],
     })
-    const [currentPage, setCurrentPage] = useState(0)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
-    const [totalItems, setTotalItems] = useState(0)
+
+    // State for busy times
+    const [busyTimes, setBusyTimes] = useState([])
+    const [availableTimes, setAvailableTimes] = useState([])
+
+    // State for form steps
+    const [step, setStep] = useState(1)
     const [timeError, setTimeError] = useState("")
-    // Add the time change modal functionality
-    // First, add a new state for the time change modal
+
+    // State for time change modal
     const [showTimeChangeModal, setShowTimeChangeModal] = useState(false)
     const [timeChangeAppointment, setTimeChangeAppointment] = useState(null)
     const [newTime, setNewTime] = useState("")
 
-    // Fetch appointments, doctors, patients, and rooms data
+    // Load appointments when component mounts or when branch/filters change
     useEffect(() => {
         fetchAppointments()
-    }, [selectedBranch, currentPage, itemsPerPage, filterStatus, filterDoctor])
+    }, [selectedBranch, currentPage, itemsPerPage, filterStatus, filterDate, filterDoctor, filterBranch])
 
     // Load filter data when branch changes
     useEffect(() => {
         if (selectedBranch !== "all") {
             fetchFilterData(selectedBranch)
-        } else if (newAppointment.branch) {
-            fetchFilterData(newAppointment.branch)
+        } else if (filterBranch !== "all") {
+            fetchFilterData(filterBranch)
         } else {
             // If all branches selected, fetch data for the first branch or default
             fetchFilterData(1) // Default to first branch
         }
-    }, [selectedBranch, newAppointment.branch])
+    }, [selectedBranch, filterBranch])
 
     // Update available times when date, doctor, or room changes
     useEffect(() => {
@@ -97,33 +120,6 @@ export default function ASchedule() {
             fetchBusyTimes()
         }
     }, [newAppointment.date, newAppointment.doctorId, newAppointment.roomId])
-
-    // Filter appointments based on filters and search
-    useEffect(() => {
-        let result = [...appointments]
-
-        // Filter by doctor
-        if (filterDoctor !== "all") {
-            result = result.filter((appointment) => appointment.doctorId === Number.parseInt(filterDoctor))
-        }
-
-        // Filter by status
-        if (filterStatus !== "all") {
-            result = result.filter((appointment) => appointment.status === filterStatus)
-        }
-
-        // Filter by search term
-        if (searchTerm) {
-            result = result.filter(
-                (appointment) =>
-                    appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    appointment.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-        }
-
-        setFilteredAppointments(result)
-    }, [appointments, filterDoctor, filterStatus, searchTerm])
 
     // Fetch appointments from API
     const fetchAppointments = async () => {
@@ -136,7 +132,9 @@ export default function ASchedule() {
 
             // Add filters if they are set
             if (filterStatus !== "all") params.status = filterStatus
+            if (filterDate) params.date = filterDate
             if (filterDoctor !== "all") params.doctor = filterDoctor
+            if (selectedBranch === "all" && filterBranch !== "all") params.branch = filterBranch
             if (selectedBranch !== "all") params.branch = selectedBranch
             if (searchTerm) params.search = searchTerm
 
@@ -165,16 +163,63 @@ export default function ASchedule() {
             }))
 
             setAppointments(transformedAppointments)
-            setFilteredAppointments(transformedAppointments)
             setTotalItems(data.count || 0)
             setError(null)
         } catch (err) {
             console.error("Error loading appointments:", err)
             setError("Error loading appointments")
             setAppointments([])
-            setFilteredAppointments([])
         } finally {
             setLoading(false)
+        }
+    }
+
+    // Fetch a single appointment by ID
+    const fetchAppointmentById = async (id) => {
+        setEditLoading(true)
+        try {
+            const data = await apiAppointments.fetchAppointmentById(id)
+            console.log("Appointment data:", data)
+
+            // Format the date and time for display and form
+            let formattedDate = ""
+            let formattedTime = ""
+
+            if (data.date) {
+                try {
+                    const dateObj = new Date(data.date)
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split("T")[0]
+                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                    }
+                } catch (error) {
+                    console.error("Error formatting date/time:", error)
+                }
+            }
+
+            // Prepare the appointment data with formatted values
+            const appointmentData = {
+                ...data,
+                patientId: data.customer,
+                patientName: data.customer_name,
+                doctorId: data.doctor,
+                doctorName: data.doctor_name,
+                roomId: data.room,
+                roomName: data.room_name,
+                diagnosis: data.diognosis || "",
+                notes: data.comment || "",
+                formattedDate,
+                formattedTime,
+            }
+
+            setCurrentAppointment(appointmentData)
+            return appointmentData
+        } catch (err) {
+            console.error("Error loading appointment:", err)
+            alert("Error loading appointment")
+            return null
+        } finally {
+            setEditLoading(false)
         }
     }
 
@@ -184,11 +229,6 @@ export default function ASchedule() {
             const data = await apiAppointments.fetchFilterData(branchId)
             console.log("Filter data:", data)
             setFilterData(data)
-
-            // Set doctors, patients, and rooms from the filter data
-            setDoctors(data.doctors || [])
-            setPatients(data.customers || [])
-            setRooms(data.cabinets || [])
         } catch (err) {
             console.error("Error loading filter data:", err)
         }
@@ -233,71 +273,8 @@ export default function ASchedule() {
         setAvailableTimes(slots)
     }
 
-    // Helper function to format date
-    function formatDate(date) {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, "0")
-        const day = String(date.getDate()).padStart(2, "0")
-        return `${year}-${month}-${day}`
-    }
-
-    // Helper function to add days to a date
-    function addDays(date, days) {
-        const result = new Date(date)
-        result.setDate(result.getDate() + days)
-        return result
-    }
-
-    // Get week dates
-    const getWeekDates = () => {
-        const dates = []
-        const startOfWeek = new Date(currentDate)
-        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()) // Start from Sunday
-
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(startOfWeek)
-            date.setDate(startOfWeek.getDate() + i)
-            dates.push(date)
-        }
-
-        return dates
-    }
-
-    // Get appointments for a specific date
-    const getAppointmentsForDate = (date) => {
-        const dateString = formatDate(date)
-        return filteredAppointments.filter((appointment) => appointment.date === dateString)
-    }
-
-    // Navigate to previous week/day
-    const navigatePrevious = () => {
-        const newDate = new Date(currentDate)
-        if (currentView === "week") {
-            newDate.setDate(currentDate.getDate() - 7)
-        } else {
-            newDate.setDate(currentDate.getDate() - 1)
-        }
-        setCurrentDate(newDate)
-    }
-
-    // Navigate to next week/day
-    const navigateNext = () => {
-        const newDate = new Date(currentDate)
-        if (currentView === "week") {
-            newDate.setDate(currentDate.getDate() + 7)
-        } else {
-            newDate.setDate(currentDate.getDate() + 1)
-        }
-        setCurrentDate(newDate)
-    }
-
-    // Navigate to today
-    const navigateToday = () => {
-        setCurrentDate(new Date())
-    }
-
-    // Handle search input
-    const handleSearch = (e) => {
+    // Handle search input change
+    const handleSearchChange = (e) => {
         setSearchTerm(e.target.value)
     }
 
@@ -307,145 +284,148 @@ export default function ASchedule() {
         fetchAppointments()
     }
 
-    // Handle filter changes
-    const handleFilterDoctor = (e) => {
-        setFilterDoctor(e.target.value)
+    // Toggle filters
+    const toggleFilters = () => {
+        setShowFilters(!showFilters)
     }
 
-    const handleFilterStatus = (e) => {
-        setFilterStatus(e.target.value)
-    }
-
-    // Open add appointment modal
-    const openAddModal = () => {
+    // Open add sidebar
+    const openAddSidebar = () => {
         const today = new Date()
         setNewAppointment({
+            branch: selectedBranch === "all" ? "" : selectedBranch,
             patientId: "",
             doctorId: "",
             roomId: "",
-            date: formatDate(today),
+            date: today.toISOString().split("T")[0],
             time: "",
             status: "expected",
             diagnosis: "",
             notes: "",
-            branch: selectedBranch === "all" ? "" : selectedBranch,
+            payment_amount: "",
         })
         setStep(1)
-        setShowAddModal(true)
+        setShowAddSidebar(true)
         setTimeError("")
     }
 
-    // Open edit appointment modal
-    const openEditModal = async (appointment) => {
+    // Close add sidebar
+    const closeAddSidebar = () => {
+        setShowAddSidebar(false)
+        setStep(1)
+        setTimeError("")
+    }
+
+    // Open view sidebar
+    const openViewSidebar = (appointment) => {
+        // Create a copy of the appointment to avoid reference issues
+        const appointmentCopy = { ...appointment }
+
+        // Ensure date is properly formatted for display
+        if (appointmentCopy.date) {
+            try {
+                const dateObj = new Date(appointmentCopy.date)
+                if (!isNaN(dateObj.getTime())) {
+                    appointmentCopy.formattedDate = dateObj.toLocaleDateString("uz-UZ", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                    })
+                    appointmentCopy.formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                } else {
+                    appointmentCopy.formattedDate = ""
+                    appointmentCopy.formattedTime = ""
+                }
+            } catch (error) {
+                console.error("Error formatting date/time:", error)
+                appointmentCopy.formattedDate = ""
+                appointmentCopy.formattedTime = ""
+            }
+        }
+
+        setCurrentAppointment(appointmentCopy)
+        setShowViewSidebar(true)
+    }
+
+    // Close view sidebar
+    const closeViewSidebar = () => {
+        setShowViewSidebar(false)
+        setCurrentAppointment(null)
+    }
+
+    // Open edit sidebar
+    const openEditSidebar = async (appointment) => {
         if (!appointment || !appointment.id) return
 
+        setEditLoading(true)
         try {
             // Fetch the latest appointment data from the server
-            const latestAppointmentData = await apiAppointments.fetchAppointmentById(appointment.id)
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
 
-            // Format date and time for the form
-            let formattedDate = ""
-            let formattedTime = ""
+            if (latestAppointmentData) {
+                // Set the current appointment data
+                setCurrentAppointment(latestAppointmentData)
 
-            if (latestAppointmentData.date) {
-                try {
-                    const dateObj = new Date(latestAppointmentData.date)
-                    if (!isNaN(dateObj.getTime())) {
-                        formattedDate = dateObj.toISOString().split("T")[0]
-                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                // Fetch filter data for the branch
+                await fetchFilterData(latestAppointmentData.branch)
+
+                // Fetch busy times for the selected date, doctor, and room
+                if (latestAppointmentData.formattedDate && latestAppointmentData.doctorId && latestAppointmentData.roomId) {
+                    const params = {
+                        branchId: latestAppointmentData.branch,
+                        doctorId: latestAppointmentData.doctorId,
+                        cabinetId: latestAppointmentData.roomId,
+                        date: latestAppointmentData.formattedDate,
                     }
-                } catch (error) {
-                    console.error("Error formatting date/time:", error)
-                }
-            }
 
-            // Transform API data to match component structure
-            const transformedAppointment = {
-                id: latestAppointmentData.id,
-                patientId: latestAppointmentData.customer.toString(),
-                patientName: latestAppointmentData.customer_name,
-                doctorId: latestAppointmentData.doctor.toString(),
-                doctorName: latestAppointmentData.doctor_name,
-                roomId: latestAppointmentData.room.toString(),
-                roomName: latestAppointmentData.room_name,
-                date: formattedDate,
-                time: formattedTime,
-                status: latestAppointmentData.status,
-                diagnosis: latestAppointmentData.diognosis || "",
-                notes: latestAppointmentData.comment || "",
-                branch: latestAppointmentData.branch.toString(),
-                payment_amount: latestAppointmentData.payment_amount || "",
-            }
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                    setBusyTimes(busyTimesData)
 
-            setSelectedAppointment(transformedAppointment)
-
-            // Fetch busy times for the selected date, doctor, and room
-            if (formattedDate && transformedAppointment.doctorId && transformedAppointment.roomId) {
-                const params = {
-                    branchId: transformedAppointment.branch,
-                    doctorId: transformedAppointment.doctorId,
-                    cabinetId: transformedAppointment.roomId,
-                    date: formattedDate,
+                    // Generate available time slots
+                    generateTimeSlots(busyTimesData)
                 }
 
-                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
-                setBusyTimes(busyTimesData)
-
-                // Generate available time slots
-                generateTimeSlots(busyTimesData)
+                setShowEditSidebar(true)
             }
-
-            setShowEditModal(true)
         } catch (error) {
-            console.error("Error opening edit modal:", error)
-            alert("Error loading appointment details")
+            console.error("Error opening edit sidebar:", error)
+            alert("Error editing appointment")
+        } finally {
+            setEditLoading(false)
         }
     }
 
-    // Handle new appointment form input changes
+    // Close edit sidebar
+    const closeEditSidebar = () => {
+        setShowEditSidebar(false)
+        setTimeError("")
+        setCurrentAppointment(null)
+    }
+
+    // Handle new appointment input change
     const handleNewAppointmentChange = (e) => {
         const { name, value } = e.target
         setTimeError("")
 
-        if (name === "doctorId" && value) {
-            const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(value))
-            setNewAppointment({
-                ...newAppointment,
-                doctorId: value,
-                doctorName: selectedDoctor ? `${selectedDoctor.first_name} ${selectedDoctor.last_name}` : "",
-                specialization: selectedDoctor ? selectedDoctor.specialization : "",
-            })
-        } else if (name === "patientId" && value) {
-            const selectedPatient = patients.find((p) => p.id === Number.parseInt(value))
-            setNewAppointment({
-                ...newAppointment,
-                patientId: value,
-                patientName: selectedPatient ? selectedPatient.full_name : "",
-            })
-        } else if (name === "roomId" && value) {
-            const selectedRoom = rooms.find((r) => r.id === Number.parseInt(value))
-            setNewAppointment({
-                ...newAppointment,
-                roomId: value,
-                roomName: selectedRoom ? selectedRoom.name : "",
-            })
-        } else if (name === "branch" && value) {
+        setNewAppointment({
+            ...newAppointment,
+            [name]: value,
+        })
+
+        // If branch changes, reset dependent fields
+        if (name === "branch") {
             setNewAppointment({
                 ...newAppointment,
                 branch: value,
+                patientId: "",
                 doctorId: "",
-                doctorName: "",
                 roomId: "",
-                roomName: "",
+                date: "",
+                time: "",
             })
 
             // Fetch new filter data for the selected branch
             fetchFilterData(value)
-        } else {
-            setNewAppointment({
-                ...newAppointment,
-                [name]: value,
-            })
         }
     }
 
@@ -458,70 +438,49 @@ export default function ASchedule() {
         })
     }
 
-    // Handle selected appointment form input changes
-    const handleSelectedAppointmentChange = async (e) => {
+    // Handle edit appointment input change
+    const handleEditAppointmentChange = async (e) => {
         const { name, value } = e.target
         setTimeError("")
 
         // Create updated appointment data
         const updatedAppointment = {
-            ...selectedAppointment,
+            ...currentAppointment,
             [name]: value,
         }
 
         // Handle branch change - reset dependent fields
         if (name === "branch") {
+            updatedAppointment.patientId = ""
             updatedAppointment.doctorId = ""
-            updatedAppointment.doctorName = ""
             updatedAppointment.roomId = ""
-            updatedAppointment.roomName = ""
 
             // Fetch new filter data for the selected branch
             await fetchFilterData(value)
         }
 
-        // Handle doctor change
-        if (name === "doctorId" && value) {
-            const selectedDoctor = doctors.find((d) => d.id === Number.parseInt(value))
-            updatedAppointment.doctorName = selectedDoctor ? `${selectedDoctor.first_name} ${selectedDoctor.last_name}` : ""
-        }
-
-        // Handle patient change
-        if (name === "patientId" && value) {
-            const selectedPatient = patients.find((p) => p.id === Number.parseInt(value))
-            updatedAppointment.patientName = selectedPatient ? selectedPatient.full_name : ""
-        }
-
-        // Handle room change
-        if (name === "roomId" && value) {
-            const selectedRoom = rooms.find((r) => r.id === Number.parseInt(value))
-            updatedAppointment.roomName = selectedRoom ? selectedRoom.name : ""
-        }
-
         // Handle doctor or room change - update busy times
-        if (
-            (name === "doctorId" || name === "roomId") &&
-            updatedAppointment.date &&
-            updatedAppointment.doctorId &&
-            updatedAppointment.roomId
-        ) {
-            const params = {
-                branchId: updatedAppointment.branch,
-                doctorId: updatedAppointment.doctorId,
-                cabinetId: updatedAppointment.roomId,
-                date: updatedAppointment.date,
+        if (name === "doctorId" || name === "roomId") {
+            if (updatedAppointment.formattedDate && updatedAppointment.doctorId && updatedAppointment.roomId) {
+                const params = {
+                    branchId: updatedAppointment.branch,
+                    doctorId: updatedAppointment.doctorId,
+                    cabinetId: updatedAppointment.roomId,
+                    date: updatedAppointment.formattedDate,
+                }
+
+                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                setBusyTimes(busyTimesData)
+
+                // Generate available time slots
+                generateTimeSlots(busyTimesData)
             }
-
-            const busyTimesData = await apiAppointments.fetchBusyTimes(params)
-            setBusyTimes(busyTimesData)
-
-            // Generate available time slots
-            generateTimeSlots(busyTimesData)
         }
 
         // Handle date change - update busy times and reset time
         if (name === "date") {
             updatedAppointment.time = ""
+            updatedAppointment.formattedDate = value
 
             if (updatedAppointment.doctorId && updatedAppointment.roomId) {
                 const params = {
@@ -539,99 +498,67 @@ export default function ASchedule() {
             }
         }
 
-        setSelectedAppointment(updatedAppointment)
+        setCurrentAppointment(updatedAppointment)
     }
 
     // Handle edit time selection
     const handleEditTimeSelect = (time) => {
         setTimeError("")
-        setSelectedAppointment({
-            ...selectedAppointment,
+        setCurrentAppointment({
+            ...currentAppointment,
             time: time,
         })
     }
 
-    // Add this function after the handleEditTimeSelect function
+    // Open time change modal
     const openTimeChangeModal = async (appointment) => {
         if (!appointment || !appointment.id) return
 
         try {
             // Fetch the latest appointment data
-            const latestAppointmentData = await apiAppointments.fetchAppointmentById(appointment.id)
+            const latestAppointmentData = await fetchAppointmentById(appointment.id)
 
-            // Format date and time for the form
-            let formattedDate = ""
-            let formattedTime = ""
+            if (latestAppointmentData) {
+                setTimeChangeAppointment(latestAppointmentData)
+                setNewTime(latestAppointmentData.formattedTime || "")
 
-            if (latestAppointmentData.date) {
-                try {
-                    const dateObj = new Date(latestAppointmentData.date)
-                    if (!isNaN(dateObj.getTime())) {
-                        formattedDate = dateObj.toISOString().split("T")[0]
-                        formattedTime = dateObj.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+                // Fetch busy times for the selected date, doctor, and room
+                if (latestAppointmentData.formattedDate && latestAppointmentData.doctorId && latestAppointmentData.roomId) {
+                    const params = {
+                        branchId: latestAppointmentData.branch,
+                        doctorId: latestAppointmentData.doctorId,
+                        cabinetId: latestAppointmentData.roomId,
+                        date: latestAppointmentData.formattedDate,
                     }
-                } catch (error) {
-                    console.error("Error formatting date/time:", error)
-                }
-            }
 
-            // Transform API data to match component structure
-            const transformedAppointment = {
-                id: latestAppointmentData.id,
-                patientId: latestAppointmentData.customer.toString(),
-                patientName: latestAppointmentData.customer_name,
-                doctorId: latestAppointmentData.doctor.toString(),
-                doctorName: latestAppointmentData.doctor_name,
-                roomId: latestAppointmentData.room.toString(),
-                roomName: latestAppointmentData.room_name,
-                date: formattedDate,
-                time: formattedTime,
-                status: latestAppointmentData.status,
-                diagnosis: latestAppointmentData.diognosis || "",
-                notes: latestAppointmentData.comment || "",
-                branch: latestAppointmentData.branch.toString(),
-                payment_amount: latestAppointmentData.payment_amount || "",
-            }
+                    const busyTimesData = await apiAppointments.fetchBusyTimes(params)
+                    setBusyTimes(busyTimesData)
 
-            setTimeChangeAppointment(transformedAppointment)
-            setNewTime(transformedAppointment.time || "")
-
-            // Fetch busy times for the selected date, doctor, and room
-            if (formattedDate && transformedAppointment.doctorId && transformedAppointment.roomId) {
-                const params = {
-                    branchId: transformedAppointment.branch,
-                    doctorId: transformedAppointment.doctorId,
-                    cabinetId: transformedAppointment.roomId,
-                    date: formattedDate,
+                    // Generate available time slots
+                    generateTimeSlots(busyTimesData)
                 }
 
-                const busyTimesData = await apiAppointments.fetchBusyTimes(params)
-                setBusyTimes(busyTimesData)
-
-                // Generate available time slots
-                generateTimeSlots(busyTimesData)
+                setShowTimeChangeModal(true)
             }
-
-            setShowTimeChangeModal(true)
         } catch (error) {
             console.error("Error opening time change modal:", error)
             alert("Error loading appointment details for time change")
         }
     }
 
-    // Add this function to handle time selection in the time change modal
+    // Handle time selection in the time change modal
     const handleTimeChangeSelect = (time) => {
         setTimeError("")
         setNewTime(time)
     }
 
-    // Add this function to save the time change
+    // Save the time change
     const saveTimeChange = async () => {
         if (!timeChangeAppointment || !newTime) return
 
         try {
             // Format date and time for API
-            const formattedDate = `${timeChangeAppointment.date}T${newTime}:00Z`
+            const formattedDate = `${timeChangeAppointment.formattedDate}T${newTime}:00Z`
 
             const appointmentData = {
                 branch: Number.parseInt(timeChangeAppointment.branch),
@@ -663,7 +590,7 @@ export default function ASchedule() {
         }
     }
 
-    // Add this function to close the time change modal
+    // Close the time change modal
     const closeTimeChangeModal = () => {
         setShowTimeChangeModal(false)
         setTimeChangeAppointment(null)
@@ -681,25 +608,9 @@ export default function ASchedule() {
         setStep(step - 1)
     }
 
-    // Handle add appointment form submission
-    const handleAddAppointment = async (e) => {
+    // Add new appointment
+    const addAppointment = async (e) => {
         e.preventDefault()
-        // Format date and time for API
-        const formattedDate = `${newAppointment.date}T${newAppointment.time}:00Z`
-
-        const appointmentData = {
-            branch: Number.parseInt(newAppointment.branch),
-            customer: Number.parseInt(newAppointment.patientId),
-            doctor: Number.parseInt(newAppointment.doctorId),
-            room: Number.parseInt(newAppointment.roomId),
-            full_date: formattedDate,
-            status: newAppointment.status,
-            comment: newAppointment.notes,
-            diognosis: newAppointment.diagnosis,
-            payment_amount: newAppointment.payment_amount || "",
-            organs: {},
-        }
-        console.log(appointmentData)
 
         try {
             // Format date and time for API
@@ -724,50 +635,87 @@ export default function ASchedule() {
             // Refresh appointments list
             fetchAppointments()
 
-            // Close modal
-            setShowAddModal(false)
+            // Close sidebar
+            closeAddSidebar()
         } catch (err) {
             console.error("Error creating appointment:", err)
             alert("Error creating appointment")
         }
     }
 
-    // Handle edit appointment form submission
-    const handleEditAppointment = async (e) => {
+    // Update appointment
+    const updateAppointment = async (e) => {
         e.preventDefault()
 
         try {
+            // Extract date and time from the current appointment
+            let date = ""
+            let time = ""
+
+            // Use the formatted date if available
+            if (currentAppointment.formattedDate) {
+                date = currentAppointment.formattedDate
+            } else if (currentAppointment.date) {
+                if (typeof currentAppointment.date === "string" && currentAppointment.date.includes("T")) {
+                    date = currentAppointment.date.split("T")[0]
+                } else {
+                    date = new Date(currentAppointment.date).toISOString().split("T")[0]
+                }
+            } else {
+                date = new Date().toISOString().split("T")[0]
+            }
+
+            // Use the time input value or extract from date
+            if (currentAppointment.time) {
+                time = currentAppointment.time
+            } else if (currentAppointment.formattedTime) {
+                time = currentAppointment.formattedTime
+            } else if (
+                currentAppointment.date &&
+                typeof currentAppointment.date === "string" &&
+                currentAppointment.date.includes("T")
+            ) {
+                const timePart = currentAppointment.date.split("T")[1]
+                if (timePart && timePart.length >= 5) {
+                    time = timePart.substring(0, 5)
+                } else {
+                    time = "00:00"
+                }
+            } else {
+                time = "00:00"
+            }
+
             // Format date and time for API
-            const formattedDate = `${selectedAppointment.date}T${selectedAppointment.time}:00Z`
+            const formattedDate = `${date}T${time}:00Z`
 
             const appointmentData = {
-                branch: Number.parseInt(selectedAppointment.branch),
-                customer: Number.parseInt(selectedAppointment.patientId),
-                doctor: Number.parseInt(selectedAppointment.doctorId),
-                room: Number.parseInt(selectedAppointment.roomId),
+                branch: Number.parseInt(currentAppointment.branch),
+                customer: Number.parseInt(currentAppointment.patientId),
+                doctor: Number.parseInt(currentAppointment.doctorId),
+                room: Number.parseInt(currentAppointment.roomId),
                 full_date: formattedDate,
-                status: selectedAppointment.status,
-                comment: selectedAppointment.notes || "",
-                diognosis: selectedAppointment.diagnosis || "",
-                payment_amount: selectedAppointment.payment_amount || "",
-                organs: {},
+                status: currentAppointment.status,
+                comment: currentAppointment.notes || "",
+                diognosis: currentAppointment.diagnosis || "",
+                payment_amount: currentAppointment.payment_amount || "",
+                organs: currentAppointment.organs || {},
             }
 
             console.log("Updated appointment data:", appointmentData)
-            await apiAppointments.updateAppointment(selectedAppointment.id, appointmentData)
+            await apiAppointments.updateAppointment(currentAppointment.id, appointmentData)
 
             // Refresh appointments list
             fetchAppointments()
 
-            // Close modal
-            setShowEditModal(false)
+            // Close sidebar
+            closeEditSidebar()
         } catch (err) {
             console.error("Error updating appointment:", err)
             alert("Error updating appointment")
         }
     }
 
-    // Handle delete appointment
+    // Delete appointment
     const handleDeleteAppointment = async (id) => {
         if (window.confirm(t("confirm_delete_appointment"))) {
             try {
@@ -787,11 +735,15 @@ export default function ASchedule() {
         try {
             await apiAppointments.updateAppointmentStatus(id, status)
 
+            // Show success message
+            const statusText = status === "accepted" ? t("accepted") : t("cancelled")
+            alert(`${t("appointment_status_updated_to")} ${statusText}`)
+
             // Refresh appointments list
             fetchAppointments()
         } catch (err) {
-            console.error("Qabul holatini yangilashda xatolik:", err)
-            alert("Qabul holatini yangilashda xatolik yuz berdi")
+            console.error("Error updating appointment status:", err)
+            alert("Error updating appointment status")
         }
     }
 
@@ -804,28 +756,108 @@ export default function ASchedule() {
         }, 0)
     }
 
-    // Format time for display
-    const formatTime = (time) => {
-        return time
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page
+        // Explicitly fetch appointments when items per page changes
+        setTimeout(() => {
+            fetchAppointments()
+        }, 0)
     }
 
-    // Get status badge class
-    const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case "finished":
-            case "completed":
-                return "completed"
-            case "progress":
-            case "in_progress":
-                return "in_progress"
-            case "expected":
-            case "pending":
-                return "pending"
-            case "cancelled":
-                return "cancelled"
-            default:
-                return ""
+    // Navigate to previous week/day
+    const navigatePrevious = () => {
+        const newDate = new Date(currentDate)
+        if (currentView === "week") {
+            newDate.setDate(currentDate.getDate() - 7)
+        } else {
+            newDate.setDate(currentDate.getDate() - 1)
         }
+        setCurrentDate(newDate)
+    }
+
+    // Navigate to next week/day
+    const navigateNext = () => {
+        const newDate = new Date(currentDate)
+        if (currentView === "week") {
+            newDate.setDate(currentDate.getDate() + 7)
+        } else {
+            newDate.setDate(currentDate.getDate() + 1)
+        }
+        setCurrentDate(newDate)
+    }
+
+    // Navigate to today
+    const navigateToday = () => {
+        setCurrentDate(new Date())
+    }
+
+    // Get week dates
+    const getWeekDates = () => {
+        const dates = []
+        const startOfWeek = new Date(currentDate)
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()) // Start from Sunday
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek)
+            date.setDate(startOfWeek.getDate() + i)
+            dates.push(date)
+        }
+
+        return dates
+    }
+
+    // Get appointments for a specific date
+    const getAppointmentsForDate = (date) => {
+        const dateString = formatDate(date)
+        return appointments.filter((appointment) => appointment.date === dateString)
+    }
+
+    // Helper function to format date
+    function formatDate(date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, "0")
+        const day = String(date.getDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+    }
+
+    // Format date for display
+    const formatDateForDisplay = (dateString) => {
+        if (!dateString) return ""
+
+        let date
+        if (typeof dateString === "string" && dateString.includes("T")) {
+            date = new Date(dateString)
+        } else {
+            date = new Date(dateString)
+        }
+
+        return date.toLocaleDateString("uz-UZ", { day: "numeric", month: "long", year: "numeric" })
+    }
+
+    // Format time for display
+    const formatTimeForDisplay = (dateString) => {
+        if (!dateString) return ""
+
+        let date
+        try {
+            if (typeof dateString === "string" && dateString.includes("T")) {
+                date = new Date(dateString)
+            } else {
+                date = new Date(dateString)
+            }
+            return date.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })
+        } catch (error) {
+            console.error("Error formatting time:", error)
+            return ""
+        }
+    }
+
+    // Get branch name by ID
+    const getBranchName = (branchId) => {
+        const branch = filterData.branches.find((b) => b.id === branchId)
+        return branch ? branch.name : branchId
     }
 
     // Get status translation
@@ -841,12 +873,6 @@ export default function ASchedule() {
                 return t("finished")
             case "cancelled":
                 return t("cancelled")
-            case "pending":
-                return t("pending")
-            case "in_progress":
-                return t("in_progress")
-            case "completed":
-                return t("completed")
             default:
                 return status
         }
@@ -863,7 +889,7 @@ export default function ASchedule() {
                         </h3>
 
                         {selectedBranch === "all" && (
-                            <div className="form-group">
+                            <div className="appointments-form-group">
                                 <label>{t("branch")}</label>
                                 <div className="input-icon-wrapper">
                                     <FaBuilding className="input-icon" />
@@ -880,7 +906,7 @@ export default function ASchedule() {
                             </div>
                         )}
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("patient")}</label>
                             <div className="input-icon-wrapper">
                                 <FaUser className="input-icon" />
@@ -891,24 +917,25 @@ export default function ASchedule() {
                                     required
                                 >
                                     <option value="">{t("select_patient")}</option>
-                                    {patients.map((patient) => (
-                                        <option key={patient.id} value={patient.id}>
-                                            {patient.full_name}
-                                        </option>
-                                    ))}
+                                    {filterData.customers &&
+                                        filterData.customers.map((customer) => (
+                                            <option key={customer.id} value={customer.id}>
+                                                {customer.full_name}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={closeAddSidebar}>
                                 {t("cancel")}
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-primary"
+                                className="appointments-btn appointments-btn-primary"
                                 onClick={nextStep}
-                                disabled={!newAppointment.patientId || (selectedBranch === "all" && !newAppointment.branch)}
+                                disabled={!newAppointment.branch || !newAppointment.patientId}
                             >
                                 {t("next")}
                             </button>
@@ -922,26 +949,32 @@ export default function ASchedule() {
                             {t("step")} 2: {t("select_doctor")}
                         </h3>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("doctor")}</label>
                             <div className="input-icon-wrapper">
                                 <FaUserMd className="input-icon" />
                                 <select name="doctorId" value={newAppointment.doctorId} onChange={handleNewAppointmentChange} required>
                                     <option value="">{t("select_doctor")}</option>
-                                    {doctors.map((doctor) => (
-                                        <option key={doctor.id} value={doctor.id}>
-                                            {doctor.first_name} {doctor.last_name} - {doctor.specialization}
-                                        </option>
-                                    ))}
+                                    {filterData.doctors &&
+                                        filterData.doctors.map((doctor) => (
+                                            <option key={doctor.id} value={doctor.id}>
+                                                {doctor.first_name} {doctor.last_name} - {doctor.specialization}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={prevStep}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={!newAppointment.doctorId}>
+                            <button
+                                type="button"
+                                className="appointments-btn appointments-btn-primary"
+                                onClick={nextStep}
+                                disabled={!newAppointment.doctorId}
+                            >
                                 {t("next")}
                             </button>
                         </div>
@@ -954,26 +987,32 @@ export default function ASchedule() {
                             {t("step")} 3: {t("select_room")}
                         </h3>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("room")}</label>
                             <div className="input-icon-wrapper">
                                 <FaDoorOpen className="input-icon" />
                                 <select name="roomId" value={newAppointment.roomId} onChange={handleNewAppointmentChange} required>
                                     <option value="">{t("select_room")}</option>
-                                    {rooms.map((room) => (
-                                        <option key={room.id} value={room.id}>
-                                            {room.name} - {room.type}
-                                        </option>
-                                    ))}
+                                    {filterData.cabinets &&
+                                        filterData.cabinets.map((cabinet) => (
+                                            <option key={cabinet.id} value={cabinet.id}>
+                                                {cabinet.name} - {cabinet.type}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={prevStep}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={!newAppointment.roomId}>
+                            <button
+                                type="button"
+                                className="appointments-btn appointments-btn-primary"
+                                onClick={nextStep}
+                                disabled={!newAppointment.roomId}
+                            >
                                 {t("next")}
                             </button>
                         </div>
@@ -986,7 +1025,7 @@ export default function ASchedule() {
                             {t("step")} 4: {t("select_date")}
                         </h3>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("date")}</label>
                             <div className="input-icon-wrapper">
                                 <FaCalendarAlt className="input-icon" />
@@ -1001,11 +1040,16 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={prevStep}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={!newAppointment.date}>
+                            <button
+                                type="button"
+                                className="appointments-btn appointments-btn-primary"
+                                onClick={nextStep}
+                                disabled={!newAppointment.date}
+                            >
                                 {t("next")}
                             </button>
                         </div>
@@ -1018,7 +1062,7 @@ export default function ASchedule() {
                             {t("step")} 5: {t("select_time")}
                         </h3>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("time")}</label>
                             {timeError && (
                                 <div className="time-error">
@@ -1044,11 +1088,16 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={prevStep}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={!newAppointment.time}>
+                            <button
+                                type="button"
+                                className="appointments-btn appointments-btn-primary"
+                                onClick={nextStep}
+                                disabled={!newAppointment.time}
+                            >
                                 {t("next")}
                             </button>
                         </div>
@@ -1061,7 +1110,7 @@ export default function ASchedule() {
                             {t("step")} 6: {t("add_diagnosis_and_notes")}
                         </h3>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("diagnosis")}</label>
                             <textarea
                                 name="diagnosis"
@@ -1072,7 +1121,7 @@ export default function ASchedule() {
                             ></textarea>
                         </div>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("notes")}</label>
                             <textarea
                                 name="notes"
@@ -1083,25 +1132,25 @@ export default function ASchedule() {
                             ></textarea>
                         </div>
 
-                        <div className="form-group">
+                        <div className="appointments-form-group">
                             <label>{t("payment_amount")}</label>
                             <div className="input-icon-wrapper">
                                 <FaMoneyBillWave className="input-icon" />
                                 <input
                                     type="number"
                                     name="payment_amount"
-                                    value={newAppointment.payment_amount || ""}
+                                    value={newAppointment.payment_amount}
                                     onChange={handleNewAppointmentChange}
                                     placeholder={t("enter_payment_amount")}
                                 />
                             </div>
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={prevStep}>
+                        <div className="appointments-form-actions">
+                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="submit" className="btn btn-primary">
+                            <button type="submit" className="appointments-btn appointments-btn-primary">
                                 {t("add_appointment")}
                             </button>
                         </div>
@@ -1112,148 +1161,295 @@ export default function ASchedule() {
         }
     }
 
-    // Loading state
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>{t("loading")}...</p>
-            </div>
-        )
-    }
-
-    // Error state
-    if (error) {
-        return (
-            <div className="error-container">
-                <FaExclamationTriangle className="error-icon" />
-                <h2>{t("error_occurred")}</h2>
-                <p>{error}</p>
-                <button className="btn btn-primary" onClick={() => window.location.reload()}>
-                    {t("try_again")}
-                </button>
-            </div>
-        )
-    }
-
     return (
-        <div className="admin-schedule">
-            <div className="page-header">
-                <h1>
+        <div className="appointments-container">
+            <div className="appointments-page-header">
+                <h1 className="appointments-page-title">
                     <FaCalendarAlt /> {t("appointment_schedule")}
                 </h1>
-                <div className="header-actions">
-                    <button className="btn btn-primary" onClick={openAddModal}>
-                        <FaPlus /> {t("add_appointment")}
+                <div className="appointments-header-actions">
+                    <button className="appointments-btn appointments-btn-primary appointments-btn-icon" onClick={openAddSidebar}>
+                        <FaCalendarPlus /> {t("add_new_appointment")}
                     </button>
                 </div>
             </div>
 
-            <div className="schedule-controls">
-                <div className="view-controls">
-                    <button
-                        className={`btn ${currentView === "week" ? "btn-primary" : "btn-outline"}`}
-                        onClick={() => setCurrentView("week")}
-                    >
-                        {t("week_view")}
-                    </button>
-                    <button
-                        className={`btn ${currentView === "day" ? "btn-primary" : "btn-outline"}`}
-                        onClick={() => setCurrentView("day")}
-                    >
-                        {t("day_view")}
+            <div className="appointments-filters-container">
+                <div className="appointments-search-filter">
+                    <form onSubmit={handleSearchSubmit} className="appointments-search-input">
+                        <FaSearch className="appointments-search-icon" />
+                        <input type="text" placeholder={t("search")} value={searchTerm} onChange={handleSearchChange} />
+                        <button type="submit" className="appointments-search-button">
+                            <FaSearch />
+                        </button>
+                    </form>
+                    <button className={`appointments-filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
+                        <FaFilter /> {t("filters")}
                     </button>
                 </div>
 
-                <div className="navigation-controls">
-                    <button className="btn btn-outline" onClick={navigatePrevious}>
-                        <FaChevronLeft />
-                    </button>
-                    <button className="btn btn-outline" onClick={navigateToday}>
-                        {t("today")}
-                    </button>
-                    <button className="btn btn-outline" onClick={navigateNext}>
-                        <FaChevronRight />
-                    </button>
-                </div>
+                {showFilters && (
+                    <div className="appointments-advanced-filters">
+                        <div className="appointments-filter-group">
+                            <label>{t("status")}:</label>
+                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                                <option value="all">{t("all")}</option>
+                                <option value="expected">{t("expected")}</option>
+                                <option value="accepted">{t("accepted")}</option>
+                                <option value="progress">{t("progress")}</option>
+                                <option value="finished">{t("finished")}</option>
+                                <option value="cancelled">{t("cancelled")}</option>
+                            </select>
+                        </div>
 
-                <div className="filters">
-                    <div className="filter-group">
-                        <FaUserMd />
-                        <select value={filterDoctor} onChange={handleFilterDoctor}>
-                            <option value="all">{t("all_doctors")}</option>
-                            {doctors.map((doctor) => (
-                                <option key={doctor.id} value={doctor.id}>
-                                    {doctor.first_name} {doctor.last_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-group">
-                        <FaFilter />
-                        <select value={filterStatus} onChange={handleFilterStatus}>
-                            <option value="all">{t("all_statuses")}</option>
-                            <option value="expected">{t("expected")}</option>
-                            <option value="accepted">{t("accepted")}</option>
-                            <option value="progress">{t("progress")}</option>
-                            <option value="finished">{t("finished")}</option>
-                            <option value="cancelled">{t("cancelled")}</option>
-                        </select>
-                    </div>
-
-                    <div className="search-box">
-                        <FaSearch />
-                        <input type="text" placeholder={t("search_appointments")} value={searchTerm} onChange={handleSearch} />
-                    </div>
-                </div>
-            </div>
-
-            {/* Week View */}
-            {currentView === "week" && (
-                <div className="week-view">
-                    <div className="week-header">
-                        {getWeekDates().map((date, index) => (
-                            <div
-                                key={index}
-                                className={`day-header ${date.toDateString() === new Date().toDateString() ? "today" : ""}`}
-                            >
-                                <div className="day-name">{date.toLocaleDateString(undefined, { weekday: "short" })}</div>
-                                <div className="day-date">{date.getDate()}</div>
+                        <div className="appointments-filter-group">
+                            <label>{t("date")}:</label>
+                            <div className="appointments-date-input">
+                                <FaCalendarAlt className="appointments-calendar-icon" />
+                                <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
                             </div>
-                        ))}
-                    </div>
+                        </div>
 
-                    <div className="week-body">
+                        <div className="appointments-filter-group">
+                            <label>{t("doctor")}:</label>
+                            <select value={filterDoctor} onChange={(e) => setFilterDoctor(e.target.value)}>
+                                <option value="all">{t("all")}</option>
+                                {filterData.doctors &&
+                                    filterData.doctors.map((doctor) => (
+                                        <option key={doctor.id} value={doctor.id}>
+                                            {doctor.first_name} {doctor.last_name}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+
+                        {selectedBranch === "all" && (
+                            <div className="appointments-filter-group">
+                                <label>{t("branch")}:</label>
+                                <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
+                                    <option value="all">{t("all")}</option>
+                                    {filterData.branches &&
+                                        filterData.branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                                {branch.name}
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="appointments-view-controls">
+                <button
+                    className={`appointments-view-btn ${currentView === "table" ? "active" : ""}`}
+                    onClick={() => setCurrentView("table")}
+                >
+                    <FaTable /> {t("table_view")}
+                </button>
+                <button
+                    className={`appointments-view-btn ${currentView === "calendar" ? "active" : ""}`}
+                    onClick={() => setCurrentView("calendar")}
+                >
+                    <FaCalendarAlt /> {t("calendar_view")}
+                </button>
+                {currentView === "calendar" && (
+                    <button className="appointments-view-btn" onClick={navigateToday}>
+                        <FaCalendarDay /> {t("today")}
+                    </button>
+                )}
+            </div>
+
+            {currentView === "table" ? (
+                <div className="appointments-dashboard-card">
+                    <div className="appointments-table-responsive">
+                        <table className="appointments-data-table">
+                            <thead>
+                                <tr>
+                                    <th>{t("patient")}</th>
+                                    <th>{t("doctor")}</th>
+                                    <th>{t("room")}</th>
+                                    <th>{t("date")}</th>
+                                    <th>{t("time")}</th>
+                                    <th>{t("status")}</th>
+                                    <th>{t("diagnosis")}</th>
+                                    <th>{t("payment_amount")}</th>
+                                    {selectedBranch === "all" && <th>{t("branch")}</th>}
+                                    <th>{t("actions")}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="10" className="appointments-loading">
+                                            <FaSpinner className="appointments-spinner" /> {t("loading")}
+                                        </td>
+                                    </tr>
+                                ) : error ? (
+                                    <tr>
+                                        <td colSpan="10" className="appointments-error">
+                                            <FaExclamationCircle className="appointments-error-icon" /> {error}
+                                        </td>
+                                    </tr>
+                                ) : appointments.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="10" className="appointments-no-data">
+                                            <FaExclamationCircle className="appointments-no-data-icon" /> {t("no_data_found")}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    appointments.map((appointment) => (
+                                        <tr key={appointment.id} onClick={() => openViewSidebar(appointment)} style={{ cursor: "pointer" }}>
+                                            <td>{appointment.patientName}</td>
+                                            <td>{appointment.doctorName}</td>
+                                            <td>{appointment.roomName}</td>
+                                            <td>{formatDateForDisplay(appointment.date)}</td>
+                                            <td>{formatTimeForDisplay(appointment.date)}</td>
+                                            <td>
+                                                <div className={`appointments-status-badge ${appointment.status}`}>
+                                                    {getStatusTranslation(appointment.status)}
+                                                </div>
+                                            </td>
+                                            <td>{appointment.diagnosis}</td>
+                                            <td>{appointment.payment_amount}</td>
+                                            {selectedBranch === "all" && (
+                                                <td>
+                                                    <div className="appointments-branch-badge">
+                                                        <FaBuilding className="appointments-branch-icon" />
+                                                        {getBranchName(appointment.branch)}
+                                                    </div>
+                                                </td>
+                                            )}
+                                            <td onClick={(e) => e.stopPropagation()}>
+                                                <div className="appointments-action-dropdown">
+                                                    <button className="appointments-action-dropdown-toggle">
+                                                        <FaEllipsisV />
+                                                    </button>
+                                                    <div className="appointments-action-dropdown-menu">
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openViewSidebar(appointment)
+                                                            }}
+                                                        >
+                                                            <FaEye /> {t("view")}
+                                                        </button>
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openEditSidebar(appointment)
+                                                            }}
+                                                        >
+                                                            <FaEdit /> {t("edit")}
+                                                        </button>
+                                                        <button
+                                                            className="appointments-action-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openTimeChangeModal(appointment)
+                                                            }}
+                                                        >
+                                                            <FaClock /> {t("change_time")}
+                                                        </button>
+                                                        {appointment.status === "expected" && (
+                                                            <button
+                                                                className="appointments-action-item status-accept"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleStatusChange(appointment.id, "accepted")
+                                                                }}
+                                                            >
+                                                                <FaCheck /> {t("accept")}
+                                                            </button>
+                                                        )}
+                                                        {appointment.status === "expected" && (
+                                                            <button
+                                                                className="appointments-action-item status-cancel"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleStatusChange(appointment.id, "cancelled")
+                                                                }}
+                                                            >
+                                                                <FaTimes /> {t("cancel")}
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            className="appointments-action-item delete"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleDeleteAppointment(appointment.id)
+                                                            }}
+                                                        >
+                                                            <FaTrash /> {t("delete")}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination
+                        pageCount={Math.ceil(totalItems / itemsPerPage)}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={totalItems}
+                        onItemsPerPageChange={handleItemsPerPageChange}
+                    />
+                </div>
+            ) : (
+                <div className="appointments-calendar-view">
+                    <div className="appointments-calendar-header">
+                        <div className="appointments-calendar-days">
+                            {getWeekDates().map((date, index) => (
+                                <div
+                                    key={index}
+                                    className={`appointments-calendar-day ${date.toDateString() === new Date().toDateString() ? "today" : ""
+                                        }`}
+                                >
+                                    <div className="appointments-day-name">{date.toLocaleDateString("uz-UZ", { weekday: "short" })}</div>
+                                    <div className="appointments-day-date">{date.getDate()}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="appointments-calendar-body">
                         {getWeekDates().map((date, index) => {
-                            const dateAppointments = getAppointmentsForDate(date)
+                            const dateString = formatDate(date)
+                            const dayAppointments = appointments.filter((appointment) => appointment.date === dateString)
 
                             return (
                                 <div
                                     key={index}
-                                    className={`day-column ${date.toDateString() === new Date().toDateString() ? "today" : ""}`}
+                                    className={`appointments-calendar-column ${date.toDateString() === new Date().toDateString() ? "today" : ""
+                                        }`}
                                 >
-                                    {dateAppointments.length > 0 ? (
-                                        dateAppointments.map((appointment) => (
+                                    {dayAppointments.length > 0 ? (
+                                        dayAppointments.map((appointment) => (
                                             <div
                                                 key={appointment.id}
-                                                className={`appointment-card ${getStatusBadgeClass(appointment.status)}`}
-                                                onClick={() => openEditModal(appointment)}
+                                                className={`appointments-calendar-item ${appointment.status}`}
+                                                onClick={() => openViewSidebar(appointment)}
                                             >
-                                                <div className="appointment-time">{formatTime(appointment.time)}</div>
-                                                <div className="appointment-patient">{appointment.patientName}</div>
-                                                <div className="appointment-doctor">{appointment.doctorName}</div>
-                                                <div className="appointment-room">{appointment.roomName}</div>
-                                                <div className="appointment-diagnosis">{appointment.diagnosis}</div>
-                                                <div className="appointment-status">
-                                                    <span className={`status-badge ${appointment.status}`}>
+                                                <div className="appointments-calendar-time">{formatTimeForDisplay(appointment.date)}</div>
+                                                <div className="appointments-calendar-patient">{appointment.patientName}</div>
+                                                <div className="appointments-calendar-doctor">{appointment.doctorName}</div>
+                                                <div className="appointments-calendar-room">{appointment.roomName}</div>
+                                                <div className="appointments-calendar-status">
+                                                    <span className={`appointments-status-badge ${appointment.status}`}>
                                                         {getStatusTranslation(appointment.status)}
                                                     </span>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="no-appointments">
+                                        <div className="appointments-no-appointments">
                                             <p>{t("no_appointments")}</p>
                                         </div>
                                     )}
@@ -1264,253 +1460,272 @@ export default function ASchedule() {
                 </div>
             )}
 
-            {/* Day View */}
-            {currentView === "day" && (
-                <div className="day-view">
-                    <div className="day-header">
-                        <h2>
-                            {currentDate.toLocaleDateString(undefined, {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                            })}
-                        </h2>
-                    </div>
-
-                    <div className="day-body">
-                        {getAppointmentsForDate(currentDate).length > 0 ? (
-                            <table className="appointments-table">
-                                <thead>
-                                    <tr>
-                                        <th>{t("time")}</th>
-                                        <th>{t("patient")}</th>
-                                        <th>{t("doctor")}</th>
-                                        <th>{t("room")}</th>
-                                        <th>{t("diagnosis")}</th>
-                                        <th>{t("status")}</th>
-                                        <th>{t("actions")}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {getAppointmentsForDate(currentDate)
-                                        .sort((a, b) => a.time.localeCompare(b.time))
-                                        .map((appointment) => (
-                                            <tr key={appointment.id}>
-                                                <td>{appointment.time}</td>
-                                                <td>{appointment.patientName}</td>
-                                                <td>{appointment.doctorName}</td>
-                                                <td>{appointment.roomName}</td>
-                                                <td>{appointment.diagnosis}</td>
-                                                <td>
-                                                    <span className={`status-badge ${appointment.status}`}>
-                                                        {getStatusTranslation(appointment.status)}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div className="action-dropdown">
-                                                        <button className="action-dropdown-toggle">
-                                                            <FaEllipsisV />
-                                                        </button>
-                                                        <div className="action-dropdown-menu">
-                                                            <button
-                                                                className="action-item"
-                                                                title={t("edit")}
-                                                                onClick={() => openEditModal(appointment)}
-                                                            >
-                                                                <FaEdit /> {t("edit")}
-                                                            </button>
-                                                            {appointment.status === "expected" && (
-                                                                <button
-                                                                    className="action-item status-accept"
-                                                                    title={t("accept")}
-                                                                    onClick={() => handleStatusChange(appointment.id, "accepted")}
-                                                                >
-                                                                    <FaCheck /> {t("accept")}
-                                                                </button>
-                                                            )}
-                                                            {appointment.status === "expected" && (
-                                                                <button
-                                                                    className="action-item status-cancel"
-                                                                    title={t("cancel")}
-                                                                    onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                                                                >
-                                                                    <FaTimes /> {t("cancel")}
-                                                                </button>
-                                                            )}
-                                                            <button
-                                                                className="action-item delete"
-                                                                title={t("delete")}
-                                                                onClick={() => handleDeleteAppointment(appointment.id)}
-                                                            >
-                                                                <FaTrash /> {t("delete")}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
-                        ) : (
-                            <div className="no-appointments-day">
-                                <FaCalendarAlt className="no-appointments-icon" />
-                                <h3>{t("no_appointments_for_day")}</h3>
-                                <button className="btn btn-primary" onClick={openAddModal}>
-                                    <FaPlus /> {t("add_appointment")}
-                                </button>
-                            </div>
-                        )}
-                    </div>
+            {/* Add Appointment Sidebar */}
+            <div className={`appointments-sidebar-overlay ${showAddSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
+            <div className={`appointments-sidebar ${showAddSidebar ? "active" : ""}`}>
+                <div className="appointments-sidebar-header">
+                    <h2>{t("add_new_appointment")}</h2>
+                    <button className="appointments-close-button" onClick={closeAddSidebar}>
+                        <FaTimes />
+                    </button>
                 </div>
-            )}
-
-            {/* Add Appointment Modal */}
-            {showAddModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>{t("add_new_appointment")}</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
-                                ×
-                            </button>
+                <div className="appointments-sidebar-content">
+                    <form onSubmit={addAppointment}>
+                        <div className="step-indicator">
+                            {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
+                                <div
+                                    key={stepNumber}
+                                    className={`step ${step === stepNumber ? "active" : ""} ${step > stepNumber ? "completed" : ""}`}
+                                >
+                                    {stepNumber}
+                                </div>
+                            ))}
                         </div>
 
-                        <form onSubmit={handleAddAppointment}>
-                            <div className="modal-body">
-                                <div className="step-indicator">
-                                    {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
-                                        <div
-                                            key={stepNumber}
-                                            className={`step ${step === stepNumber ? "active" : ""} ${step > stepNumber ? "completed" : ""}`}
-                                        >
-                                            {stepNumber}
-                                        </div>
-                                    ))}
+                        {renderStepContent()}
+                    </form>
+                </div>
+            </div>
+
+            {/* View Appointment Sidebar */}
+            <div
+                className={`appointments-sidebar-overlay ${showViewSidebar ? "active" : ""}`}
+                onClick={closeViewSidebar}
+            ></div>
+            <div className={`appointments-sidebar ${showViewSidebar ? "active" : ""}`}>
+                {currentAppointment && (
+                    <>
+                        <div className="appointments-sidebar-header">
+                            <h2>{t("view_appointment")}</h2>
+                            <button className="appointments-close-button" onClick={closeViewSidebar}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="appointments-sidebar-content">
+                            <div className="appointment-view-card">
+                                <div className={`appointment-status-indicator ${currentAppointment.status}`}>
+                                    {getStatusTranslation(currentAppointment.status)}
                                 </div>
 
-                                {renderStepContent()}
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                                <div className="appointment-view-header">
+                                    <div className="appointment-view-avatar">
+                                        <FaUser />
+                                    </div>
+                                    <div className="appointment-view-title">
+                                        <h3>{currentAppointment.patientName}</h3>
+                                        <p className="appointment-view-subtitle">
+                                            <FaCalendarAlt />
+                                            {currentAppointment.formattedDate || formatDateForDisplay(currentAppointment.date)}
+                                            <span className="appointment-time">
+                                                <FaClock />
+                                                {currentAppointment.formattedTime || formatTimeForDisplay(currentAppointment.date)}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
 
-            {/* Edit Appointment Modal */}
-            {showEditModal && selectedAppointment && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>{t("edit_appointment")}</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
-                                ×
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleEditAppointment}>
-                            <div className="modal-body">
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor="patientId">{t("patient")}</label>
-                                        <div className="input-icon-wrapper">
-                                            <FaUser className="input-icon" />
-                                            <select
-                                                id="patientId"
-                                                name="patientId"
-                                                value={selectedAppointment.patientId}
-                                                onChange={handleSelectedAppointmentChange}
-                                                required
-                                            >
-                                                <option value="">{t("select_patient")}</option>
-                                                {patients.map((patient) => (
-                                                    <option key={patient.id} value={patient.id}>
-                                                        {patient.full_name}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                <div className="appointment-view-details">
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaUserMd />
+                                            {t("doctor_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("doctor")}:</span>
+                                            <span className="info-value">{currentAppointment.doctorName}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("specialization")}:</span>
+                                            <span className="info-value">
+                                                {currentAppointment.doctor_specialization || t("not_specified")}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label htmlFor="doctorId">{t("doctor")}</label>
-                                        <div className="input-icon-wrapper">
-                                            <FaUserMd className="input-icon" />
-                                            <select
-                                                id="doctorId"
-                                                name="doctorId"
-                                                value={selectedAppointment.doctorId}
-                                                onChange={handleSelectedAppointmentChange}
-                                                required
-                                            >
-                                                <option value="">{t("select_doctor")}</option>
-                                                {doctors.map((doctor) => (
-                                                    <option key={doctor.id} value={doctor.id}>
-                                                        {doctor.first_name} {doctor.last_name} - {doctor.specialization}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaBuilding />
+                                            {t("location_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("branch")}:</span>
+                                            <span className="info-value">{currentAppointment.branch_name}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("room")}:</span>
+                                            <span className="info-value">{currentAppointment.roomName}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaNotesMedical />
+                                            {t("medical_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("diagnosis")}:</span>
+                                            <span className="info-value">{currentAppointment.diagnosis || t("no_diagnosis")}</span>
+                                        </div>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("notes")}:</span>
+                                            <span className="info-value">{currentAppointment.notes || t("no_notes")}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="appointment-view-section">
+                                        <h4>
+                                            <FaMoneyBillWave />
+                                            {t("payment_information")}
+                                        </h4>
+                                        <div className="appointment-view-info">
+                                            <span className="info-label">{t("payment_amount")}:</span>
+                                            <span className="info-value">
+                                                {currentAppointment.payment_amount || "0"} {t("currency")}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor="roomId">{t("room")}</label>
+                                <div className="appointment-view-actions">
+                                    <button
+                                        type="button"
+                                        className="appointments-btn appointments-btn-primary"
+                                        onClick={() => {
+                                            closeViewSidebar()
+                                            openEditSidebar(currentAppointment)
+                                        }}
+                                    >
+                                        <FaEdit /> {t("edit")}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="appointments-btn appointments-btn-secondary"
+                                        onClick={closeViewSidebar}
+                                    >
+                                        {t("close")}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Edit Appointment Sidebar */}
+            <div
+                className={`appointments-sidebar-overlay ${showEditSidebar ? "active" : ""}`}
+                onClick={closeEditSidebar}
+            ></div>
+            <div className={`appointments-sidebar ${showEditSidebar ? "active" : ""}`}>
+                {editLoading ? (
+                    <div className="appointments-loading-container">
+                        <FaSpinner className="appointments-spinner" /> {t("loading")}
+                    </div>
+                ) : currentAppointment ? (
+                    <>
+                        <div className="appointments-sidebar-header">
+                            <h2>{t("edit_appointment")}</h2>
+                            <button className="appointments-close-button" onClick={closeEditSidebar}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="appointments-sidebar-content">
+                            <form onSubmit={updateAppointment}>
+                                {selectedBranch === "all" && (
+                                    <div className="appointments-form-group">
+                                        <label>{t("branch")}</label>
                                         <div className="input-icon-wrapper">
-                                            <FaDoorOpen className="input-icon" />
-                                            <select
-                                                id="roomId"
-                                                name="roomId"
-                                                value={selectedAppointment.roomId}
-                                                onChange={handleSelectedAppointmentChange}
-                                                required
-                                            >
-                                                <option value="">{t("select_room")}</option>
-                                                {rooms.map((room) => (
-                                                    <option key={room.id} value={room.id}>
-                                                        {room.name} - {room.type}
-                                                    </option>
-                                                ))}
+                                            <FaBuilding className="input-icon" />
+                                            <select name="branch" value={currentAppointment.branch} onChange={handleEditAppointmentChange}>
+                                                {filterData.branches &&
+                                                    filterData.branches.map((branch) => (
+                                                        <option key={branch.id} value={branch.id}>
+                                                            {branch.name}
+                                                        </option>
+                                                    ))}
                                             </select>
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="form-group">
-                                        <label htmlFor="status">{t("status")}</label>
+                                <div className="appointments-form-group">
+                                    <label>{t("patient")}</label>
+                                    <div className="input-icon-wrapper">
+                                        <FaUser className="input-icon" />
                                         <select
-                                            id="status"
-                                            name="status"
-                                            value={selectedAppointment.status}
-                                            onChange={handleSelectedAppointmentChange}
+                                            name="patientId"
+                                            value={currentAppointment.patientId}
+                                            onChange={handleEditAppointmentChange}
                                             required
                                         >
-                                            <option value="expected">{t("expected")}</option>
-                                            <option value="accepted">{t("accepted")}</option>
-                                            <option value="progress">{t("progress")}</option>
-                                            <option value="finished">{t("finished")}</option>
-                                            <option value="cancelled">{t("cancelled")}</option>
+                                            <option value="">{t("select_patient")}</option>
+                                            {filterData.customers &&
+                                                filterData.customers.map((customer) => (
+                                                    <option key={customer.id} value={customer.id}>
+                                                        {customer.full_name}
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor="date">{t("date")}</label>
+                                <div className="appointments-form-group">
+                                    <label>{t("doctor")}</label>
+                                    <div className="input-icon-wrapper">
+                                        <FaUserMd className="input-icon" />
+                                        <select
+                                            name="doctorId"
+                                            value={currentAppointment.doctorId}
+                                            onChange={handleEditAppointmentChange}
+                                            required
+                                        >
+                                            <option value="">{t("select_doctor")}</option>
+                                            {filterData.doctors &&
+                                                filterData.doctors.map((doctor) => (
+                                                    <option key={doctor.id} value={doctor.id}>
+                                                        {doctor.first_name} {doctor.last_name} - {doctor.specialization}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="appointments-form-group">
+                                    <label>{t("room")}</label>
+                                    <div className="input-icon-wrapper">
+                                        <FaDoorOpen className="input-icon" />
+                                        <select name="roomId" value={currentAppointment.roomId} onChange={handleEditAppointmentChange} required>
+                                            <option value="">{t("select_room")}</option>
+                                            {filterData.cabinets &&
+                                                filterData.cabinets.map((cabinet) => (
+                                                    <option key={cabinet.id} value={cabinet.id}>
+                                                        {cabinet.name} - {cabinet.type}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="appointments-form-row">
+                                    <div className="appointments-form-group">
+                                        <label>{t("date")}</label>
                                         <div className="input-icon-wrapper">
                                             <FaCalendarAlt className="input-icon" />
                                             <input
                                                 type="date"
-                                                id="date"
                                                 name="date"
-                                                value={selectedAppointment.date}
-                                                onChange={handleSelectedAppointmentChange}
+                                                value={
+                                                    currentAppointment.formattedDate ||
+                                                    (currentAppointment.date ? currentAppointment.date.split("T")[0] : "")
+                                                }
+                                                onChange={handleEditAppointmentChange}
                                                 required
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="form-group">
+                                <div className="appointments-form-group">
                                     <label>{t("time")}</label>
                                     {timeError && (
                                         <div className="time-error">
@@ -1518,76 +1733,161 @@ export default function ASchedule() {
                                         </div>
                                     )}
                                     <div className="time-slots-container">
-                                        {availableTimes.map((slot, index) => (
-                                            <button
-                                                key={index}
-                                                type="button"
-                                                className={`time-slot ${slot.isBooked && selectedAppointment.time !== slot.time ? "booked" : ""} ${selectedAppointment.time === slot.time ? "selected" : ""
-                                                    }`}
-                                                onClick={() =>
-                                                    (!slot.isBooked || selectedAppointment.time === slot.time) && handleEditTimeSelect(slot.time)
-                                                }
-                                                disabled={slot.isBooked && selectedAppointment.time !== slot.time}
-                                            >
-                                                <FaClock className="time-icon" />
-                                                {slot.time}
-                                            </button>
-                                        ))}
-                                        {availableTimes.length === 0 && (
+                                        {availableTimes.length > 0 ? (
+                                            availableTimes.map((slot, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    className={`time-slot ${slot.isBooked ? "booked" : ""} ${currentAppointment.time === slot.time ? "selected" : ""}`}
+                                                    onClick={() => !slot.isBooked && handleEditTimeSelect(slot.time)}
+                                                    disabled={slot.isBooked}
+                                                >
+                                                    <FaClock className="time-icon" />
+                                                    {slot.time}
+                                                </button>
+                                            ))
+                                        ) : (
                                             <div className="no-times-message">{t("please_select_date_and_room_first")}</div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label htmlFor="diagnosis">{t("diagnosis")}</label>
+                                <div className="appointments-form-group">
+                                    <label>{t("status")}</label>
+                                    <select name="status" value={currentAppointment.status} onChange={handleEditAppointmentChange}>
+                                        <option value="expected">{t("expected")}</option>
+                                        <option value="accepted">{t("accepted")}</option>
+                                        <option value="progress">{t("progress")}</option>
+                                        <option value="finished">{t("finished")}</option>
+                                        <option value="cancelled">{t("cancelled")}</option>
+                                    </select>
+                                </div>
+
+                                <div className="appointments-form-group">
+                                    <label>{t("diagnosis")}</label>
                                     <textarea
-                                        id="diagnosis"
                                         name="diagnosis"
-                                        value={selectedAppointment.diagnosis}
-                                        onChange={handleSelectedAppointmentChange}
+                                        value={currentAppointment.diagnosis || ""}
+                                        onChange={handleEditAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_diagnosis")}
                                     ></textarea>
                                 </div>
 
-                                <div className="form-group">
-                                    <label htmlFor="notes">{t("notes")}</label>
+                                <div className="appointments-form-group">
+                                    <label>{t("notes")}</label>
                                     <textarea
-                                        id="notes"
                                         name="notes"
-                                        value={selectedAppointment.notes}
-                                        onChange={handleSelectedAppointmentChange}
+                                        value={currentAppointment.notes || ""}
+                                        onChange={handleEditAppointmentChange}
                                         rows={3}
                                         placeholder={t("enter_notes")}
                                     ></textarea>
                                 </div>
 
-                                <div className="form-group">
-                                    <label htmlFor="payment_amount">{t("payment_amount")}</label>
+                                <div className="appointments-form-group">
+                                    <label>{t("payment_amount")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaMoneyBillWave className="input-icon" />
                                         <input
                                             type="number"
-                                            id="payment_amount"
                                             name="payment_amount"
-                                            value={selectedAppointment.payment_amount || ""}
-                                            onChange={handleSelectedAppointmentChange}
+                                            value={currentAppointment.payment_amount || ""}
+                                            onChange={handleEditAppointmentChange}
                                             placeholder={t("enter_payment_amount")}
                                         />
                                     </div>
                                 </div>
+
+                                <div className="appointments-form-actions">
+                                    <button type="submit" className="appointments-btn appointments-btn-primary">
+                                        {t("save")}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="appointments-btn appointments-btn-secondary"
+                                        onClick={closeEditSidebar}
+                                    >
+                                        {t("cancel")}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </>
+                ) : null}
+            </div>
+
+            {showTimeChangeModal && timeChangeAppointment && (
+                <div className="time-change-modal-overlay">
+                    <div className="time-change-modal">
+                        <div className="time-change-modal-header">
+                            <h3>{t("change_appointment_time")}</h3>
+                            <button className="close-btn" onClick={closeTimeChangeModal}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="time-change-modal-body">
+                            <div className="appointment-info">
+                                <div className="info-row">
+                                    <div className="info-label">{t("patient")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.patientName}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("doctor")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.doctorName}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("room")}:</div>
+                                    <div className="info-value">{timeChangeAppointment.roomName}</div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("date")}:</div>
+                                    <div className="info-value">
+                                        {timeChangeAppointment.formattedDate || formatDateForDisplay(timeChangeAppointment.date)}
+                                    </div>
+                                </div>
+                                <div className="info-row">
+                                    <div className="info-label">{t("current_time")}:</div>
+                                    <div className="info-value">
+                                        {timeChangeAppointment.time || formatTimeForDisplay(timeChangeAppointment.date)}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="modal-footer">
-                                <button type="submit" className="btn btn-primary">
-                                    {t("save_changes")}
-                                </button>
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
-                                    {t("cancel")}
-                                </button>
+                            <div className="time-selection">
+                                <h4>{t("select_new_time")}</h4>
+                                {timeError && (
+                                    <div className="time-error">
+                                        <FaExclamationCircle /> {timeError}
+                                    </div>
+                                )}
+                                <div className="time-slots-container">
+                                    {availableTimes.map((slot, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            className={`time-slot ${slot.isBooked && timeChangeAppointment.time !== slot.time ? "booked" : ""} ${newTime === slot.time ? "selected" : ""}`}
+                                            onClick={() =>
+                                                (!slot.isBooked || timeChangeAppointment.time === slot.time) && handleTimeChangeSelect(slot.time)
+                                            }
+                                            disabled={slot.isBooked && timeChangeAppointment.time !== slot.time}
+                                        >
+                                            <FaClock className="time-icon" />
+                                            {slot.time}
+                                        </button>
+                                    ))}
+                                    {availableTimes.length === 0 && <div className="no-times-message">{t("no_available_times")}</div>}
+                                </div>
                             </div>
-                        </form>
+                        </div>
+                        <div className="time-change-modal-footer">
+                            <button className="appointments-btn appointments-btn-secondary" onClick={closeTimeChangeModal}>
+                                {t("cancel")}
+                            </button>
+                            <button className="appointments-btn appointments-btn-primary" onClick={saveTimeChange} disabled={!newTime}>
+                                {t("save_changes")}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
