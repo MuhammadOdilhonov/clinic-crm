@@ -44,7 +44,7 @@ export default function ASchedule() {
 
     // State for pagination
     const [currentPage, setCurrentPage] = useState(0)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
 
     // State for search and filters
     const [searchTerm, setSearchTerm] = useState("")

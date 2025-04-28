@@ -107,6 +107,55 @@ export const deleteAppointment = async (id) => {
     }
 }
 
+// Add these new functions for daily and weekly meetings
+
+// Get daily meetings
+export const fetchDailyMeetings = async (date) => {
+    try {
+        const response = await client.get(`/meetings/daily_meetings/?date=${date}`)
+        return response.data
+    } catch (error) {
+        console.error("Kunlik qabullarni olishda xatolik:", error)
+        throw error
+    }
+}
+
+// Get weekly meetings
+export const fetchWeeklyMeetings = async (date) => {
+    try {
+        const response = await client.get(`/meetings/weekly_meetings/?date=${date}`)
+        return response.data
+    } catch (error) {
+        console.error("Haftalik qabullarni olishda xatolik:", error)
+        throw error
+    }
+}
+
+// Update the appointment with diagnosis and organs data
+export const updateAppointmentWithDiagnosis = async (appointmentId, data) => {
+    try {
+        // Check if data is FormData
+        if (data instanceof FormData) {
+            // Use the client instance which already has the correct base URL and headers
+            const response = await client.patch(`/meetings/${appointmentId}/`, data, {
+                headers: {
+                    // Don't set Content-Type when using FormData, the browser will set it automatically
+                    "Content-Type": undefined,
+                },
+            })
+            return response.data
+        } else {
+            // Regular JSON data
+            const response = await client.patch(`/meetings/${appointmentId}/`, data)
+            return response.data
+        }
+    } catch (error) {
+        console.error("Error updating appointment with diagnosis:", error)
+        throw error
+    }
+}
+
+// Update the default export to include the new functions
 export default {
     fetchAppointments,
     fetchAppointmentById,
@@ -116,4 +165,7 @@ export default {
     updateAppointment,
     updateAppointmentStatus,
     deleteAppointment,
+    fetchDailyMeetings,
+    fetchWeeklyMeetings,
+    updateAppointmentWithDiagnosis,
 }

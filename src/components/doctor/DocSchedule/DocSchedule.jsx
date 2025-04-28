@@ -29,7 +29,15 @@ import {
     FaInfoCircle,
     FaQuestionCircle,
     FaExternalLinkAlt,
+    FaMoneyBillAlt,
 } from "react-icons/fa"
+import Pagination from "../../pagination/Pagination"
+import {
+    fetchAppointments,
+    fetchDailyMeetings,
+    fetchWeeklyMeetings,
+    updateAppointmentStatus,
+} from "../../../api/apiAppointments"
 
 export default function DocSchedule() {
     const { user } = useAuth()
@@ -43,19 +51,18 @@ export default function DocSchedule() {
     const [appointmentCompleted, setAppointmentCompleted] = useState(false)
 
     // Data states
-    const [branches, setBranches] = useState([])
-    const [patients, setPatients] = useState([])
-    const [doctors, setDoctors] = useState([])
-    const [rooms, setRooms] = useState([])
     const [appointments, setAppointments] = useState([])
-    const [bookedTimeSlots, setBookedTimeSlots] = useState({})
+    const [dailyAppointments, setDailyAppointments] = useState([])
+    const [weeklyAppointments, setWeeklyAppointments] = useState([])
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(0)
+    const [itemsPerPage, setItemsPerPage] = useState(5)
+    const [totalItems, setTotalItems] = useState(0)
+    const [pageCount, setPageCount] = useState(0)
 
     // Selection states
-    const [selectedBranchId, setSelectedBranchId] = useState("")
-    const [selectedPatientId, setSelectedPatientId] = useState("")
-    const [selectedRoomId, setSelectedRoomId] = useState("")
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
     const [diagnosis, setDiagnosis] = useState("")
 
     // UI states
@@ -70,6 +77,24 @@ export default function DocSchedule() {
     // Reference to track if window was opened
     const resultWindowRef = useRef(null)
     const checkWindowIntervalRef = useRef(null)
+
+    // Status mapping from API to UI
+    const statusMapping = {
+        expected: "waiting",
+        accepted: "confirmed",
+        progress: "in_progress",
+        finished: "completed",
+        cancelled: "cancelled",
+    }
+
+    // Reverse status mapping from UI to API
+    const reverseStatusMapping = {
+        waiting: "expected",
+        confirmed: "accepted",
+        in_progress: "progress",
+        completed: "finished",
+        cancelled: "cancelled",
+    }
 
     // Status definitions for legend
     const statusDefinitions = [
@@ -153,204 +178,114 @@ export default function DocSchedule() {
         }
     }, [resultWindowOpened])
 
-    // Fetch data
+    // Fetch appointments based on view mode
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true)
+                setError(null)
 
-                // In a real app, these would be API calls
-                // Simulating API calls with setTimeout
-                setTimeout(() => {
-                    // Mock branches data
-                    const mockBranches = [
-                        { id: 1, name: "Main Branch", address: "Tashkent, Chilanzar district" },
-                        { id: 2, name: "Secondary Branch", address: "Tashkent, Yunusabad district" },
-                        { id: 3, name: "Tertiary Branch", address: "Tashkent, Mirzo Ulugbek district" },
-                    ]
+                if (viewMode === "table") {
+                    // Fetch paginated appointments
+                    const params = {
+                        page: currentPage + 1,
+                        page_size: itemsPerPage,
+                        doctor_id: user?.id, // Filter by current doctor
+                        search: searchTerm,
+                        status: filterStatus !== "all" ? reverseStatusMapping[filterStatus] : undefined,
+                    }
 
-                    // Mock patients data
-                    const mockPatients = [
-                        { id: 101, name: "Alisher Karimov", age: 45, gender: "male", phone: "+998901234567" },
-                        { id: 102, name: "Dilnoza Saidova", age: 32, gender: "female", phone: "+998901234568" },
-                        { id: 103, name: "Rustam Khasanov", age: 58, gender: "male", phone: "+998901234569" },
-                        { id: 104, name: "Nodira Azimova", age: 27, gender: "female", phone: "+998901234570" },
-                        { id: 105, name: "Jahongir Tursunov", age: 42, gender: "male", phone: "+998901234571" },
-                    ]
+                    const response = await fetchAppointments(params)
 
-                    // Mock doctors data
-                    const mockDoctors = [
-                        { id: 1, name: "Dr. Sardor Alimov", specialization: "General Practitioner", branchId: 1 },
-                        { id: 2, name: "Dr. Kamil Rakhimov", specialization: "Cardiologist", branchId: 1 },
-                        { id: 3, name: "Dr. Aziz Yusupov", specialization: "Pulmonologist", branchId: 2 },
-                        { id: 4, name: "Dr. Malika Umarova", specialization: "Surgeon", branchId: 3 },
-                    ]
+                    // Map API status to UI status
+                    const mappedAppointments = response.results.map((appointment) => ({
+                        id: appointment.id,
+                        patientId: appointment.customer,
+                        patientName: appointment.customer_name,
+                        doctorId: appointment.doctor,
+                        doctorName: appointment.doctor_name,
+                        roomId: appointment.room,
+                        roomNumber: appointment.room_name,
+                        branchId: appointment.branch,
+                        branchName: appointment.branch_name,
+                        date: appointment.date,
+                        timeSlot: appointment.time.substring(0, 5), // Format time as HH:MM
+                        duration: 60, // Assuming 60 minutes per appointment
+                        status: statusMapping[appointment.status] || "waiting",
+                        diagnosis: appointment.comment || "",
+                        paymentAmount: appointment.payment_amount,
+                        customerGender: appointment.customer_gender,
+                        createdAt: new Date().toISOString(), // Using current date as fallback
+                    }))
 
-                    // Mock rooms data
-                    const mockRooms = [
-                        { id: 1, roomNumber: "101", roomType: "examination", branchId: 1 },
-                        { id: 2, roomNumber: "102", roomType: "procedure", branchId: 1 },
-                        { id: 3, roomNumber: "201", roomType: "examination", branchId: 2 },
-                        { id: 4, roomNumber: "202", roomType: "procedure", branchId: 2 },
-                        { id: 5, roomNumber: "301", roomType: "examination", branchId: 3 },
-                        { id: 6, roomNumber: "302", roomType: "procedure", branchId: 3 },
-                    ]
+                    setAppointments(mappedAppointments)
+                    setTotalItems(response.count)
+                    setPageCount(Math.ceil(response.count / itemsPerPage))
+                } else if (viewMode === "day") {
+                    // Fetch daily appointments
+                    const response = await fetchDailyMeetings(selectedDate)
 
-                    // Mock appointments data - assuming current doctor ID is 1
-                    const currentDoctorId = 1
-                    const mockAppointments = [
-                        {
-                            id: 1001,
-                            patientId: 101,
-                            patientName: "Alisher Karimov",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 1,
-                            roomNumber: "101",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            date: "2023-05-20",
-                            timeSlot: "09:00",
-                            duration: 60, // minutes
-                            status: "confirmed",
-                            diagnosis: "Regular check-up",
-                            createdAt: "2023-05-15T10:30:00Z",
-                        },
-                        {
-                            id: 1002,
-                            patientId: 102,
-                            patientName: "Dilnoza Saidova",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 2,
-                            roomNumber: "102",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            date: "2023-05-20",
-                            timeSlot: "10:00",
-                            duration: 60,
-                            status: "waiting",
-                            diagnosis: "Heart examination",
-                            createdAt: "2023-05-16T09:15:00Z",
-                        },
-                        {
-                            id: 1003,
-                            patientId: 103,
-                            patientName: "Rustam Khasanov",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 3,
-                            roomNumber: "201",
-                            branchId: 2,
-                            branchName: "Secondary Branch",
-                            date: "2023-05-21",
-                            timeSlot: "11:00",
-                            duration: 60,
-                            status: "in_progress",
-                            diagnosis: "Respiratory issues",
-                            createdAt: "2023-05-17T14:20:00Z",
-                        },
-                        {
-                            id: 1004,
-                            patientId: 104,
-                            patientName: "Nodira Azimova",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 4,
-                            roomNumber: "202",
-                            branchId: 2,
-                            branchName: "Secondary Branch",
-                            date: "2023-05-22",
-                            timeSlot: "14:00",
-                            duration: 60,
-                            status: "completed",
-                            diagnosis: "Annual checkup",
-                            createdAt: "2023-05-18T11:30:00Z",
-                        },
-                        {
-                            id: 1005,
-                            patientId: 105,
-                            patientName: "Jahongir Tursunov",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 5,
-                            roomNumber: "301",
-                            branchId: 3,
-                            branchName: "Tertiary Branch",
-                            date: "2023-05-23",
-                            timeSlot: "15:00",
-                            duration: 60,
-                            status: "cancelled",
-                            diagnosis: "Follow-up consultation",
-                            createdAt: "2023-05-19T09:45:00Z",
-                        },
-                    ]
+                    // Map API status to UI status
+                    const mappedDailyAppointments = response.map((appointment) => ({
+                        id: appointment.id,
+                        patientId: appointment.customer,
+                        patientName: appointment.customer_name,
+                        doctorId: appointment.doctor,
+                        doctorName: appointment.doctor_name,
+                        roomId: appointment.room,
+                        roomNumber: appointment.room_name,
+                        branchId: appointment.branch,
+                        branchName: appointment.branch_name,
+                        date: appointment.date,
+                        timeSlot: appointment.time.substring(0, 5), // Format time as HH:MM
+                        duration: 60, // Assuming 60 minutes per appointment
+                        status: statusMapping[appointment.status] || "waiting",
+                        diagnosis: appointment.comment || "",
+                        paymentAmount: appointment.payment_amount,
+                        customerGender: appointment.customer_gender,
+                        createdAt: new Date().toISOString(), // Using current date as fallback
+                    }))
 
-                    // Add today's appointments
-                    const today = new Date().toISOString().split("T")[0]
-                    mockAppointments.push(
-                        {
-                            id: 1006,
-                            patientId: 101,
-                            patientName: "Alisher Karimov",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 1,
-                            roomNumber: "101",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            date: today,
-                            timeSlot: "09:00",
-                            duration: 60,
-                            status: "confirmed",
-                            diagnosis: "Follow-up check",
-                            createdAt: "2023-05-19T09:45:00Z",
-                        },
-                        {
-                            id: 1007,
-                            patientId: 102,
-                            patientName: "Dilnoza Saidova",
-                            doctorId: currentDoctorId,
-                            doctorName: "Dr. Sardor Alimov",
-                            roomId: 2,
-                            roomNumber: "102",
-                            branchId: 1,
-                            branchName: "Main Branch",
-                            date: today,
-                            timeSlot: "11:00",
-                            duration: 60,
-                            status: "in_progress",
-                            diagnosis: "Blood pressure check",
-                            createdAt: "2023-05-19T09:45:00Z",
-                        },
-                    )
+                    setDailyAppointments(mappedDailyAppointments)
+                } else if (viewMode === "week") {
+                    // Fetch weekly appointments
+                    const weekStartDate = currentWeekStart.toISOString().split("T")[0]
+                    const response = await fetchWeeklyMeetings(weekStartDate)
 
-                    // Calculate booked time slots
-                    const bookedSlots = {}
-                    mockAppointments.forEach((appointment) => {
-                        const key = `${appointment.date}-${appointment.roomId}`
-                        if (!bookedSlots[key]) {
-                            bookedSlots[key] = []
-                        }
-                        bookedSlots[key].push(appointment.timeSlot)
-                    })
+                    // Map API status to UI status
+                    const mappedWeeklyAppointments = response.map((appointment) => ({
+                        id: appointment.id,
+                        patientId: appointment.customer,
+                        patientName: appointment.customer_name,
+                        doctorId: appointment.doctor,
+                        doctorName: appointment.doctor_name,
+                        roomId: appointment.room,
+                        roomNumber: appointment.room_name,
+                        branchId: appointment.branch,
+                        branchName: appointment.branch_name,
+                        date: appointment.date,
+                        timeSlot: appointment.time.substring(0, 5), // Format time as HH:MM
+                        duration: 60, // Assuming 60 minutes per appointment
+                        status: statusMapping[appointment.status] || "waiting",
+                        diagnosis: appointment.comment || "",
+                        paymentAmount: appointment.payment_amount,
+                        customerGender: appointment.customer_gender,
+                        createdAt: new Date().toISOString(), // Using current date as fallback
+                    }))
 
-                    setBranches(mockBranches)
-                    setPatients(mockPatients)
-                    setDoctors(mockDoctors)
-                    setRooms(mockRooms)
-                    setAppointments(mockAppointments)
-                    setBookedTimeSlots(bookedSlots)
-                    setLoading(false)
-                }, 800)
+                    setWeeklyAppointments(mappedWeeklyAppointments)
+                }
+
+                setLoading(false)
             } catch (err) {
-                setError(err.message || "An error occurred")
+                console.error("Error fetching appointments:", err)
+                setError(err.message || "Ma'lumotlarni yuklashda xatolik yuz berdi")
                 setLoading(false)
             }
         }
 
         fetchData()
-    }, [])
+    }, [viewMode, currentPage, itemsPerPage, selectedDate, currentWeekStart, searchTerm, filterStatus, user?.id])
 
     // Helper function to get the start date of the week
     function getWeekStartDate(date) {
@@ -371,56 +306,20 @@ export default function DocSchedule() {
 
     const timeSlots = generateTimeSlots()
 
-    // Check if a time slot is booked
-    const isTimeSlotBooked = (date, roomId, timeSlot) => {
-        const key = `${date}-${roomId}`
-        return bookedTimeSlots[key] && bookedTimeSlots[key].includes(timeSlot)
+    // Handle page change
+    const handlePageChange = (selectedPage) => {
+        setCurrentPage(selectedPage)
     }
 
-    // Filter appointments based on search and filter
-    const filteredAppointments = appointments.filter((appointment) => {
-        const matchesSearch =
-            appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            appointment.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            appointment.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            appointment.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
-
-        const matchesFilter = filterStatus === "all" || appointment.status === filterStatus
-
-        return matchesSearch && matchesFilter
-    })
-
-    // Handle branch selection
-    const handleBranchChange = (e) => {
-        const branchId = e.target.value
-        setSelectedBranchId(branchId)
-        setSelectedPatientId("")
-        setSelectedRoomId("")
-        setSelectedTimeSlot("")
-    }
-
-    // Handle patient selection
-    const handlePatientChange = (e) => {
-        setSelectedPatientId(e.target.value)
-        setSelectedRoomId("")
-        setSelectedTimeSlot("")
-    }
-
-    // Handle room selection
-    const handleRoomChange = (e) => {
-        setSelectedRoomId(e.target.value)
-        setSelectedTimeSlot("")
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page
     }
 
     // Handle date selection
     const handleDateChange = (e) => {
         setSelectedDate(e.target.value)
-        setSelectedTimeSlot("")
-    }
-
-    // Handle time slot selection
-    const handleTimeSlotChange = (timeSlot) => {
-        setSelectedTimeSlot(timeSlot)
     }
 
     // Handle diagnosis input
@@ -431,82 +330,110 @@ export default function DocSchedule() {
     // Open edit appointment modal
     const openEditModal = (appointment) => {
         setCurrentAppointment(appointment)
-        setSelectedBranchId(appointment.branchId.toString())
-        setSelectedPatientId(appointment.patientId.toString())
-        setSelectedRoomId(appointment.roomId.toString())
-        setSelectedDate(appointment.date)
-        setSelectedTimeSlot(appointment.timeSlot)
         setDiagnosis(appointment.diagnosis)
         setShowEditModal(true)
         setAppointmentCompleted(false)
     }
 
     // Handle edit appointment
-    const handleEditAppointment = () => {
-        setIsUpdating(true)
+    const handleEditAppointment = async () => {
+        try {
+            setIsUpdating(true)
 
-        // Simulate API call with timeout
-        setTimeout(() => {
             // Update appointment status based on current status
             let newStatus = currentAppointment.status
 
             if (currentAppointment.status === "confirmed") {
                 newStatus = "in_progress"
 
-                // Update the appointment status
+                // Update the appointment status in the API
+                await updateAppointmentStatus(currentAppointment.id, reverseStatusMapping[newStatus])
+
+                // Update the appointment in the local state
                 const updatedAppointment = {
                     ...currentAppointment,
                     status: newStatus,
                     diagnosis: diagnosis,
                 }
 
-                const updatedAppointments = appointments.map((appointment) =>
-                    appointment.id === currentAppointment.id ? updatedAppointment : appointment,
-                )
+                // Update appointments list
+                if (viewMode === "table") {
+                    const updatedAppointments = appointments.map((appointment) =>
+                        appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                    )
+                    setAppointments(updatedAppointments)
+                } else if (viewMode === "day") {
+                    const updatedDailyAppointments = dailyAppointments.map((appointment) =>
+                        appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                    )
+                    setDailyAppointments(updatedDailyAppointments)
+                } else if (viewMode === "week") {
+                    const updatedWeeklyAppointments = weeklyAppointments.map((appointment) =>
+                        appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                    )
+                    setWeeklyAppointments(updatedWeeklyAppointments)
+                }
 
-                setAppointments(updatedAppointments)
                 setIsUpdating(false)
                 setShowEditModal(false)
 
                 // Reset form
                 setCurrentAppointment(null)
-                setSelectedBranchId("")
-                setSelectedPatientId("")
-                setSelectedRoomId("")
-                setSelectedTimeSlot("")
                 setDiagnosis("")
             } else if (currentAppointment.status === "in_progress") {
                 // For in_progress appointments, open the details page in a new tab
                 // and keep the modal open with loading state
                 openAppointmentDetailsPage(currentAppointment.id)
             }
-        }, 800)
+        } catch (error) {
+            console.error("Error updating appointment:", error)
+            setError("Qabulni yangilashda xatolik yuz berdi")
+            setIsUpdating(false)
+        }
     }
 
     // Complete appointment after returning from details page
-    const completeAppointment = () => {
-        // Update the appointment to completed status
-        const updatedAppointment = {
-            ...currentAppointment,
-            status: "completed",
-            diagnosis: diagnosis,
+    const completeAppointment = async () => {
+        try {
+            // Update the appointment to completed status in the API
+            await updateAppointmentStatus(currentAppointment.id, "finished")
+
+            // Update the appointment in the local state
+            const updatedAppointment = {
+                ...currentAppointment,
+                status: "completed",
+                diagnosis: diagnosis,
+            }
+
+            // Update appointments list
+            if (viewMode === "table") {
+                const updatedAppointments = appointments.map((appointment) =>
+                    appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                )
+                setAppointments(updatedAppointments)
+            } else if (viewMode === "day") {
+                const updatedDailyAppointments = dailyAppointments.map((appointment) =>
+                    appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                )
+                setDailyAppointments(updatedDailyAppointments)
+            } else if (viewMode === "week") {
+                const updatedWeeklyAppointments = weeklyAppointments.map((appointment) =>
+                    appointment.id === currentAppointment.id ? updatedAppointment : appointment,
+                )
+                setWeeklyAppointments(updatedWeeklyAppointments)
+            }
+
+            setIsUpdating(false)
+
+            // Reset form and close modal
+            setCurrentAppointment(null)
+            setDiagnosis("")
+            setShowEditModal(false)
+        } catch (error) {
+            console.error("Error completing appointment:", error)
+            setError("Qabulni yakunlashda xatolik yuz berdi")
+            setIsUpdating(false)
         }
-
-        const updatedAppointments = appointments.map((appointment) =>
-            appointment.id === currentAppointment.id ? updatedAppointment : appointment,
-        )
-
-        setAppointments(updatedAppointments)
-        setIsUpdating(false)
-
-        // Reset form and close modal
-        setCurrentAppointment(null)
-        setSelectedBranchId("")
-        setSelectedPatientId("")
-        setSelectedRoomId("")
-        setSelectedTimeSlot("")
-        setDiagnosis("")
-        setShowEditModal(false)
     }
 
     // Open appointment details page in a new tab
@@ -521,7 +448,7 @@ export default function DocSchedule() {
         // Simulate redirection to another page
         setTimeout(() => {
             // In a real app, you would use router.push or window.location
-            alert(`Redirecting to patient record for patient ID: ${patientId}`)
+            resultWindowRef.current = window.open(`/appointment-details/${patientId}`, "_blank")
             setRedirecting(false)
         }, 1500)
     }
@@ -529,6 +456,8 @@ export default function DocSchedule() {
     // Handle view mode change
     const handleViewModeChange = (mode) => {
         setViewMode(mode)
+        // Reset pagination when changing view mode
+        setCurrentPage(0)
     }
 
     // Navigate to today
@@ -571,15 +500,14 @@ export default function DocSchedule() {
 
     const weekDays = generateWeekDays()
 
-    // Get appointments for a specific day
+    // Get appointments for a specific day from weekly appointments
     const getAppointmentsForDay = (date) => {
-        return appointments.filter((appointment) => appointment.date === date)
+        return weeklyAppointments.filter((appointment) => appointment.date === date)
     }
 
     // Format time
     const formatTime = (timeSlot) => {
-        const [hours, minutes] = timeSlot.split(":")
-        return `${hours}:${minutes}`
+        return timeSlot
     }
 
     // Get status badge class
@@ -808,13 +736,14 @@ export default function DocSchedule() {
                                 <th>{t("patient")}</th>
                                 <th>{t("room")}</th>
                                 <th>{t("diagnosis")}</th>
+                                <th>{t("payment")}</th>
                                 <th>{t("status")}</th>
                                 <th>{t("actions")}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredAppointments.length > 0 ? (
-                                filteredAppointments.map((appointment) => (
+                            {appointments.length > 0 ? (
+                                appointments.map((appointment) => (
                                     <tr key={appointment.id} className={`appointment-row ${getStatusBadgeClass(appointment.status)}`}>
                                         <td>{appointment.date}</td>
                                         <td>{formatTime(appointment.timeSlot)}</td>
@@ -839,7 +768,13 @@ export default function DocSchedule() {
                                         <td>
                                             <div className="cell-with-icon">
                                                 <FaRegClipboard className="cell-icon" />
-                                                {appointment.diagnosis}
+                                                {appointment.diagnosis || t("no_diagnosis")}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="cell-with-icon">
+                                                <FaMoneyBillAlt className="cell-icon" />
+                                                {appointment.paymentAmount} so'm
                                             </div>
                                         </td>
                                         <td>
@@ -863,7 +798,7 @@ export default function DocSchedule() {
                                                 {appointment.status === "completed" && (
                                                     <button
                                                         className="btn btn-action btn-redirect"
-                                                        onClick={() => window.open(`/appointment-details/${appointment.id}`, "_blank")}
+                                                        onClick={() => redirectToPatientRecord(appointment.id)}
                                                         title={t("go_to_patient_record")}
                                                     >
                                                         <FaExternalLinkAlt className="action-icon action-redirect" />
@@ -882,7 +817,7 @@ export default function DocSchedule() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="no-data">
+                                    <td colSpan="9" className="no-data">
                                         <div className="no-data-content">
                                             <FaCalendarAlt className="no-data-icon" />
                                             <p>{t("no_appointments_found")}</p>
@@ -892,6 +827,16 @@ export default function DocSchedule() {
                             )}
                         </tbody>
                     </table>
+
+                    {/* Pagination */}
+                    <Pagination
+                        pageCount={pageCount}
+                        currentPage={currentPage}
+                        onPageChange={handlePageChange}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={totalItems}
+                        onItemsPerPageChange={handleItemsPerPageChange}
+                    />
                 </div>
             )}
 
@@ -933,8 +878,8 @@ export default function DocSchedule() {
 
                     <div className="time-slots-container">
                         {timeSlots.map((timeSlot) => {
-                            const appointmentsAtTime = appointments.filter(
-                                (appointment) => appointment.date === selectedDate && appointment.timeSlot === timeSlot,
+                            const appointmentsAtTime = dailyAppointments.filter(
+                                (appointment) => appointment.timeSlot.substring(0, 2) === timeSlot.substring(0, 2),
                             )
 
                             return (
@@ -978,6 +923,10 @@ export default function DocSchedule() {
                                                             <FaRegClipboard className="appointment-icon" />
                                                             {appointment.diagnosis || t("no_diagnosis")}
                                                         </div>
+                                                        <div className="appointment-payment">
+                                                            <FaMoneyBillAlt className="appointment-icon" />
+                                                            {appointment.paymentAmount} so'm
+                                                        </div>
                                                     </div>
                                                     {canChangeStatus(appointment.status) && (
                                                         <div className="appointment-actions">
@@ -997,7 +946,7 @@ export default function DocSchedule() {
                                                                 className="btn btn-action-card btn-redirect"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
-                                                                    window.open(`/appointment-details-result/${appointment.id}`, "_blank")
+                                                                    redirectToPatientRecord(appointment.patientId)
                                                                 }}
                                                             >
                                                                 <FaExternalLinkAlt className="action-icon action-redirect" />
@@ -1061,8 +1010,8 @@ export default function DocSchedule() {
                                 </div>
 
                                 {timeSlots.map((timeSlot) => {
-                                    const appointmentsAtTime = appointments.filter(
-                                        (appointment) => appointment.date === day.date && appointment.timeSlot === timeSlot,
+                                    const appointmentsAtTime = getAppointmentsForDay(day.date).filter(
+                                        (appointment) => appointment.timeSlot.substring(0, 2) === timeSlot.substring(0, 2),
                                     )
 
                                     return (
@@ -1141,6 +1090,10 @@ export default function DocSchedule() {
                                         <div className="detail-row">
                                             <span className="detail-label">{t("room")}:</span>
                                             <span className="detail-value">{currentAppointment.roomNumber}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">{t("payment")}:</span>
+                                            <span className="detail-value">{currentAppointment.paymentAmount} so'm</span>
                                         </div>
                                     </div>
 

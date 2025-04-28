@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, useGLTF, Html } from "@react-three/drei"
+import { OrbitControls, useGLTF } from "@react-three/drei"
+import { updateAppointmentWithDiagnosis } from "../../api/apiAppointments"
 
 // Tooltip component
 const QuestionMarkTooltip = () => {
@@ -20,7 +21,10 @@ const QuestionMarkTooltip = () => {
                     <p>Yo'riqnoma:</p>
                     <ol>
                         <li>Bir nechta a'zolarni tanlash uchun SHIFT tugmasini bosib turing va a'zolarni bosing.</li>
-                        <li>A'zoni tanlovdan chiqarish uchun SHIFT tugmasini bosib turgan holda qayta bosing yoki a'zo yonidagi "X" tugmasini bosing.</li>
+                        <li>
+                            A'zoni tanlovdan chiqarish uchun SHIFT tugmasini bosib turgan holda qayta bosing yoki a'zo yonidagi "X"
+                            tugmasini bosing.
+                        </li>
                         <li>Tanlovni tozalash uchun "Barcha tanlovlarni o'chirish" tugmasini bosing.</li>
                         <li>Tashxis va yechimni kiritib "Saqlash" tugmasini bosing.</li>
                         <li>Saqlangan tashxis kartochkalarini bosib, tegishli a'zolarni ko'rishingiz mumkin.</li>
@@ -50,7 +54,7 @@ function Model({ url, onSelectOrgan, selectedOrgans }) {
         scene.traverse((object) => {
             if (object.isMesh) {
                 if (selectedOrgans.includes(object.name)) {
-                    object.material.color.set('#e8e520') // Orange for selection
+                    object.material.color.set("#e8e520") // Yellow for selection
                 } else {
                     // Reset to original material
                     if (object.userData.originalMaterial) {
@@ -87,6 +91,9 @@ export default function AppointmentDetailsResult() {
     const [isUploading, setIsUploading] = useState(false)
     const [uploadSuccess, setUploadSuccess] = useState(false)
     const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [appointmentId, setAppointmentId] = useState(null)
+    const [error, setError] = useState(null)
     const fileInputRef = useRef(null)
     const modelRef = useRef(null)
 
@@ -96,22 +103,40 @@ export default function AppointmentDetailsResult() {
     // Supported file formats
     const supportedFormats = [".dcm", ".jpg", ".png", ".tif", ".bmp", ".raw", ".nii"]
 
+    // Get appointment ID from URL
+    useEffect(() => {
+        const pathParts = window.location.pathname.split("/")
+        const id = pathParts[pathParts.length - 1]
+        if (id && !isNaN(id)) {
+            setAppointmentId(Number.parseInt(id))
+        }
+    }, [])
+
     // Load available organs
     useEffect(() => {
         // In a real app, you would extract this from the actual model
         // These should match organ names in the actual 3D model
         setAvailableOrgans([
-            "Heart", "Liver", "Lungs", "Kidneys", "Brain", "Stomach",
-            "Intestines", "Pancreas", "Spleen", "Bladder", "Gallbladder"
+            "Heart",
+            "Liver",
+            "Lungs",
+            "Kidneys",
+            "Brain",
+            "Stomach",
+            "Intestines",
+            "Pancreas",
+            "Spleen",
+            "Bladder",
+            "Gallbladder",
         ])
     }, [])
 
     // Handle organ selection from 3D model
     const handleSelectOrgan = (organName, isShiftPressed) => {
-        setSelectedOrgans(prev => {
+        setSelectedOrgans((prev) => {
             if (prev.includes(organName)) {
                 // If already selected, remove it
-                return prev.filter(name => name !== organName)
+                return prev.filter((name) => name !== organName)
             } else if (isShiftPressed) {
                 // If shift is pressed, add to selection
                 return [...prev, organName]
@@ -128,13 +153,13 @@ export default function AppointmentDetailsResult() {
         if (!organ) return
 
         if (!selectedOrgans.includes(organ)) {
-            setSelectedOrgans(prev => [...prev, organ])
+            setSelectedOrgans((prev) => [...prev, organ])
         }
     }
 
     // Remove selected organ
     const removeOrgan = (organToRemove) => {
-        setSelectedOrgans(prev => prev.filter(organ => organ !== organToRemove))
+        setSelectedOrgans((prev) => prev.filter((organ) => organ !== organToRemove))
     }
 
     // Clear all selections
@@ -142,19 +167,80 @@ export default function AppointmentDetailsResult() {
         setSelectedOrgans([])
     }
 
-    const handleSave = () => {
-        // Show success modal
-        setShowSuccessModal(true)
+    // Prepare organs data for API as an array
+    const prepareOrgansData = () => {
+        // Return array of lowercase organ names
+        return selectedOrgans.map((organ) => organ.toLowerCase())
+    }
 
-        // Close the window after 2 seconds
-        setTimeout(() => {
-            setShowSuccessModal(false)
+    // Handle save
+    const handleSave = async () => {
+        if (!appointmentId) {
+            setError("Qabul ID raqami topilmadi")
+            return
+        }
 
-            // If this is opened from DocSchedule, close the window
-            if (window.opener && !window.opener.closed) {
-                window.close()
+        try {
+            setIsSaving(true)
+            setError(null)
+
+            // Prepare organs array
+            const organsArray = prepareOrgansData()
+            console.log("Organs array:", organsArray)
+
+            // If there are files, we need to use FormData
+            if (selectedFiles.length > 0) {
+                const formData = new FormData()
+
+                // Add diagnosis data fields individually
+                formData.append("status", "finished")
+                formData.append("diognosis", diagnosis)
+                formData.append("comment", treatment)
+
+                // Convert organs array to JSON string and append it
+                formData.append("organs", JSON.stringify(organsArray))
+
+                // Add files
+                selectedFiles.forEach((file) => {
+                    formData.append("uploaded_files", file)
+                })
+
+                console.log("Sending FormData with organs:", JSON.stringify(organsArray))
+
+                // Send data to API
+                await updateAppointmentWithDiagnosis(appointmentId, formData)
+            } else {
+                // No files, just send the JSON data
+                const diagnosisData = {
+                    status: "finished", // Mark as completed
+                    diognosis: diagnosis, // API field name is "diognosis"
+                    comment: treatment, // Use treatment as comment
+                    organs: organsArray, // Array of selected organs
+                }
+
+                console.log("Sending JSON data:", diagnosisData)
+
+                await updateAppointmentWithDiagnosis(appointmentId, diagnosisData)
             }
-        }, 2000)
+
+            // Show success modal
+            setShowSuccessModal(true)
+
+            // Close the window after 2 seconds
+            setTimeout(() => {
+                setShowSuccessModal(false)
+
+                // If this is opened from DocSchedule, close the window
+                if (window.opener && !window.opener.closed) {
+                    window.close()
+                }
+            }, 2000)
+        } catch (err) {
+            console.error("Error saving diagnosis:", err)
+            setError("Ma'lumotlarni saqlashda xatolik yuz berdi")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     const handleUploadResults = () => {
@@ -199,23 +285,35 @@ export default function AppointmentDetailsResult() {
     }
 
     // Upload files
-    const uploadFiles = () => {
+    const uploadFiles = async () => {
         if (selectedFiles.length === 0) return
 
-        setIsUploading(true)
+        try {
+            setIsUploading(true)
+            setError(null)
 
-        // Simulate upload process
-        setTimeout(() => {
-            setIsUploading(false)
-            setShowUploadModal(false)
-            setUploadSuccess(true)
-            setShowSuccessModal(true)
+            // In a real implementation, you would upload files to server
+            // and get back URLs or IDs to include in the diagnosis data
 
-            // Close success modal after 2 seconds
+            // For now, we'll simulate a successful upload
             setTimeout(() => {
-                setShowSuccessModal(false)
-            }, 2000)
-        }, 1500)
+                setIsUploading(false)
+                setShowUploadModal(false)
+                setUploadSuccess(true)
+
+                // Show success modal
+                setShowSuccessModal(true)
+
+                // Close success modal after 2 seconds
+                setTimeout(() => {
+                    setShowSuccessModal(false)
+                }, 2000)
+            }, 1500)
+        } catch (err) {
+            console.error("Error uploading files:", err)
+            setError("Fayllarni yuklashda xatolik yuz berdi")
+            setIsUploading(false)
+        }
     }
 
     // Get file icon based on extension
@@ -231,12 +329,7 @@ export default function AppointmentDetailsResult() {
                     <ambientLight intensity={1.5} />
                     <spotLight position={[5, 5, 5]} intensity={1.5} castShadow />
                     <pointLight position={[-10, -10, -10]} intensity={1} />
-                    <Model
-                        url={modelUrl}
-                        onSelectOrgan={handleSelectOrgan}
-                        selectedOrgans={selectedOrgans}
-                        ref={modelRef}
-                    />
+                    <Model url={modelUrl} onSelectOrgan={handleSelectOrgan} selectedOrgans={selectedOrgans} ref={modelRef} />
                     <OrbitControls />
                 </Canvas>
             </div>
@@ -244,21 +337,19 @@ export default function AppointmentDetailsResult() {
             <div className="details-form">
                 <div className="selected-organs-header">
                     <h2>
-                        Tanlangan a'zolar: {selectedOrgans.length > 0 ? '' : 'Hech narsa tanlanmagan'}
+                        Tanlangan a'zolar: {selectedOrgans.length > 0 ? "" : "Hech narsa tanlanmagan"}
                         <QuestionMarkTooltip />
                     </h2>
                 </div>
 
                 <div className="dropdown-section">
                     <label>Dropdown orqali tanlash:</label>
-                    <select
-                        onChange={handleDropdownSelect}
-                        className="organ-dropdown"
-                        value=""
-                    >
+                    <select onChange={handleDropdownSelect} className="organ-dropdown" value="">
                         <option value="">-- Tanlang --</option>
                         {availableOrgans.map((organ, index) => (
-                            <option key={index} value={organ}>{organ}</option>
+                            <option key={index} value={organ}>
+                                {organ}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -268,10 +359,7 @@ export default function AppointmentDetailsResult() {
                         {selectedOrgans.map((organ, index) => (
                             <div key={index} className="selected-organ-tag">
                                 <span>{organ}</span>
-                                <button
-                                    className="remove-organ-button"
-                                    onClick={() => removeOrgan(organ)}
-                                >
+                                <button className="remove-organ-button" onClick={() => removeOrgan(organ)}>
                                     ×
                                 </button>
                             </div>
@@ -310,8 +398,14 @@ export default function AppointmentDetailsResult() {
                         ></textarea>
                     </div>
 
+                    {error && <div className="error-message">{error}</div>}
+
                     <div className="button-group">
-                        <button className={`upload-button ${uploadSuccess ? "success" : ""}`} onClick={handleUploadResults}>
+                        <button
+                            className={`upload-button ${uploadSuccess ? "success" : ""}`}
+                            onClick={handleUploadResults}
+                            disabled={isSaving}
+                        >
                             {uploadSuccess ? (
                                 <>
                                     <span className="checkmark">✓</span> Natijasi yuklandi
@@ -320,8 +414,14 @@ export default function AppointmentDetailsResult() {
                                 "Natijasini yuklash"
                             )}
                         </button>
-                        <button className="save-button" onClick={handleSave}>
-                            Saqlash
+                        <button className="save-button" onClick={handleSave} disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner"></span> Saqlanmoqda...
+                                </>
+                            ) : (
+                                "Saqlash"
+                            )}
                         </button>
                     </div>
                 </div>
@@ -401,16 +501,6 @@ export default function AppointmentDetailsResult() {
                 </div>
             )}
 
-            {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="modal-overlay">
-                    <div className="success-modal">
-                        <div className="success-icon">✓</div>
-                        <h2>Muvaffaqiyatli yuklandi!</h2>
-                        <p>Fayllar muvaffaqiyatli yuklandi va saqlandi.</p>
-                    </div>
-                </div>
-            )}
             {/* Success Modal */}
             {showSuccessModal && (
                 <div className="modal-overlay">
