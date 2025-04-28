@@ -25,6 +25,9 @@ import {
     FaTable,
     FaEye,
     FaNotesMedical,
+    FaChevronLeft,
+    FaChevronRight,
+    FaPlus,
 } from "react-icons/fa"
 import apiAppointments from "../../../api/apiAppointments"
 import Pagination from "../../pagination/Pagination"
@@ -889,7 +892,7 @@ export default function ASchedule() {
                         </h3>
 
                         {selectedBranch === "all" && (
-                            <div className="appointments-form-group">
+                            <div className="jadval-form-group">
                                 <label>{t("branch")}</label>
                                 <div className="input-icon-wrapper">
                                     <FaBuilding className="input-icon" />
@@ -906,7 +909,7 @@ export default function ASchedule() {
                             </div>
                         )}
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("patient")}</label>
                             <div className="input-icon-wrapper">
                                 <FaUser className="input-icon" />
@@ -927,13 +930,13 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={closeAddSidebar}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={closeAddSidebar}>
                                 {t("cancel")}
                             </button>
                             <button
                                 type="button"
-                                className="appointments-btn appointments-btn-primary"
+                                className="jadval-btn jadval-btn-primary"
                                 onClick={nextStep}
                                 disabled={!newAppointment.branch || !newAppointment.patientId}
                             >
@@ -949,7 +952,7 @@ export default function ASchedule() {
                             {t("step")} 2: {t("select_doctor")}
                         </h3>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("doctor")}</label>
                             <div className="input-icon-wrapper">
                                 <FaUserMd className="input-icon" />
@@ -965,13 +968,13 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
                             <button
                                 type="button"
-                                className="appointments-btn appointments-btn-primary"
+                                className="jadval-btn jadval-btn-primary"
                                 onClick={nextStep}
                                 disabled={!newAppointment.doctorId}
                             >
@@ -987,7 +990,7 @@ export default function ASchedule() {
                             {t("step")} 3: {t("select_room")}
                         </h3>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("room")}</label>
                             <div className="input-icon-wrapper">
                                 <FaDoorOpen className="input-icon" />
@@ -1003,13 +1006,13 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
                             <button
                                 type="button"
-                                className="appointments-btn appointments-btn-primary"
+                                className="jadval-btn jadval-btn-primary"
                                 onClick={nextStep}
                                 disabled={!newAppointment.roomId}
                             >
@@ -1025,7 +1028,7 @@ export default function ASchedule() {
                             {t("step")} 4: {t("select_date")}
                         </h3>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("date")}</label>
                             <div className="input-icon-wrapper">
                                 <FaCalendarAlt className="input-icon" />
@@ -1040,13 +1043,13 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
                             <button
                                 type="button"
-                                className="appointments-btn appointments-btn-primary"
+                                className="jadval-btn jadval-btn-primary"
                                 onClick={nextStep}
                                 disabled={!newAppointment.date}
                             >
@@ -1062,7 +1065,7 @@ export default function ASchedule() {
                             {t("step")} 5: {t("select_time")}
                         </h3>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("time")}</label>
                             {timeError && (
                                 <div className="time-error">
@@ -1088,13 +1091,13 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
                             <button
                                 type="button"
-                                className="appointments-btn appointments-btn-primary"
+                                className="jadval-btn jadval-btn-primary"
                                 onClick={nextStep}
                                 disabled={!newAppointment.time}
                             >
@@ -1110,7 +1113,7 @@ export default function ASchedule() {
                             {t("step")} 6: {t("add_diagnosis_and_notes")}
                         </h3>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("diagnosis")}</label>
                             <textarea
                                 name="diagnosis"
@@ -1121,7 +1124,7 @@ export default function ASchedule() {
                             ></textarea>
                         </div>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("notes")}</label>
                             <textarea
                                 name="notes"
@@ -1132,7 +1135,7 @@ export default function ASchedule() {
                             ></textarea>
                         </div>
 
-                        <div className="appointments-form-group">
+                        <div className="jadval-form-group">
                             <label>{t("payment_amount")}</label>
                             <div className="input-icon-wrapper">
                                 <FaMoneyBillWave className="input-icon" />
@@ -1146,11 +1149,11 @@ export default function ASchedule() {
                             </div>
                         </div>
 
-                        <div className="appointments-form-actions">
-                            <button type="button" className="appointments-btn appointments-btn-secondary" onClick={prevStep}>
+                        <div className="jadval-form-actions">
+                            <button type="button" className="jadval-btn jadval-btn-secondary" onClick={prevStep}>
                                 {t("back")}
                             </button>
-                            <button type="submit" className="appointments-btn appointments-btn-primary">
+                            <button type="submit" className="jadval-btn jadval-btn-primary">
                                 {t("add_appointment")}
                             </button>
                         </div>
@@ -1162,35 +1165,35 @@ export default function ASchedule() {
     }
 
     return (
-        <div className="appointments-container">
-            <div className="appointments-page-header">
-                <h1 className="appointments-page-title">
+        <div className="jadval-container">
+            <div className="jadval-page-header">
+                <h1 className="jadval-page-title">
                     <FaCalendarAlt /> {t("appointment_schedule")}
                 </h1>
-                <div className="appointments-header-actions">
-                    <button className="appointments-btn appointments-btn-primary appointments-btn-icon" onClick={openAddSidebar}>
+                <div className="jadval-header-actions">
+                    <button className="jadval-btn jadval-btn-primary jadval-btn-icon" onClick={openAddSidebar}>
                         <FaCalendarPlus /> {t("add_new_appointment")}
                     </button>
                 </div>
             </div>
 
-            <div className="appointments-filters-container">
-                <div className="appointments-search-filter">
-                    <form onSubmit={handleSearchSubmit} className="appointments-search-input">
-                        <FaSearch className="appointments-search-icon" />
+            <div className="jadval-filters-container">
+                <div className="jadval-search-filter">
+                    <form onSubmit={handleSearchSubmit} className="jadval-search-input">
+                        <FaSearch className="jadval-search-icon" />
                         <input type="text" placeholder={t("search")} value={searchTerm} onChange={handleSearchChange} />
-                        <button type="submit" className="appointments-search-button">
+                        <button type="submit" className="jadval-search-button">
                             <FaSearch />
                         </button>
                     </form>
-                    <button className={`appointments-filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
+                    <button className={`jadval-filter-toggle-btn ${showFilters ? "active" : ""}`} onClick={toggleFilters}>
                         <FaFilter /> {t("filters")}
                     </button>
                 </div>
 
                 {showFilters && (
-                    <div className="appointments-advanced-filters">
-                        <div className="appointments-filter-group">
+                    <div className="jadval-advanced-filters">
+                        <div className="jadval-filter-group">
                             <label>{t("status")}:</label>
                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                 <option value="all">{t("all")}</option>
@@ -1202,15 +1205,15 @@ export default function ASchedule() {
                             </select>
                         </div>
 
-                        <div className="appointments-filter-group">
+                        <div className="jadval-filter-group">
                             <label>{t("date")}:</label>
-                            <div className="appointments-date-input">
-                                <FaCalendarAlt className="appointments-calendar-icon" />
+                            <div className="jadval-date-input">
+                                <FaCalendarAlt className="jadval-calendar-icon" />
                                 <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
                             </div>
                         </div>
 
-                        <div className="appointments-filter-group">
+                        <div className="jadval-filter-group">
                             <label>{t("doctor")}:</label>
                             <select value={filterDoctor} onChange={(e) => setFilterDoctor(e.target.value)}>
                                 <option value="all">{t("all")}</option>
@@ -1224,7 +1227,7 @@ export default function ASchedule() {
                         </div>
 
                         {selectedBranch === "all" && (
-                            <div className="appointments-filter-group">
+                            <div className="jadval-filter-group">
                                 <label>{t("branch")}:</label>
                                 <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
                                     <option value="all">{t("all")}</option>
@@ -1241,30 +1244,30 @@ export default function ASchedule() {
                 )}
             </div>
 
-            <div className="appointments-view-controls">
+            <div className="jadval-view-controls">
                 <button
-                    className={`appointments-view-btn ${currentView === "table" ? "active" : ""}`}
+                    className={`jadval-view-btn ${currentView === "table" ? "active" : ""}`}
                     onClick={() => setCurrentView("table")}
                 >
                     <FaTable /> {t("table_view")}
                 </button>
                 <button
-                    className={`appointments-view-btn ${currentView === "calendar" ? "active" : ""}`}
+                    className={`jadval-view-btn ${currentView === "calendar" ? "active" : ""}`}
                     onClick={() => setCurrentView("calendar")}
                 >
                     <FaCalendarAlt /> {t("calendar_view")}
                 </button>
                 {currentView === "calendar" && (
-                    <button className="appointments-view-btn" onClick={navigateToday}>
+                    <button className="jadval-view-btn" onClick={navigateToday}>
                         <FaCalendarDay /> {t("today")}
                     </button>
                 )}
             </div>
 
             {currentView === "table" ? (
-                <div className="appointments-dashboard-card">
-                    <div className="appointments-table-responsive">
-                        <table className="appointments-data-table">
+                <div className="jadval-dashboard-card">
+                    <div className="jadval-table-responsive">
+                        <table className="jadval-data-table">
                             <thead>
                                 <tr>
                                     <th>{t("patient")}</th>
@@ -1282,20 +1285,20 @@ export default function ASchedule() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="10" className="appointments-loading">
-                                            <FaSpinner className="appointments-spinner" /> {t("loading")}
+                                        <td colSpan="10" className="jadval-loading">
+                                            <FaSpinner className="jadval-spinner" /> {t("loading")}
                                         </td>
                                     </tr>
                                 ) : error ? (
                                     <tr>
-                                        <td colSpan="10" className="appointments-error">
-                                            <FaExclamationCircle className="appointments-error-icon" /> {error}
+                                        <td colSpan="10" className="jadval-error">
+                                            <FaExclamationCircle className="jadval-error-icon" /> {error}
                                         </td>
                                     </tr>
                                 ) : appointments.length === 0 ? (
                                     <tr>
-                                        <td colSpan="10" className="appointments-no-data">
-                                            <FaExclamationCircle className="appointments-no-data-icon" /> {t("no_data_found")}
+                                        <td colSpan="10" className="jadval-no-data">
+                                            <FaExclamationCircle className="jadval-no-data-icon" /> {t("no_data_found")}
                                         </td>
                                     </tr>
                                 ) : (
@@ -1307,7 +1310,7 @@ export default function ASchedule() {
                                             <td>{formatDateForDisplay(appointment.date)}</td>
                                             <td>{formatTimeForDisplay(appointment.date)}</td>
                                             <td>
-                                                <div className={`appointments-status-badge ${appointment.status}`}>
+                                                <div className={`jadval-status-badge ${appointment.status}`}>
                                                     {getStatusTranslation(appointment.status)}
                                                 </div>
                                             </td>
@@ -1315,20 +1318,20 @@ export default function ASchedule() {
                                             <td>{appointment.payment_amount}</td>
                                             {selectedBranch === "all" && (
                                                 <td>
-                                                    <div className="appointments-branch-badge">
-                                                        <FaBuilding className="appointments-branch-icon" />
+                                                    <div className="jadval-branch-badge">
+                                                        <FaBuilding className="jadval-branch-icon" />
                                                         {getBranchName(appointment.branch)}
                                                     </div>
                                                 </td>
                                             )}
                                             <td onClick={(e) => e.stopPropagation()}>
-                                                <div className="appointments-action-dropdown">
-                                                    <button className="appointments-action-dropdown-toggle">
+                                                <div className="jadval-action-dropdown">
+                                                    <button className="jadval-action-dropdown-toggle">
                                                         <FaEllipsisV />
                                                     </button>
-                                                    <div className="appointments-action-dropdown-menu">
+                                                    <div className="jadval-action-dropdown-menu">
                                                         <button
-                                                            className="appointments-action-item"
+                                                            className="jadval-action-item"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 openViewSidebar(appointment)
@@ -1337,7 +1340,7 @@ export default function ASchedule() {
                                                             <FaEye /> {t("view")}
                                                         </button>
                                                         <button
-                                                            className="appointments-action-item"
+                                                            className="jadval-action-item"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 openEditSidebar(appointment)
@@ -1346,7 +1349,7 @@ export default function ASchedule() {
                                                             <FaEdit /> {t("edit")}
                                                         </button>
                                                         <button
-                                                            className="appointments-action-item"
+                                                            className="jadval-action-item"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 openTimeChangeModal(appointment)
@@ -1356,7 +1359,7 @@ export default function ASchedule() {
                                                         </button>
                                                         {appointment.status === "expected" && (
                                                             <button
-                                                                className="appointments-action-item status-accept"
+                                                                className="jadval-action-item status-accept"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     handleStatusChange(appointment.id, "accepted")
@@ -1367,7 +1370,7 @@ export default function ASchedule() {
                                                         )}
                                                         {appointment.status === "expected" && (
                                                             <button
-                                                                className="appointments-action-item status-cancel"
+                                                                className="jadval-action-item status-cancel"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     handleStatusChange(appointment.id, "cancelled")
@@ -1377,7 +1380,7 @@ export default function ASchedule() {
                                                             </button>
                                                         )}
                                                         <button
-                                                            className="appointments-action-item delete"
+                                                            className="jadval-action-item delete"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleDeleteAppointment(appointment.id)
@@ -1404,22 +1407,32 @@ export default function ASchedule() {
                     />
                 </div>
             ) : (
-                <div className="appointments-calendar-view">
-                    <div className="appointments-calendar-header">
-                        <div className="appointments-calendar-days">
+                <div className="jadval-calendar-view">
+                    <div className="jadval-calendar-header">
+                        <div className="jadval-calendar-navigation">
+                            <button className="jadval-nav-btn" onClick={navigatePrevious}>
+                                <FaChevronLeft />
+                            </button>
+                            <h3 className="jadval-current-month">
+                                {currentDate.toLocaleDateString("uz-UZ", { month: "long", year: "numeric" })}
+                            </h3>
+                            <button className="jadval-nav-btn" onClick={navigateNext}>
+                                <FaChevronRight />
+                            </button>
+                        </div>
+                        <div className="jadval-calendar-days">
                             {getWeekDates().map((date, index) => (
                                 <div
                                     key={index}
-                                    className={`appointments-calendar-day ${date.toDateString() === new Date().toDateString() ? "today" : ""
-                                        }`}
+                                    className={`jadval-calendar-day ${date.toDateString() === new Date().toDateString() ? "today" : ""}`}
                                 >
-                                    <div className="appointments-day-name">{date.toLocaleDateString("uz-UZ", { weekday: "short" })}</div>
-                                    <div className="appointments-day-date">{date.getDate()}</div>
+                                    <div className="jadval-day-name">{date.toLocaleDateString("uz-UZ", { weekday: "short" })}</div>
+                                    <div className="jadval-day-date">{date.getDate()}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <div className="appointments-calendar-body">
+                    <div className="jadval-calendar-body">
                         {getWeekDates().map((date, index) => {
                             const dateString = formatDate(date)
                             const dayAppointments = appointments.filter((appointment) => appointment.date === dateString)
@@ -1427,30 +1440,33 @@ export default function ASchedule() {
                             return (
                                 <div
                                     key={index}
-                                    className={`appointments-calendar-column ${date.toDateString() === new Date().toDateString() ? "today" : ""
+                                    className={`jadval-calendar-column ${date.toDateString() === new Date().toDateString() ? "today" : ""
                                         }`}
                                 >
                                     {dayAppointments.length > 0 ? (
                                         dayAppointments.map((appointment) => (
                                             <div
                                                 key={appointment.id}
-                                                className={`appointments-calendar-item ${appointment.status}`}
+                                                className={`jadval-calendar-item ${appointment.status}`}
                                                 onClick={() => openViewSidebar(appointment)}
                                             >
-                                                <div className="appointments-calendar-time">{formatTimeForDisplay(appointment.date)}</div>
-                                                <div className="appointments-calendar-patient">{appointment.patientName}</div>
-                                                <div className="appointments-calendar-doctor">{appointment.doctorName}</div>
-                                                <div className="appointments-calendar-room">{appointment.roomName}</div>
-                                                <div className="appointments-calendar-status">
-                                                    <span className={`appointments-status-badge ${appointment.status}`}>
+                                                <div className="jadval-calendar-time">{formatTimeForDisplay(appointment.date)}</div>
+                                                <div className="jadval-calendar-patient">{appointment.patientName}</div>
+                                                <div className="jadval-calendar-doctor">{appointment.doctorName}</div>
+                                                <div className="jadval-calendar-room">{appointment.roomName}</div>
+                                                <div className="jadval-calendar-status">
+                                                    <span className={`jadval-status-badge ${appointment.status}`}>
                                                         {getStatusTranslation(appointment.status)}
                                                     </span>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="appointments-no-appointments">
+                                        <div className="jadval-no-appointments">
                                             <p>{t("no_appointments")}</p>
+                                            <button className="jadval-add-btn" onClick={openAddSidebar}>
+                                                <FaPlus />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -1461,15 +1477,15 @@ export default function ASchedule() {
             )}
 
             {/* Add Appointment Sidebar */}
-            <div className={`appointments-sidebar-overlay ${showAddSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
-            <div className={`appointments-sidebar ${showAddSidebar ? "active" : ""}`}>
-                <div className="appointments-sidebar-header">
+            <div className={`jadval-sidebar-overlay ${showAddSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
+            <div className={`jadval-sidebar ${showAddSidebar ? "active" : ""}`}>
+                <div className="jadval-sidebar-header">
                     <h2>{t("add_new_appointment")}</h2>
-                    <button className="appointments-close-button" onClick={closeAddSidebar}>
+                    <button className="jadval-close-button" onClick={closeAddSidebar}>
                         <FaTimes />
                     </button>
                 </div>
-                <div className="appointments-sidebar-content">
+                <div className="jadval-sidebar-content">
                     <form onSubmit={addAppointment}>
                         <div className="step-indicator">
                             {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
@@ -1488,20 +1504,17 @@ export default function ASchedule() {
             </div>
 
             {/* View Appointment Sidebar */}
-            <div
-                className={`appointments-sidebar-overlay ${showViewSidebar ? "active" : ""}`}
-                onClick={closeViewSidebar}
-            ></div>
-            <div className={`appointments-sidebar ${showViewSidebar ? "active" : ""}`}>
+            <div className={`jadval-sidebar-overlay ${showViewSidebar ? "active" : ""}`} onClick={closeViewSidebar}></div>
+            <div className={`jadval-sidebar ${showViewSidebar ? "active" : ""}`}>
                 {currentAppointment && (
                     <>
-                        <div className="appointments-sidebar-header">
+                        <div className="jadval-sidebar-header">
                             <h2>{t("view_appointment")}</h2>
-                            <button className="appointments-close-button" onClick={closeViewSidebar}>
+                            <button className="jadval-close-button" onClick={closeViewSidebar}>
                                 <FaTimes />
                             </button>
                         </div>
-                        <div className="appointments-sidebar-content">
+                        <div className="jadval-sidebar-content">
                             <div className="appointment-view-card">
                                 <div className={`appointment-status-indicator ${currentAppointment.status}`}>
                                     {getStatusTranslation(currentAppointment.status)}
@@ -1589,7 +1602,7 @@ export default function ASchedule() {
                                 <div className="appointment-view-actions">
                                     <button
                                         type="button"
-                                        className="appointments-btn appointments-btn-primary"
+                                        className="jadval-btn jadval-btn-primary"
                                         onClick={() => {
                                             closeViewSidebar()
                                             openEditSidebar(currentAppointment)
@@ -1597,11 +1610,7 @@ export default function ASchedule() {
                                     >
                                         <FaEdit /> {t("edit")}
                                     </button>
-                                    <button
-                                        type="button"
-                                        className="appointments-btn appointments-btn-secondary"
-                                        onClick={closeViewSidebar}
-                                    >
+                                    <button type="button" className="jadval-btn jadval-btn-secondary" onClick={closeViewSidebar}>
                                         {t("close")}
                                     </button>
                                 </div>
@@ -1612,27 +1621,24 @@ export default function ASchedule() {
             </div>
 
             {/* Edit Appointment Sidebar */}
-            <div
-                className={`appointments-sidebar-overlay ${showEditSidebar ? "active" : ""}`}
-                onClick={closeEditSidebar}
-            ></div>
-            <div className={`appointments-sidebar ${showEditSidebar ? "active" : ""}`}>
+            <div className={`jadval-sidebar-overlay ${showEditSidebar ? "active" : ""}`} onClick={closeEditSidebar}></div>
+            <div className={`jadval-sidebar ${showEditSidebar ? "active" : ""}`}>
                 {editLoading ? (
-                    <div className="appointments-loading-container">
-                        <FaSpinner className="appointments-spinner" /> {t("loading")}
+                    <div className="jadval-loading-container">
+                        <FaSpinner className="jadval-spinner" /> {t("loading")}
                     </div>
                 ) : currentAppointment ? (
                     <>
-                        <div className="appointments-sidebar-header">
+                        <div className="jadval-sidebar-header">
                             <h2>{t("edit_appointment")}</h2>
-                            <button className="appointments-close-button" onClick={closeEditSidebar}>
+                            <button className="jadval-close-button" onClick={closeEditSidebar}>
                                 <FaTimes />
                             </button>
                         </div>
-                        <div className="appointments-sidebar-content">
+                        <div className="jadval-sidebar-content">
                             <form onSubmit={updateAppointment}>
                                 {selectedBranch === "all" && (
-                                    <div className="appointments-form-group">
+                                    <div className="jadval-form-group">
                                         <label>{t("branch")}</label>
                                         <div className="input-icon-wrapper">
                                             <FaBuilding className="input-icon" />
@@ -1648,7 +1654,7 @@ export default function ASchedule() {
                                     </div>
                                 )}
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("patient")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaUser className="input-icon" />
@@ -1669,7 +1675,7 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("doctor")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaUserMd className="input-icon" />
@@ -1690,11 +1696,16 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("room")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaDoorOpen className="input-icon" />
-                                        <select name="roomId" value={currentAppointment.roomId} onChange={handleEditAppointmentChange} required>
+                                        <select
+                                            name="roomId"
+                                            value={currentAppointment.roomId}
+                                            onChange={handleEditAppointmentChange}
+                                            required
+                                        >
                                             <option value="">{t("select_room")}</option>
                                             {filterData.cabinets &&
                                                 filterData.cabinets.map((cabinet) => (
@@ -1706,8 +1717,8 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-row">
-                                    <div className="appointments-form-group">
+                                <div className="jadval-form-row">
+                                    <div className="jadval-form-group">
                                         <label>{t("date")}</label>
                                         <div className="input-icon-wrapper">
                                             <FaCalendarAlt className="input-icon" />
@@ -1725,7 +1736,7 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("time")}</label>
                                     {timeError && (
                                         <div className="time-error">
@@ -1752,7 +1763,7 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("status")}</label>
                                     <select name="status" value={currentAppointment.status} onChange={handleEditAppointmentChange}>
                                         <option value="expected">{t("expected")}</option>
@@ -1763,7 +1774,7 @@ export default function ASchedule() {
                                     </select>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("diagnosis")}</label>
                                     <textarea
                                         name="diagnosis"
@@ -1774,7 +1785,7 @@ export default function ASchedule() {
                                     ></textarea>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("notes")}</label>
                                     <textarea
                                         name="notes"
@@ -1785,7 +1796,7 @@ export default function ASchedule() {
                                     ></textarea>
                                 </div>
 
-                                <div className="appointments-form-group">
+                                <div className="jadval-form-group">
                                     <label>{t("payment_amount")}</label>
                                     <div className="input-icon-wrapper">
                                         <FaMoneyBillWave className="input-icon" />
@@ -1799,15 +1810,11 @@ export default function ASchedule() {
                                     </div>
                                 </div>
 
-                                <div className="appointments-form-actions">
-                                    <button type="submit" className="appointments-btn appointments-btn-primary">
+                                <div className="jadval-form-actions">
+                                    <button type="submit" className="jadval-btn jadval-btn-primary">
                                         {t("save")}
                                     </button>
-                                    <button
-                                        type="button"
-                                        className="appointments-btn appointments-btn-secondary"
-                                        onClick={closeEditSidebar}
-                                    >
+                                    <button type="button" className="jadval-btn jadval-btn-secondary" onClick={closeEditSidebar}>
                                         {t("cancel")}
                                     </button>
                                 </div>
@@ -1817,6 +1824,7 @@ export default function ASchedule() {
                 ) : null}
             </div>
 
+            {/* Time Change Modal */}
             {showTimeChangeModal && timeChangeAppointment && (
                 <div className="time-change-modal-overlay">
                     <div className="time-change-modal">
@@ -1868,7 +1876,8 @@ export default function ASchedule() {
                                             type="button"
                                             className={`time-slot ${slot.isBooked && timeChangeAppointment.time !== slot.time ? "booked" : ""} ${newTime === slot.time ? "selected" : ""}`}
                                             onClick={() =>
-                                                (!slot.isBooked || timeChangeAppointment.time === slot.time) && handleTimeChangeSelect(slot.time)
+                                                (!slot.isBooked || timeChangeAppointment.time === slot.time) &&
+                                                handleTimeChangeSelect(slot.time)
                                             }
                                             disabled={slot.isBooked && timeChangeAppointment.time !== slot.time}
                                         >
@@ -1881,10 +1890,10 @@ export default function ASchedule() {
                             </div>
                         </div>
                         <div className="time-change-modal-footer">
-                            <button className="appointments-btn appointments-btn-secondary" onClick={closeTimeChangeModal}>
+                            <button className="jadval-btn jadval-btn-secondary" onClick={closeTimeChangeModal}>
                                 {t("cancel")}
                             </button>
-                            <button className="appointments-btn appointments-btn-primary" onClick={saveTimeChange} disabled={!newTime}>
+                            <button className="jadval-btn jadval-btn-primary" onClick={saveTimeChange} disabled={!newTime}>
                                 {t("save_changes")}
                             </button>
                         </div>

@@ -1,611 +1,757 @@
-// Admin Schedule Styles - Matching Director Appointments
-.appointments-container {
-    padding: 20px;
-    background-color: #f8f9fa;
+// Admin Schedule Styles - Modern Design
+.jadval-container {
+    padding: 24px;
+    background-color: #f8fafc;
     min-height: calc(100vh - 60px);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-    .appointments-page-header {
+    .jadval-page-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
 
-        .appointments-page-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
+        .jadval-page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
 
             svg {
-                color: #4a6cf7;
+                color: #3b82f6;
             }
         }
 
-        .appointments-header-actions {
+        .jadval-header-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
     }
 
-    .appointments-btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 500;
+    .jadval-btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         border: none;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        font-size: 14px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
-        &.appointments-btn-primary {
-            background-color: #4a6cf7;
+        &.jadval-btn-primary {
+            background-color: #3b82f6;
             color: white;
 
             &:hover {
-                background-color: darken(#4a6cf7, 10%);
+                background-color: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+            }
+
+            &:active {
+                transform: translateY(0);
             }
         }
 
-        &.appointments-btn-secondary {
-            background-color: #e9ecef;
-            color: #495057;
+        &.jadval-btn-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
 
             &:hover {
-                background-color: darken(#e9ecef, 10%);
+                background-color: #e2e8f0;
+                transform: translateY(-1px);
+            }
+
+            &:active {
+                transform: translateY(0);
             }
         }
 
-        &.appointments-btn-icon {
+        &.jadval-btn-icon {
             svg {
-                margin-right: 5px;
+                font-size: 16px;
             }
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
         }
     }
 
-    .appointments-filters-container {
-        margin-bottom: 20px;
+    .jadval-filters-container {
+        margin-bottom: 24px;
 
-        .appointments-search-filter {
+        .jadval-search-filter {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 16px;
 
-            .appointments-search-input {
+            .jadval-search-input {
                 flex: 1;
                 position: relative;
                 display: flex;
 
                 input {
                     flex: 1;
-                    padding: 10px 10px 10px 40px;
-                    border: 1px solid #ced4da;
-                    border-radius: 6px;
+                    padding: 12px 12px 12px 42px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
                     font-size: 14px;
+                    background-color: #fff;
+                    transition: all 0.2s ease;
 
                     &:focus {
                         outline: none;
-                        border-color: #4a6cf7;
-                        box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
                     }
                 }
 
-                .appointments-search-icon {
+                .jadval-search-icon {
                     position: absolute;
-                    left: 12px;
+                    left: 14px;
                     top: 50%;
                     transform: translateY(-50%);
-                    color: #6c757d;
+                    color: #94a3b8;
                 }
 
-                .appointments-search-button {
-                    background-color: #4a6cf7;
+                .jadval-search-button {
+                    background-color: #3b82f6;
                     color: white;
                     border: none;
-                    border-radius: 0 6px 6px 0;
-                    padding: 0 15px;
+                    border-radius: 0 8px 8px 0;
+                    padding: 0 16px;
                     cursor: pointer;
+                    transition: all 0.2s ease;
 
                     &:hover {
-                        background-color: darken(#4a6cf7, 10%);
+                        background-color: #2563eb;
                     }
                 }
             }
 
-            .appointments-filter-toggle-btn {
+            .jadval-filter-toggle-btn {
                 display: flex;
                 align-items: center;
-                gap: 5px;
-                padding: 10px 15px;
-                background-color: #e9ecef;
+                gap: 8px;
+                padding: 12px 18px;
+                background-color: #f1f5f9;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
-                font-weight: 500;
-                color: #495057;
+                font-weight: 600;
+                color: #475569;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
                 &:hover {
-                    background-color: darken(#e9ecef, 5%);
+                    background-color: #e2e8f0;
                 }
 
                 &.active {
-                    background-color: #4a6cf7;
+                    background-color: #3b82f6;
                     color: white;
                 }
             }
         }
 
-        .appointments-advanced-filters {
+        .jadval-advanced-filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            padding: 15px;
+            gap: 16px;
+            padding: 20px;
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            animation: slideDown 0.3s ease;
 
-            .appointments-filter-group {
+            .jadval-filter-group {
                 display: flex;
                 flex-direction: column;
                 min-width: 200px;
+                flex: 1;
 
                 label {
                     font-size: 13px;
-                    font-weight: 500;
-                    margin-bottom: 5px;
-                    color: #495057;
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                    color: #64748b;
                 }
 
                 select,
                 input {
-                    padding: 8px 12px;
-                    border: 1px solid #ced4da;
-                    border-radius: 4px;
+                    padding: 10px 14px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
                     font-size: 14px;
+                    background-color: #fff;
+                    transition: all 0.2s ease;
 
                     &:focus {
                         outline: none;
-                        border-color: #4a6cf7;
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
                     }
                 }
 
-                .appointments-date-input {
+                .jadval-date-input {
                     position: relative;
 
                     input {
-                        padding-left: 35px;
+                        padding-left: 40px;
                         width: 100%;
                     }
 
-                    .appointments-calendar-icon {
+                    .jadval-calendar-icon {
                         position: absolute;
-                        left: 10px;
+                        left: 14px;
                         top: 50%;
                         transform: translateY(-50%);
-                        color: #6c757d;
+                        color: #94a3b8;
                     }
                 }
             }
         }
     }
 
-    .appointments-view-controls {
+    .jadval-view-controls {
         display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 24px;
 
-        .appointments-view-btn {
-            padding: 8px 16px;
-            background-color: #e9ecef;
+        .jadval-view-btn {
+            padding: 10px 18px;
+            background-color: #f1f5f9;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 500;
-            color: #495057;
+            font-weight: 600;
+            color: #475569;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
             &:hover {
-                background-color: darken(#e9ecef, 5%);
+                background-color: #e2e8f0;
             }
 
             &.active {
-                background-color: #4a6cf7;
+                background-color: #3b82f6;
                 color: white;
             }
         }
     }
 
-    .appointments-dashboard-card {
+    .jadval-dashboard-card {
         background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         overflow: hidden;
 
-        .appointments-table-responsive {
-            overflow-x: auto;
+        .jadval-table-responsive {
+            // overflow-x: auto;
 
-            .appointments-data-table {
+            .jadval-data-table {
                 width: 100%;
-                border-collapse: collapse;
+                border-collapse: separate;
+                border-spacing: 0;
 
                 th,
                 td {
-                    padding: 12px 15px;
+                    padding: 16px;
                     text-align: left;
-                    border-bottom: 1px solid #e9ecef;
                     font-size: 14px;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
                 th {
-                    background-color: #f8f9fa;
+                    background-color: #f8fafc;
                     font-weight: 600;
-                    color: #495057;
+                    color: #475569;
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
                 }
 
-                tr:hover {
-                    background-color: #f8f9fa;
+                tr {
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background-color: #f8fafc;
+                    }
                 }
 
-                .appointments-status-badge {
-                    display: inline-block;
-                    padding: 4px 8px;
-                    border-radius: 4px;
+                .jadval-status-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 6px 10px;
+                    border-radius: 6px;
                     font-size: 12px;
-                    font-weight: 500;
+                    font-weight: 600;
                     text-transform: capitalize;
 
                     &.expected {
-                        background-color: #e9ecef;
-                        color: #495057;
+                        background-color: #f1f5f9;
+                        color: #475569;
                     }
 
                     &.accepted {
-                        background-color: #cff4fc;
-                        color: #055160;
+                        background-color: #dbeafe;
+                        color: #1e40af;
                     }
 
                     &.progress,
                     &.in_progress {
-                        background-color: #fff3cd;
-                        color: #664d03;
+                        background-color: #fef3c7;
+                        color: #92400e;
                     }
 
                     &.finished,
                     &.completed {
-                        background-color: #d1e7dd;
-                        color: #0f5132;
+                        background-color: #dcfce7;
+                        color: #166534;
                     }
 
                     &.cancelled {
-                        background-color: #f8d7da;
-                        color: #842029;
+                        background-color: #fee2e2;
+                        color: #b91c1c;
                     }
                 }
 
-                .appointments-branch-badge {
+                .jadval-branch-badge {
                     display: flex;
                     align-items: center;
-                    gap: 5px;
+                    gap: 6px;
                     font-size: 13px;
+                    background-color: #f1f5f9;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    width: fit-content;
 
-                    .appointments-branch-icon {
-                        color: #6c757d;
+                    .jadval-branch-icon {
+                        color: #64748b;
                     }
                 }
 
-                .appointments-action-dropdown {
+                .jadval-action-dropdown {
                     position: relative;
                     display: inline-block;
 
-                    .appointments-action-dropdown-toggle {
+                    .jadval-action-dropdown-toggle {
                         background: none;
                         border: none;
-                        color: #6c757d;
+                        color: #64748b;
                         cursor: pointer;
-                        padding: 5px;
-                        border-radius: 4px;
+                        padding: 8px;
+                        border-radius: 6px;
+                        transition: all 0.2s ease;
 
                         &:hover {
-                            background-color: #e9ecef;
+                            background-color: #f1f5f9;
+                            color: #1e293b;
                         }
                     }
 
-                    .appointments-action-dropdown-menu {
+                    .jadval-action-dropdown-menu {
                         position: absolute;
-                        bottom: 100%; // Changed from top to bottom to make dropdown open upward
-                        right: 0;
+                        overflow-x: scroll;
+                        top: -10px;
+                        right: 40%;
                         background-color: #fff;
-                        border-radius: 6px;
-                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                        min-width: 150px;
-                        z-index: 10;
-                        margin-bottom: 5px; // Added margin to the bottom
+                        border-radius: 8px;
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                        min-width: 180px;
+                        height: 150px;
+                        z-index: 10000;
+                        margin-right: 8px;
                         display: none;
                         flex-direction: column;
+                        padding: 8px;
+                        animation: fadeIn 0.2s ease;
 
-                        .appointments-action-item {
+                        .jadval-action-item {
                             display: flex;
                             align-items: center;
-                            gap: 8px;
-                            padding: 8px 12px;
+                            gap: 10px;
+                            padding: 10px 12px;
                             border: none;
                             background: none;
                             text-align: left;
                             cursor: pointer;
                             font-size: 14px;
-                            color: #495057;
-                            width: 100%;
+                            color: #475569;
+                            width: 200px;
+                            border-radius: 6px;
+                            transition: all 0.2s ease;
 
                             &:hover {
-                                background-color: #f8f9fa;
+                                background-color: #f8fafc;
                             }
 
                             &.delete {
-                                color: #dc3545;
+                                color: #ef4444;
+
+                                &:hover {
+                                    background-color: #fee2e2;
+                                }
                             }
 
                             &.status-accept {
-                                color: #198754;
+                                color: #10b981;
+
+                                &:hover {
+                                    background-color: #dcfce7;
+                                }
                             }
 
                             &.status-cancel {
-                                color: #dc3545;
+                                color: #ef4444;
+
+                                &:hover {
+                                    background-color: #fee2e2;
+                                }
                             }
                         }
                     }
 
-                    &:hover .appointments-action-dropdown-menu {
+                    &:hover .jadval-action-dropdown-menu {
                         display: flex;
                     }
                 }
 
-                .appointments-loading,
-                .appointments-error,
-                .appointments-no-data {
+                .jadval-loading,
+                .jadval-error,
+                .jadval-no-data {
                     text-align: center;
-                    padding: 30px;
-                    color: #6c757d;
+                    padding: 40px;
+                    color: #64748b;
+                    font-size: 15px;
 
-                    .appointments-spinner {
+                    .jadval-spinner {
                         animation: spin 1s linear infinite;
                         margin-right: 10px;
+                        font-size: 18px;
                     }
 
-                    .appointments-error-icon,
-                    .appointments-no-data-icon {
+                    .jadval-error-icon,
+                    .jadval-no-data-icon {
                         margin-right: 10px;
-                        color: #dc3545;
+                        color: #ef4444;
+                        font-size: 18px;
                     }
                 }
             }
         }
     }
 
-    .appointments-calendar-view {
+    .jadval-calendar-view {
         background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         overflow: hidden;
 
-        .appointments-calendar-header {
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
+        .jadval-calendar-header {
+            padding: 20px;
+            border-bottom: 1px solid #f1f5f9;
 
-            .appointments-calendar-days {
+            .jadval-calendar-navigation {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 16px;
+
+                .jadval-nav-btn {
+                    background-color: #f1f5f9;
+                    border: none;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: #475569;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background-color: #e2e8f0;
+                        color: #1e293b;
+                    }
+                }
+
+                .jadval-current-month {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1e293b;
+                    margin: 0;
+                }
+            }
+
+            .jadval-calendar-days {
                 display: flex;
 
-                .appointments-calendar-day {
+                .jadval-calendar-day {
                     flex: 1;
                     text-align: center;
-                    padding: 10px;
+                    padding: 12px;
+                    border-radius: 8px;
+                    transition: all 0.2s ease;
 
                     &.today {
-                        background-color: #e9ecef;
-                        border-radius: 6px;
+                        background-color: #eff6ff;
                     }
 
-                    .appointments-day-name {
+                    .jadval-day-name {
                         font-weight: 600;
                         font-size: 14px;
-                        color: #495057;
+                        color: #64748b;
+                        margin-bottom: 6px;
                     }
 
-                    .appointments-day-date {
-                        font-size: 18px;
+                    .jadval-day-date {
+                        font-size: 20px;
                         font-weight: 700;
-                        margin-top: 5px;
+                        color: #1e293b;
                     }
                 }
             }
         }
 
-        .appointments-calendar-body {
+        .jadval-calendar-body {
             display: flex;
-            min-height: 500px;
+            min-height: 600px;
 
-            .appointments-calendar-column {
+            .jadval-calendar-column {
                 flex: 1;
-                padding: 10px;
-                border-right: 1px solid #e9ecef;
+                padding: 12px;
+                border-right: 1px solid #f1f5f9;
+                background-color: #fcfcfc;
 
                 &:last-child {
                     border-right: none;
                 }
 
                 &.today {
-                    background-color: rgba(233, 236, 239, 0.3);
+                    background-color: #f8fafc;
                 }
 
-                .appointments-calendar-item {
+                .jadval-calendar-item {
                     background-color: #fff;
-                    border-radius: 6px;
-                    padding: 10px;
-                    margin-bottom: 10px;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+                    border-radius: 8px;
+                    padding: 14px;
+                    margin-bottom: 12px;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
                     cursor: pointer;
-                    border-left: 4px solid #4a6cf7;
+                    border-left: 4px solid #3b82f6;
+                    transition: all 0.2s ease;
 
                     &:hover {
-                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                        transform: translateY(-2px);
                     }
 
                     &.expected {
-                        border-left-color: #6c757d;
+                        border-left-color: #94a3b8;
                     }
 
                     &.accepted {
-                        border-left-color: #0dcaf0;
+                        border-left-color: #3b82f6;
                     }
 
                     &.progress,
                     &.in_progress {
-                        border-left-color: #ffc107;
+                        border-left-color: #f59e0b;
                     }
 
                     &.finished,
                     &.completed {
-                        border-left-color: #198754;
+                        border-left-color: #10b981;
                     }
 
                     &.cancelled {
-                        border-left-color: #dc3545;
+                        border-left-color: #ef4444;
                     }
 
-                    .appointments-calendar-time {
+                    .jadval-calendar-time {
+                        font-weight: 700;
+                        font-size: 15px;
+                        margin-bottom: 8px;
+                        color: #1e293b;
+                    }
+
+                    .jadval-calendar-patient {
                         font-weight: 600;
-                        font-size: 14px;
-                        margin-bottom: 5px;
+                        margin-bottom: 6px;
+                        color: #1e293b;
                     }
 
-                    .appointments-calendar-patient {
-                        font-weight: 500;
-                        margin-bottom: 3px;
-                    }
-
-                    .appointments-calendar-doctor,
-                    .appointments-calendar-room {
+                    .jadval-calendar-doctor,
+                    .jadval-calendar-room {
                         font-size: 13px;
-                        color: #6c757d;
-                        margin-bottom: 3px;
+                        color: #64748b;
+                        margin-bottom: 4px;
                     }
 
-                    .appointments-calendar-status {
-                        margin-top: 5px;
+                    .jadval-calendar-status {
+                        margin-top: 8px;
 
-                        .appointments-status-badge {
-                            display: inline-block;
-                            padding: 3px 6px;
+                        .jadval-status-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            padding: 4px 8px;
                             border-radius: 4px;
                             font-size: 11px;
-                            font-weight: 500;
+                            font-weight: 600;
                             text-transform: capitalize;
 
                             &.expected {
-                                background-color: #e9ecef;
-                                color: #495057;
+                                background-color: #f1f5f9;
+                                color: #475569;
                             }
 
                             &.accepted {
-                                background-color: #cff4fc;
-                                color: #055160;
+                                background-color: #dbeafe;
+                                color: #1e40af;
                             }
 
                             &.progress,
                             &.in_progress {
-                                background-color: #fff3cd;
-                                color: #664d03;
+                                background-color: #fef3c7;
+                                color: #92400e;
                             }
 
                             &.finished,
                             &.completed {
-                                background-color: #d1e7dd;
-                                color: #0f5132;
+                                background-color: #dcfce7;
+                                color: #166534;
                             }
 
                             &.cancelled {
-                                background-color: #f8d7da;
-                                color: #842029;
+                                background-color: #fee2e2;
+                                color: #b91c1c;
                             }
                         }
                     }
                 }
 
-                .appointments-no-appointments {
+                .jadval-no-appointments {
                     height: 100%;
                     display: flex;
+                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    color: #6c757d;
+                    color: #94a3b8;
                     font-style: italic;
+                    gap: 16px;
+
+                    .jadval-add-btn {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        background-color: #3b82f6;
+                        color: white;
+                        border: none;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+
+                        &:hover {
+                            background-color: #2563eb;
+                            transform: scale(1.05);
+                        }
+                    }
                 }
             }
         }
     }
 
-    .appointments-sidebar-overlay {
+    .jadval-sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(15, 23, 42, 0.5);
         z-index: 999;
         display: none;
+        backdrop-filter: blur(2px);
+        transition: all 0.3s ease;
 
         &.active {
             display: block;
+            animation: fadeIn 0.3s ease;
         }
     }
 
-    .appointments-sidebar {
+    .jadval-sidebar {
         position: fixed;
         top: 0;
-        right: -400px;
-        width: 400px;
+        right: -450px;
+        width: 450px;
         height: 100vh;
         background-color: #fff;
         z-index: 1000;
         transition: right 0.3s ease;
         display: flex;
         flex-direction: column;
+        box-shadow: -10px 0 20px rgba(0, 0, 0, 0.1);
 
         &.active {
             right: 0;
         }
 
-        .appointments-sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid #e9ecef;
+        .jadval-sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f1f5f9;
             display: flex;
             justify-content: space-between;
             align-items: center;
 
             h2 {
-                font-size: 18px;
-                font-weight: 600;
+                font-size: 20px;
+                font-weight: 700;
                 margin: 0;
+                color: #1e293b;
             }
 
-            .appointments-close-button {
+            .jadval-close-button {
                 background: none;
                 border: none;
                 font-size: 20px;
                 cursor: pointer;
-                color: #6c757d;
+                color: #64748b;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
 
                 &:hover {
-                    color: #495057;
+                    background-color: #f1f5f9;
+                    color: #1e293b;
                 }
             }
         }
 
-        .appointments-sidebar-content {
-            padding: 20px;
+        .jadval-sidebar-content {
+            padding: 24px;
             overflow-y: auto;
             flex: 1;
 
@@ -613,82 +759,85 @@
                 display: flex;
                 justify-content: space-between;
                 margin-bottom: 30px;
+                position: relative;
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 15px;
+                    left: 15px;
+                    right: 15px;
+                    height: 2px;
+                    background-color: #e2e8f0;
+                    z-index: 1;
+                }
 
                 .step {
                     width: 30px;
                     height: 30px;
                     border-radius: 50%;
-                    background-color: #e9ecef;
+                    background-color: #f1f5f9;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    color: #6c757d;
+                    color: #64748b;
                     position: relative;
-
-                    &:not(:last-child)::after {
-                        content: '';
-                        position: absolute;
-                        top: 50%;
-                        left: 100%;
-                        width: calc(100% - 30px);
-                        height: 2px;
-                        background-color: #e9ecef;
-                        transform: translateY(-50%);
-                    }
+                    z-index: 2;
+                    transition: all 0.3s ease;
 
                     &.active {
-                        background-color: #4a6cf7;
+                        background-color: #3b82f6;
                         color: white;
+                        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
                     }
 
                     &.completed {
-                        background-color: #198754;
+                        background-color: #10b981;
                         color: white;
-
-                        &::after {
-                            background-color: #198754;
-                        }
                     }
                 }
             }
 
             .step-title {
-                font-size: 16px;
-                font-weight: 600;
-                margin-bottom: 20px;
-                color: #495057;
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 24px;
+                color: #1e293b;
             }
 
-            .appointments-form-group {
-                margin-bottom: 20px;
+            .jadval-form-group {
+                margin-bottom: 24px;
 
                 label {
                     display: block;
-                    font-weight: 500;
+                    font-weight: 600;
                     margin-bottom: 8px;
-                    color: #495057;
+                    color: #475569;
+                    font-size: 14px;
                 }
 
                 input,
                 select,
                 textarea {
                     width: 100%;
-                    padding: 10px 12px;
-                    border: 1px solid #ced4da;
-                    border-radius: 6px;
+                    padding: 12px 14px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
                     font-size: 14px;
+                    background-color: #fff;
+                    transition: all 0.2s ease;
 
                     &:focus {
                         outline: none;
-                        border-color: #4a6cf7;
-                        box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
                     }
                 }
 
                 textarea {
                     resize: vertical;
-                    min-height: 100px;
+                    min-height: 120px;
                 }
 
                 .input-icon-wrapper {
@@ -696,36 +845,39 @@
 
                     .input-icon {
                         position: absolute;
-                        left: 12px;
+                        left: 14px;
                         top: 50%;
                         transform: translateY(-50%);
-                        color: #6c757d;
+                        color: #94a3b8;
                     }
 
                     input,
                     select {
-                        padding-left: 40px;
+                        padding-left: 42px;
                     }
                 }
 
                 .time-error {
-                    color: #dc3545;
+                    color: #ef4444;
                     font-size: 13px;
-                    margin-bottom: 10px;
+                    margin-bottom: 12px;
                     display: flex;
                     align-items: center;
-                    gap: 5px;
+                    gap: 6px;
+                    background-color: #fee2e2;
+                    padding: 8px 12px;
+                    border-radius: 6px;
                 }
 
                 .time-slots-container {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-                    gap: 10px;
+                    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                    gap: 12px;
 
                     .time-slot {
-                        padding: 8px;
-                        border: 1px solid #ced4da;
-                        border-radius: 6px;
+                        padding: 10px 8px;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
                         text-align: center;
                         cursor: pointer;
                         background-color: #fff;
@@ -733,21 +885,22 @@
                         display: flex;
                         flex-direction: column;
                         align-items: center;
+                        gap: 6px;
 
                         .time-icon {
-                            margin-bottom: 5px;
-                            color: #6c757d;
+                            color: #64748b;
                         }
 
                         &:hover:not(.booked) {
-                            border-color: #4a6cf7;
-                            background-color: #f0f4ff;
+                            border-color: #3b82f6;
+                            background-color: #eff6ff;
                         }
 
                         &.selected {
-                            border-color: #4a6cf7;
-                            background-color: #4a6cf7;
+                            border-color: #3b82f6;
+                            background-color: #3b82f6;
                             color: white;
+                            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
 
                             .time-icon {
                                 color: white;
@@ -755,13 +908,13 @@
                         }
 
                         &.booked {
-                            background-color: #f8f9fa;
-                            border-color: #e9ecef;
-                            color: #adb5bd;
+                            background-color: #f8fafc;
+                            border-color: #e2e8f0;
+                            color: #cbd5e1;
                             cursor: not-allowed;
 
                             .time-icon {
-                                color: #adb5bd;
+                                color: #cbd5e1;
                             }
                         }
                     }
@@ -769,99 +922,105 @@
                     .no-times-message {
                         grid-column: 1 / -1;
                         text-align: center;
-                        padding: 20px;
-                        color: #6c757d;
+                        padding: 24px;
+                        color: #64748b;
                         font-style: italic;
+                        background-color: #f8fafc;
+                        border-radius: 8px;
                     }
                 }
             }
 
-            .appointments-form-row {
+            .jadval-form-row {
                 display: flex;
-                gap: 15px;
+                gap: 16px;
 
-                .appointments-form-group {
+                .jadval-form-group {
                     flex: 1;
                 }
             }
 
-            .appointments-form-actions {
+            .jadval-form-actions {
                 display: flex;
                 justify-content: flex-end;
-                gap: 10px;
-                margin-top: 30px;
+                gap: 12px;
+                margin-top: 36px;
             }
 
             .appointment-view-card {
                 background-color: #fff;
-                border-radius: 8px;
+                border-radius: 12px;
                 overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
                 .appointment-status-indicator {
-                    padding: 10px 20px;
+                    padding: 14px 24px;
                     color: white;
-                    font-weight: 600;
+                    font-weight: 700;
                     text-transform: uppercase;
                     font-size: 14px;
+                    letter-spacing: 0.5px;
 
                     &.expected {
-                        background-color: #6c757d;
+                        background-color: #64748b;
                     }
 
                     &.accepted {
-                        background-color: #0dcaf0;
+                        background-color: #3b82f6;
                     }
 
                     &.progress,
                     &.in_progress {
-                        background-color: #ffc107;
+                        background-color: #f59e0b;
                     }
 
                     &.finished,
                     &.completed {
-                        background-color: #198754;
+                        background-color: #10b981;
                     }
 
                     &.cancelled {
-                        background-color: #dc3545;
+                        background-color: #ef4444;
                     }
                 }
 
                 .appointment-view-header {
-                    padding: 20px;
+                    padding: 24px;
                     display: flex;
                     align-items: center;
-                    gap: 15px;
-                    border-bottom: 1px solid #e9ecef;
+                    gap: 16px;
+                    border-bottom: 1px solid #f1f5f9;
 
                     .appointment-view-avatar {
-                        width: 60px;
-                        height: 60px;
+                        width: 64px;
+                        height: 64px;
                         border-radius: 50%;
-                        background-color: #e9ecef;
+                        background-color: #eff6ff;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         font-size: 24px;
-                        color: #6c757d;
+                        color: #3b82f6;
                     }
 
                     .appointment-view-title {
                         h3 {
-                            margin: 0 0 5px;
-                            font-size: 18px;
-                            font-weight: 600;
+                            margin: 0 0 8px;
+                            font-size: 20px;
+                            font-weight: 700;
+                            color: #1e293b;
                         }
 
                         .appointment-view-subtitle {
                             display: flex;
                             align-items: center;
-                            gap: 15px;
-                            color: #6c757d;
+                            gap: 16px;
+                            color: #64748b;
                             font-size: 14px;
 
                             svg {
-                                margin-right: 5px;
+                                margin-right: 6px;
+                                color: #94a3b8;
                             }
 
                             .appointment-time {
@@ -873,10 +1032,10 @@
                 }
 
                 .appointment-view-details {
-                    padding: 20px;
+                    padding: 24px;
 
                     .appointment-view-section {
-                        margin-bottom: 25px;
+                        margin-bottom: 28px;
 
                         &:last-child {
                             margin-bottom: 0;
@@ -884,58 +1043,67 @@
 
                         h4 {
                             font-size: 16px;
-                            font-weight: 600;
-                            margin: 0 0 15px;
-                            color: #495057;
+                            font-weight: 700;
+                            margin: 0 0 16px;
+                            color: #1e293b;
                             display: flex;
                             align-items: center;
                             gap: 10px;
 
                             svg {
-                                color: #4a6cf7;
+                                color: #3b82f6;
                             }
                         }
 
                         .appointment-view-info {
                             display: flex;
-                            margin-bottom: 10px;
+                            margin-bottom: 12px;
+                            padding-bottom: 12px;
+                            border-bottom: 1px dashed #f1f5f9;
 
                             &:last-child {
                                 margin-bottom: 0;
+                                padding-bottom: 0;
+                                border-bottom: none;
                             }
 
                             .info-label {
-                                width: 120px;
-                                font-weight: 500;
-                                color: #6c757d;
+                                width: 140px;
+                                font-weight: 600;
+                                color: #64748b;
                             }
 
                             .info-value {
                                 flex: 1;
+                                color: #1e293b;
                             }
                         }
                     }
                 }
 
                 .appointment-view-actions {
-                    padding: 20px;
-                    border-top: 1px solid #e9ecef;
+                    padding: 20px 24px;
+                    border-top: 1px solid #f1f5f9;
                     display: flex;
                     justify-content: flex-end;
-                    gap: 10px;
+                    gap: 12px;
+                    background-color: #f8fafc;
                 }
             }
 
-            .appointments-loading-container {
+            .jadval-loading-container {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                height: 200px;
-                color: #6c757d;
+                height: 300px;
+                color: #64748b;
+                font-size: 16px;
 
-                .appointments-spinner {
-                    margin-right: 10px;
+                .jadval-spinner {
+                    margin-right: 12px;
                     animation: spin 1s linear infinite;
+                    font-size: 20px;
+                    color: #3b82f6;
                 }
             }
         }
@@ -947,24 +1115,27 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(15, 23, 42, 0.5);
         z-index: 1001;
         display: flex;
         align-items: center;
         justify-content: center;
+        backdrop-filter: blur(2px);
+        animation: fadeIn 0.3s ease;
 
         .time-change-modal {
             background-color: #fff;
-            border-radius: 8px;
-            width: 500px;
+            border-radius: 12px;
+            width: 550px;
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: zoomIn 0.3s ease;
 
             .time-change-modal-header {
-                padding: 15px 20px;
-                border-bottom: 1px solid #e9ecef;
+                padding: 20px 24px;
+                border-bottom: 1px solid #f1f5f9;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -972,7 +1143,8 @@
                 h3 {
                     margin: 0;
                     font-size: 18px;
-                    font-weight: 600;
+                    font-weight: 700;
+                    color: #1e293b;
                 }
 
                 .close-btn {
@@ -980,23 +1152,34 @@
                     border: none;
                     font-size: 24px;
                     cursor: pointer;
-                    color: #6c757d;
+                    color: #64748b;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
 
                     &:hover {
-                        color: #495057;
+                        background-color: #f1f5f9;
+                        color: #1e293b;
                     }
                 }
             }
 
             .time-change-modal-body {
-                padding: 20px;
+                padding: 24px;
 
                 .appointment-info {
-                    margin-bottom: 20px;
+                    margin-bottom: 24px;
+                    background-color: #f8fafc;
+                    padding: 16px;
+                    border-radius: 8px;
 
                     .info-row {
                         display: flex;
-                        margin-bottom: 10px;
+                        margin-bottom: 12px;
 
                         &:last-child {
                             margin-bottom: 0;
@@ -1004,12 +1187,14 @@
 
                         .info-label {
                             width: 120px;
-                            font-weight: 500;
-                            color: #6c757d;
+                            font-weight: 600;
+                            color: #64748b;
                         }
 
                         .info-value {
                             flex: 1;
+                            color: #1e293b;
+                            font-weight: 500;
                         }
                     }
                 }
@@ -1017,29 +1202,32 @@
                 .time-selection {
                     h4 {
                         font-size: 16px;
-                        font-weight: 600;
-                        margin: 0 0 15px;
-                        color: #495057;
+                        font-weight: 700;
+                        margin: 0 0 16px;
+                        color: #1e293b;
                     }
 
                     .time-error {
-                        color: #dc3545;
+                        color: #ef4444;
                         font-size: 13px;
-                        margin-bottom: 10px;
+                        margin-bottom: 12px;
                         display: flex;
                         align-items: center;
-                        gap: 5px;
+                        gap: 6px;
+                        background-color: #fee2e2;
+                        padding: 8px 12px;
+                        border-radius: 6px;
                     }
 
                     .time-slots-container {
                         display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-                        gap: 10px;
+                        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                        gap: 12px;
 
                         .time-slot {
-                            padding: 8px;
-                            border: 1px solid #ced4da;
-                            border-radius: 6px;
+                            padding: 10px 8px;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 8px;
                             text-align: center;
                             cursor: pointer;
                             background-color: #fff;
@@ -1047,21 +1235,22 @@
                             display: flex;
                             flex-direction: column;
                             align-items: center;
+                            gap: 6px;
 
                             .time-icon {
-                                margin-bottom: 5px;
-                                color: #6c757d;
+                                color: #64748b;
                             }
 
                             &:hover:not(.booked) {
-                                border-color: #4a6cf7;
-                                background-color: #f0f4ff;
+                                border-color: #3b82f6;
+                                background-color: #eff6ff;
                             }
 
                             &.selected {
-                                border-color: #4a6cf7;
-                                background-color: #4a6cf7;
+                                border-color: #3b82f6;
+                                background-color: #3b82f6;
                                 color: white;
+                                box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
 
                                 .time-icon {
                                     color: white;
@@ -1069,13 +1258,13 @@
                             }
 
                             &.booked {
-                                background-color: #f8f9fa;
-                                border-color: #e9ecef;
-                                color: #adb5bd;
+                                background-color: #f8fafc;
+                                border-color: #e2e8f0;
+                                color: #cbd5e1;
                                 cursor: not-allowed;
 
                                 .time-icon {
-                                    color: #adb5bd;
+                                    color: #cbd5e1;
                                 }
                             }
                         }
@@ -1083,24 +1272,94 @@
                         .no-times-message {
                             grid-column: 1 / -1;
                             text-align: center;
-                            padding: 20px;
-                            color: #6c757d;
+                            padding: 24px;
+                            color: #64748b;
                             font-style: italic;
+                            background-color: #f8fafc;
+                            border-radius: 8px;
                         }
                     }
                 }
             }
 
             .time-change-modal-footer {
-                padding: 15px 20px;
-                border-top: 1px solid #e9ecef;
+                padding: 20px 24px;
+                border-top: 1px solid #f1f5f9;
                 display: flex;
                 justify-content: flex-end;
-                gap: 10px;
+                gap: 12px;
+                background-color: #f8fafc;
             }
         }
     }
 
+    // Responsive styles
+    @media (max-width: 768px) {
+        padding: 16px;
+
+        .jadval-page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+
+            .jadval-header-actions {
+                width: 100%;
+            }
+        }
+
+        .jadval-search-filter {
+            flex-direction: column;
+            gap: 10px;
+
+            .jadval-filter-toggle-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .jadval-advanced-filters {
+            .jadval-filter-group {
+                min-width: 100%;
+            }
+        }
+
+        .jadval-view-controls {
+            flex-wrap: wrap;
+
+            .jadval-view-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        .jadval-calendar-view {
+            .jadval-calendar-header {
+                .jadval-calendar-days {
+                    overflow-x: auto;
+                    padding-bottom: 10px;
+
+                    .jadval-calendar-day {
+                        min-width: 100px;
+                    }
+                }
+            }
+
+            .jadval-calendar-body {
+                overflow-x: auto;
+
+                .jadval-calendar-column {
+                    min-width: 200px;
+                }
+            }
+        }
+
+        .jadval-sidebar {
+            width: 100%;
+            right: -100%;
+        }
+    }
+
+    // Animations
     @keyframes spin {
         0% {
             transform: rotate(0deg);
@@ -1108,6 +1367,40 @@
 
         100% {
             transform: rotate(360deg);
+        }
+    }
+
+    @keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    @keyframes zoomIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes slideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 }
