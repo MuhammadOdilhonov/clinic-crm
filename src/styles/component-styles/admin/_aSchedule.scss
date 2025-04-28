@@ -882,7 +882,7 @@ $transition: all 0.3s ease;
             border-radius: $border-radius;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             min-width: 180px;
-            z-index: 1000;
+            z-index: 100000000;
             overflow: visible;
             opacity: 0;
             visibility: hidden;
