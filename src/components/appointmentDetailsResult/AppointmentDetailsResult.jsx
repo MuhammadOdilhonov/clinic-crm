@@ -170,7 +170,7 @@ export default function AppointmentDetailsResult() {
     // Prepare organs data for API as an array
     const prepareOrgansData = () => {
         // Return array of lowercase organ names
-        return selectedOrgans.map((organ) => organ.toLowerCase())
+        return selectedOrgans.map((organ) => organ)
     }
 
     // Handle save

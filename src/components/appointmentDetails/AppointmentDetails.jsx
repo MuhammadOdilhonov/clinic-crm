@@ -2,10 +2,20 @@
 
 import { Suspense, useState, useEffect, useRef } from "react"
 import { Canvas, useThree, useFrame } from "@react-three/fiber"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { OrbitControls, Html, useGLTF, useProgress } from "@react-three/drei"
 import * as THREE from "three"
-import { FaDownload, FaInfoCircle, FaSearchPlus } from "react-icons/fa"
+import {
+    FaDownload,
+    FaInfoCircle,
+    FaSearchPlus,
+    FaFilePdf,
+    FaFileImage,
+    FaFileAlt,
+    FaFileWord,
+    FaFileExcel,
+    FaFileCsv,
+} from "react-icons/fa"
 import apiPatientDetailReception from "../../api/apiPatientDetailReception"
 
 // Yuklash jarayonini ko'rsatish uchun komponent
@@ -19,7 +29,7 @@ const LoadingIndicator = () => {
                 <div
                     className="circular-progress"
                     style={{
-                        backgroundImage: `conic-gradient(#0077cc 0deg, #0077cc ${angle}deg, #e6e6e6 ${angle}deg, #e6e6e6 360deg)`
+                        backgroundImage: `conic-gradient(#0077cc 0deg, #0077cc ${angle}deg, #e6e6e6 ${angle}deg, #e6e6e6 360deg)`,
                     }}
                 >
                     <div className="progress-value">{Math.round(progress)}%</div>
@@ -63,13 +73,11 @@ const FocusOnAffectedParts = ({ modelScene, affectedParts, controlsRef, isAutoFo
     useEffect(() => {
         if (modelScene && affectedParts.length > 0 && isAutoFocus) {
             const affectedMeshes = []
-            let center = new THREE.Vector3()
+            const center = new THREE.Vector3()
 
             modelScene.traverse((child) => {
                 if (child.isMesh) {
-                    const isAffected = affectedParts.some(
-                        affectedPart => child.name.includes(affectedPart.originalName)
-                    )
+                    const isAffected = affectedParts.some((affectedPart) => child.name.includes(affectedPart.originalName))
                     if (isAffected) {
                         affectedMeshes.push(child)
                         const boundingBox = new THREE.Box3().setFromObject(child)
@@ -146,9 +154,7 @@ const Model = ({ gender, affectedParts, onPartsLoaded, modelType, onModelLoaded,
 
         parts.forEach((part) => {
             if (part.mesh) {
-                const isAffected = affectedParts.some(
-                    affectedPart => part.name.includes(affectedPart.originalName)
-                )
+                const isAffected = affectedParts.some((affectedPart) => part.name.includes(affectedPart.originalName))
                 if (isAffected) {
                     const highlightMaterial = new THREE.MeshStandardMaterial({
                         color: new THREE.Color("yellow"),
@@ -209,27 +215,41 @@ const CameraController = ({ controlsRef, modelType }) => {
     return null
 }
 
-// PDF generatsiya qilish funksiyasi
-const generatePDF = (appointmentData) => {
-    console.log("PDF ma'lumotlari bilan generatsiya qilinmoqda:", appointmentData)
-    const content = `
-        Tashxis ma'lumotlari
-        -------------------
-        Sana: ${new Date(appointmentData.date).toLocaleString()}
 
-        Filial: ${appointmentData.branch_name}
-        Mijoz: ${appointmentData.customer_name}
-        Shifokor: ${appointmentData.doctor_name}
-        Kabinet: ${appointmentData.room_name}
 
-        Tanlangan a'zolar:
-        ${appointmentData.parts.map(part => `- ${part.uzbekName}`).join('\n')}
+// File icon component
+const FileIcon = ({ fileType }) => {
+    switch (fileType.toLowerCase()) {
+        case "pdf":
+            return <FaFilePdf />
+        case "jpg":
+        case "jpeg":
+        case "png":
+        case "gif":
+        case "bmp":
+        case "tiff":
+            return <FaFileImage />
+        case "doc":
+        case "docx":
+            return <FaFileWord />
+        case "xls":
+        case "xlsx":
+            return <FaFileExcel />
+        case "csv":
+            return <FaFileCsv />
+        default:
+            return <FaFileAlt />
+    }
+}
 
-        Tashxis: ${appointmentData.comment || "Tashxis ma'lumotlari mavjud emas"}
+// Get file extension
+const getFileExtension = (filename) => {
+    return filename.split(".").pop().toLowerCase()
+}
 
-        To'lov miqdori: ${appointmentData.payment_amount}
-    `
-    alert("PDF ma'lumotlari: \n\n" + content)
+// Get file name from URL
+const getFileName = (url) => {
+    return url.split("/").pop()
 }
 
 // AppointmentDetails asosiy komponenti
@@ -252,9 +272,9 @@ const AppointmentDetails = () => {
                 const data = await apiPatientDetailReception.fetchAppointmentById(appointmentId)
                 // API dan kelgan "organs" massivini Model kutadigan formatga aylantiramiz:
                 // Har bir element uchun "originalName" va "uzbekName" maydonlarini yarataylik.
-                const parts = data.organs.map(organ => ({
+                const parts = data.organs.map((organ) => ({
                     originalName: organ,
-                    uzbekName: organ // Zaruratga qarab tarjima yoki mapping qoʻshish mumkin
+                    uzbekName: organ, // Zaruratga qarab tarjima yoki mapping qoʻshish mumkin
                 }))
                 setAppointmentData({ ...data, parts })
             } catch (error) {
@@ -272,9 +292,6 @@ const AppointmentDetails = () => {
         setModelScene(scene)
     }
 
-    const handleExportPDF = () => {
-        generatePDF(appointmentData)
-    }
 
     const handleFocusToggle = () => {
         setIsAutoFocus(!isAutoFocus)
@@ -283,6 +300,16 @@ const AppointmentDetails = () => {
         } else {
             setIsAutoFocus(true)
         }
+    }
+
+    // Download file function
+    const downloadFile = (url, filename) => {
+        const link = document.createElement("a")
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
     }
 
     if (!appointmentData) {
@@ -364,8 +391,13 @@ const AppointmentDetails = () => {
                     </div>
 
                     <div className="info-section">
-                        <h4>Tashxis (Izoh):</h4>
-                        <p>{appointmentData.comment || "Tashxis ma'lumotlari mavjud emas"}</p>
+                        <h4>Tashxis:</h4>
+                        <p>{appointmentData.diognosis || "Tashxis ma'lumotlari mavjud emas"}</p>
+                    </div>
+
+                    <div className="info-section">
+                        <h4>Izoh:</h4>
+                        <p>{appointmentData.comment || "Izoh mavjud emas"}</p>
                     </div>
 
                     <div className="info-section">
@@ -373,14 +405,38 @@ const AppointmentDetails = () => {
                         <p>{appointmentData.payment_amount}</p>
                     </div>
 
+                    {appointmentData.files && appointmentData.files.length > 0 && (
+                        <div className="info-section files-section">
+                            <h4>Yuklangan fayllar:</h4>
+                            <div className="files-container">
+                                {appointmentData.files.map((file) => {
+                                    const fileName = getFileName(file.file)
+                                    const fileExt = getFileExtension(fileName)
+                                    return (
+                                        <button
+                                            key={file.id}
+                                            className={`file-download-button file-type-${fileExt}`}
+                                            onClick={() => downloadFile(file.file, fileName)}
+                                        >
+                                            <span className="file-icon">
+                                                <FileIcon fileType={fileExt} />
+                                            </span>
+                                            <span className="file-name">{fileName}</span>
+                                            <span className="download-icon">
+                                                <FaDownload />
+                                            </span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="info-note">
                         <FaInfoCircle />
                         <p>3D modelda sariq rangda ajratilgan a'zolar tashxis qo'yilgan a'zolardir.</p>
                     </div>
-
-                    <button className="export-pdf-button" onClick={handleExportPDF}>
-                        <FaDownload /> PDF yuklab olish
-                    </button>
+                    
                 </div>
 
                 <div className="anatomy-instructions">
