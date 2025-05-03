@@ -10,7 +10,10 @@ import {
     FaChartPie,
     FaMoneyBillWave,
     FaArrowUp,
-    FaTasks,
+    FaArrowDown,
+    FaSpinner,
+    FaExclamationTriangle,
+    FaCalendarCheck,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import {
@@ -26,192 +29,171 @@ import {
     LineElement,
 } from "chart.js"
 import { Pie, Bar, Line } from "react-chartjs-2"
+import { getAllDashboardData } from "../../../api/apiDirectorDashboard"
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement)
 
+// Helper function to format date
+const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    const hours = date.getHours().toString().padStart(2, "0")
+    const minutes = date.getMinutes().toString().padStart(2, "0")
+    return `${hours}:${minutes}`
+}
+
+// Helper function to format date for display
+const formatDateForDisplay = (dateString) => {
+    const date = new Date(dateString)
+    const day = date.getDate().toString().padStart(2, "0")
+    const month = (date.getMonth() + 1).toString().padStart(2, "0")
+    const year = date.getFullYear()
+    const hours = date.getHours().toString().padStart(2, "0")
+    const minutes = date.getMinutes().toString().padStart(2, "0")
+    return `${day}.${month}.${year} ${hours}:${minutes}`
+}
+
+// Helper function to get month name from number
+const getMonthName = (monthNumber) => {
+    const monthNames = [
+        "Yanvar",
+        "Fevral",
+        "Mart",
+        "Aprel",
+        "May",
+        "Iyun",
+        "Iyul",
+        "Avgust",
+        "Sentabr",
+        "Oktabr",
+        "Noyabr",
+        "Dekabr",
+    ]
+    return monthNames[monthNumber - 1] || `Oy ${monthNumber}`
+}
+
+// Helper function to translate status
+const translateStatus = (status) => {
+    const statusMap = {
+        accepted: "Qabul qilingan",
+        expected: "Kutilmoqda",
+        finished: "Yakunlangan",
+        cancelled: "Bekor qilingan",
+    }
+    return statusMap[status] || status
+}
+
+// Helper function to get status class
+const getStatusClass = (status) => {
+    const statusClassMap = {
+        accepted: "in_progress",
+        expected: "pending",
+        finished: "completed",
+        cancelled: "cancelled",
+    }
+    return statusClassMap[status] || "pending"
+}
+
 export default function DirectorDashboard() {
     const { selectedBranch } = useAuth()
-    const [stats, setStats] = useState({
-        totalStaff: 24,
-        totalDoctors: 15,
-        totalAdmins: 8,
-        totalCabinets: 12,
-        totalPatients: 156,
-        appointmentsToday: 42,
-        totalIncome: 12500000,
-        totalExpenses: 8750000,
-        incomeChange: 8.5,
-        expenseChange: 5.2,
-        patientChange: 12.3,
-        appointmentChange: 7.8,
-        totalTasks: 18,
-        completedTasks: 7,
-        pendingTasks: 11,
-    })
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [dashboardData, setDashboardData] = useState(null)
 
-    // Update stats based on selected branch
+    // Fetch dashboard data based on selected branch
     useEffect(() => {
-        if (selectedBranch === "branch1") {
-            setStats({
-                totalStaff: 10,
-                totalDoctors: 6,
-                totalAdmins: 3,
-                totalCabinets: 5,
-                totalPatients: 68,
-                appointmentsToday: 18,
-                totalIncome: 5200000,
-                totalExpenses: 3600000,
-                incomeChange: 9.2,
-                expenseChange: 4.8,
-                patientChange: 14.5,
-                appointmentChange: 8.3,
-                totalTasks: 8,
-                completedTasks: 3,
-                pendingTasks: 5,
-            })
-        } else if (selectedBranch === "branch2") {
-            setStats({
-                totalStaff: 8,
-                totalDoctors: 5,
-                totalAdmins: 2,
-                totalCabinets: 4,
-                totalPatients: 52,
-                appointmentsToday: 14,
-                totalIncome: 4100000,
-                totalExpenses: 2900000,
-                incomeChange: 7.8,
-                expenseChange: 5.5,
-                patientChange: 10.2,
-                appointmentChange: 6.7,
-                totalTasks: 6,
-                completedTasks: 2,
-                pendingTasks: 4,
-            })
-        } else if (selectedBranch === "branch3") {
-            setStats({
-                totalStaff: 6,
-                totalDoctors: 4,
-                totalAdmins: 2,
-                totalCabinets: 3,
-                totalPatients: 36,
-                appointmentsToday: 10,
-                totalIncome: 3200000,
-                totalExpenses: 2250000,
-                incomeChange: 6.5,
-                expenseChange: 4.2,
-                patientChange: 9.8,
-                appointmentChange: 5.4,
-                totalTasks: 4,
-                completedTasks: 2,
-                pendingTasks: 2,
-            })
-        } else {
-            // All branches
-            setStats({
-                totalStaff: 24,
-                totalDoctors: 15,
-                totalAdmins: 8,
-                totalCabinets: 12,
-                totalPatients: 156,
-                appointmentsToday: 42,
-                totalIncome: 12500000,
-                totalExpenses: 8750000,
-                incomeChange: 8.5,
-                expenseChange: 5.2,
-                patientChange: 12.3,
-                appointmentChange: 7.8,
-                totalTasks: 18,
-                completedTasks: 7,
-                pendingTasks: 11,
-            })
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true)
+                setError(null)
+
+                // Use the branch ID from selectedBranch or default to "all-filial"
+                const branchId = selectedBranch || "all-filial"
+                const data = await getAllDashboardData(branchId)
+                setDashboardData(data)
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err)
+                setError("Ma'lumotlarni yuklashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.")
+            } finally {
+                setLoading(false)
+            }
         }
+
+        fetchDashboardData()
     }, [selectedBranch])
 
-    const recentStaff = [
-        { id: 1, name: "Aziz Karimov", role: "Shifokor", department: "Kardiologiya", date: "2023-05-15" },
-        { id: 2, name: "Malika Umarova", role: "Admin", department: "Qabul bo'limi", date: "2023-05-10" },
-        { id: 3, name: "Jasur Toshmatov", role: "Shifokor", department: "Nevrologiya", date: "2023-05-05" },
-    ]
+    // Loading state
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <FaSpinner className="spinner" />
+                <p>Ma'lumotlar yuklanmoqda...</p>
+            </div>
+        )
+    }
 
-    const performanceData = [
-        { id: 1, name: "Kardiologiya", patients: 45, satisfaction: 92 },
-        { id: 2, name: "Nevrologiya", patients: 38, satisfaction: 88 },
-        { id: 3, name: "Pediatriya", patients: 52, satisfaction: 95 },
-        { id: 4, name: "Terapiya", patients: 30, satisfaction: 90 },
-    ]
+    // Error state
+    if (error) {
+        return (
+            <div className="error-container">
+                <FaExclamationTriangle className="error-icon" />
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                    Qayta urinib ko'rish
+                </button>
+            </div>
+        )
+    }
 
-    // Today's appointments
-    const todayAppointments = [
-        {
-            id: 1,
-            patientName: "Alisher Karimov",
-            time: "09:00",
-            doctor: "Dr. Aziz Karimov",
-            department: "Kardiologiya",
-            status: "completed",
-        },
-        {
-            id: 2,
-            patientName: "Nilufar Rahimova",
-            time: "10:30",
-            doctor: "Dr. Jasur Toshmatov",
-            department: "Nevrologiya",
-            status: "completed",
-        },
-        {
-            id: 3,
-            patientName: "Sardor Aliyev",
-            time: "11:45",
-            doctor: "Dr. Aziz Karimov",
-            department: "Kardiologiya",
-            status: "in_progress",
-        },
-        {
-            id: 4,
-            patientName: "Malika Umarova",
-            time: "13:15",
-            doctor: "Dr. Nilufar Rahimova",
-            department: "Pediatriya",
-            status: "pending",
-        },
-    ]
+    // If data is not loaded yet, show nothing
+    if (!dashboardData) {
+        return null
+    }
 
-    // Recent tasks
-    const recentTasks = [
-        {
-            id: 1,
-            title: "Yangi tibbiy jihozlarni tekshirish",
-            assignee: "Dr. Aziz Karimov",
-            dueDate: "2023-05-18",
-            status: "pending",
-            priority: "high",
-        },
-        {
-            id: 2,
-            title: "Xodimlar yig'ilishi",
-            assignee: "Malika Umarova",
-            dueDate: "2023-05-19",
-            status: "pending",
-            priority: "medium",
-        },
-        {
-            id: 3,
-            title: "Yangi hamshiralar bilan suhbat",
-            assignee: "Nilufar Rahimova",
-            dueDate: "2023-05-20",
-            status: "completed",
-            priority: "medium",
-        },
-    ]
+    // Extract data from the API response
+    const {
+        financialMetrics,
+        doctorEfficiency,
+        customersByDepartment,
+        monthlyCustomerDynamics,
+        departmentEfficiency,
+        todaysAppointments,
+        newStaff,
+        financialReport,
+        patientStatistics,
+        doctorStatistics,
+    } = dashboardData
 
-    // Chart data
+    // Calculate total income and expenses from financial metrics
+    const totalIncome = financialReport?.total_income || 0
+    const totalExpenses = financialReport?.total_expenses || 0
+    const netProfit = financialReport?.net_profit || 0
+
+    // Calculate stats from API data
+    const stats = {
+        totalStaff: doctorStatistics?.doctor_stats?.length || 0,
+        totalDoctors: doctorStatistics?.doctor_stats?.length || 0,
+        totalCabinets: departmentEfficiency?.department_data?.length || 0,
+        totalPatients: patientStatistics?.total_patients || customersByDepartment?.total_customers || 0,
+        appointmentsToday: todaysAppointments?.total_appointments || 0,
+        totalIncome: totalIncome,
+        totalExpenses: totalExpenses,
+        netProfit: netProfit,
+        incomeChange: financialReport?.profitability || 0,
+        patientChange: monthlyCustomerDynamics?.growth_rate || 0,
+        appointmentChange: 0, // Not provided in API
+        totalTasks: 0, // Not provided in API
+        completedTasks: 0, // Not provided in API
+        pendingTasks: 0, // Not provided in API
+    }
+
+    // Format department data for charts
     const departmentDistributionData = {
-        labels: ["Kardiologiya", "Nevrologiya", "Pediatriya", "Terapiya", "Stomatologiya"],
+        labels: customersByDepartment?.department_data?.map((dept) => dept.doctor__specialization) || [],
         datasets: [
             {
                 label: "Mijozlar soni",
-                data: [45, 38, 52, 30, 25],
+                data: customersByDepartment?.department_data?.map((dept) => dept.customer_count) || [],
                 backgroundColor: [
                     "rgba(255, 99, 132, 0.8)",
                     "rgba(54, 162, 235, 0.8)",
@@ -231,12 +213,13 @@ export default function DirectorDashboard() {
         ],
     }
 
+    // Format monthly patient data for charts
     const monthlyPatientsData = {
-        labels: ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun"],
+        labels: monthlyCustomerDynamics?.monthly_data?.map((item) => getMonthName(item.date__month)) || [],
         datasets: [
             {
                 label: "Mijozlar soni",
-                data: [65, 59, 80, 81, 56, 55],
+                data: monthlyCustomerDynamics?.monthly_data?.map((item) => item.customer_count) || [],
                 backgroundColor: "rgba(54, 162, 235, 0.5)",
                 borderColor: "rgba(54, 162, 235, 1)",
                 borderWidth: 2,
@@ -246,19 +229,20 @@ export default function DirectorDashboard() {
         ],
     }
 
+    // Format financial data for charts
     const financialData = {
-        labels: ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun"],
+        labels: financialMetrics?.monthly_data?.map((item) => item.month) || [],
         datasets: [
             {
                 label: "Daromad",
-                data: [1800000, 2100000, 1950000, 2300000, 2150000, 2200000],
+                data: financialMetrics?.monthly_data?.map((item) => item.income) || [],
                 backgroundColor: "rgba(75, 192, 192, 0.5)",
                 borderColor: "rgba(75, 192, 192, 1)",
                 borderWidth: 2,
             },
             {
                 label: "Xarajat",
-                data: [1200000, 1350000, 1400000, 1550000, 1500000, 1750000],
+                data: financialMetrics?.monthly_data?.map((item) => item.expenses) || [],
                 backgroundColor: "rgba(255, 99, 132, 0.5)",
                 borderColor: "rgba(255, 99, 132, 1)",
                 borderWidth: 2,
@@ -266,12 +250,13 @@ export default function DirectorDashboard() {
         ],
     }
 
+    // Format doctor performance data for charts
     const doctorPerformanceData = {
-        labels: ["Dr. Aziz", "Dr. Jasur", "Dr. Nilufar", "Dr. Sardor", "Dr. Malika"],
+        labels: doctorStatistics?.doctor_stats?.map((doc) => doc.doctor_name) || [],
         datasets: [
             {
                 label: "Mijozlar soni",
-                data: [28, 32, 19, 24, 22],
+                data: doctorStatistics?.doctor_stats?.map((doc) => doc.total_patients) || [],
                 backgroundColor: [
                     "rgba(255, 99, 132, 0.8)",
                     "rgba(54, 162, 235, 0.8)",
@@ -290,6 +275,15 @@ export default function DirectorDashboard() {
             },
         ],
     }
+
+    // Format department efficiency data
+    const performanceData =
+        departmentEfficiency?.department_data?.map((dept) => ({
+            id: dept.id,
+            name: dept.name,
+            patients: dept.customer_count || 0,
+            satisfaction: dept.avg_satisfaction || 0,
+        })) || []
 
     return (
         <div className="director-dashboard">
@@ -322,7 +316,7 @@ export default function DirectorDashboard() {
                     </div>
                     <div className="stat-content">
                         <div className="stat-value">{stats.totalCabinets}</div>
-                        <div className="stat-label">Kabinetlar</div>
+                        <div className="stat-label">Filiallar</div>
                     </div>
                 </div>
 
@@ -333,23 +327,26 @@ export default function DirectorDashboard() {
                     <div className="stat-content">
                         <div className="stat-value">{stats.appointmentsToday}</div>
                         <div className="stat-label">Bugungi qabullar</div>
-                        <div className="stat-change positive">
-                            <FaArrowUp /> {stats.appointmentChange}%
-                        </div>
+                        {stats.appointmentChange !== 0 && (
+                            <div className={`stat-change ${stats.appointmentChange >= 0 ? "positive" : "negative"}`}>
+                                {stats.appointmentChange >= 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(stats.appointmentChange)}%
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="stat-card">
+                <div className="stat-card patients">
                     <div className="stat-icon-wrapper">
-                        <FaTasks className="stat-icon director" />
+                        <FaUsers className="stat-icon" />
                     </div>
                     <div className="stat-content">
-                        <div className="stat-value">{stats.totalTasks}</div>
-                        <div className="stat-label">Jami vazifalar</div>
-                        <div className="stat-details">
-                            <span className="completed">{stats.completedTasks} bajarilgan</span> /
-                            <span className="pending">{stats.pendingTasks} kutilmoqda</span>
-                        </div>
+                        <div className="stat-value">{stats.totalPatients}</div>
+                        <div className="stat-label">Jami mijozlar</div>
+                        {stats.patientChange !== 0 && (
+                            <div className={`stat-change ${stats.patientChange >= 0 ? "positive" : "negative"}`}>
+                                {stats.patientChange >= 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(stats.patientChange)}%
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -362,9 +359,6 @@ export default function DirectorDashboard() {
                     <div className="stat-content">
                         <div className="stat-value">{stats.totalIncome.toLocaleString()} so'm</div>
                         <div className="stat-label">Jami daromad</div>
-                        <div className="stat-change positive">
-                            <FaArrowUp /> {stats.incomeChange}%
-                        </div>
                     </div>
                 </div>
 
@@ -375,9 +369,6 @@ export default function DirectorDashboard() {
                     <div className="stat-content">
                         <div className="stat-value">{stats.totalExpenses.toLocaleString()} so'm</div>
                         <div className="stat-label">Jami xarajat</div>
-                        <div className="stat-change negative">
-                            <FaArrowUp /> {stats.expenseChange}%
-                        </div>
                     </div>
                 </div>
 
@@ -386,21 +377,23 @@ export default function DirectorDashboard() {
                         <FaMoneyBillWave className="stat-icon" />
                     </div>
                     <div className="stat-content">
-                        <div className="stat-value">{(stats.totalIncome - stats.totalExpenses).toLocaleString()} so'm</div>
+                        <div className="stat-value">{stats.netProfit.toLocaleString()} so'm</div>
                         <div className="stat-label">Sof foyda</div>
+                        {stats.incomeChange !== 0 && (
+                            <div className={`stat-change ${stats.incomeChange >= 0 ? "positive" : "negative"}`}>
+                                {stats.incomeChange >= 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(stats.incomeChange)}%
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="stat-card patients">
+                <div className="stat-card">
                     <div className="stat-icon-wrapper">
-                        <FaUsers className="stat-icon" />
+                        <FaCalendarCheck className="stat-icon director" />
                     </div>
                     <div className="stat-content">
-                        <div className="stat-value">{stats.totalPatients}</div>
-                        <div className="stat-label">Jami mijozlar</div>
-                        <div className="stat-change positive">
-                            <FaArrowUp /> {stats.patientChange}%
-                        </div>
+                        <div className="stat-value">{doctorEfficiency?.avg_patients_per_doctor || 0}</div>
+                        <div className="stat-label">O'rtacha mijoz/shifokor</div>
                     </div>
                 </div>
             </div>
@@ -415,81 +408,39 @@ export default function DirectorDashboard() {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Mijoz</th>
                                     <th>Vaqt</th>
+                                    <th>Mijoz</th>
                                     <th>Shifokor</th>
-                                    <th>Bo'lim</th>
+                                    <th>Filial</th>
                                     <th>Holat</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {todayAppointments.map((appointment) => (
-                                    <tr key={appointment.id}>
-                                        <td>{appointment.patientName}</td>
-                                        <td>{appointment.time}</td>
-                                        <td>{appointment.doctor}</td>
-                                        <td>{appointment.department}</td>
+                                {todaysAppointments?.appointments?.map((appointment, index) => (
+                                    <tr key={index}>
+                                        <td>{formatDate(appointment.date)}</td>
+                                        <td>{appointment.customer__full_name}</td>
+                                        <td>{`${appointment.doctor__first_name} ${appointment.doctor__last_name}`}</td>
+                                        <td>{appointment.branch__name}</td>
                                         <td>
-                                            <div className={`status-badge ${appointment.status}`}>
-                                                {appointment.status === "completed" && "Yakunlangan"}
-                                                {appointment.status === "in_progress" && "Jarayonda"}
-                                                {appointment.status === "pending" && "Kutilmoqda"}
+                                            <div className={`status-badge ${getStatusClass(appointment.status)}`}>
+                                                {translateStatus(appointment.status)}
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
+                                {(!todaysAppointments?.appointments || todaysAppointments.appointments.length === 0) && (
+                                    <tr>
+                                        <td colSpan="5" className="no-data">
+                                            Bugun uchun qabullar yo'q
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div className="dashboard-card">
-                    <div className="card-header">
-                        <h2>Joriy vazifalar</h2>
-                        <button className="btn btn-text" onClick={() => (window.location.href = "/dashboard/director/tasks")}>
-                            Barchasini ko'rish
-                        </button>
-                    </div>
-                    <div className="table-responsive">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Vazifa</th>
-                                    <th>Mas'ul</th>
-                                    <th>Muddat</th>
-                                    <th>Muhimlik</th>
-                                    <th>Holat</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentTasks.map((task) => (
-                                    <tr key={task.id}>
-                                        <td>{task.title}</td>
-                                        <td>{task.assignee}</td>
-                                        <td>{task.dueDate}</td>
-                                        <td>
-                                            <div className={`priority-badge ${task.priority}-priority`}>
-                                                {task.priority === "high" && "Yuqori"}
-                                                {task.priority === "medium" && "O'rta"}
-                                                {task.priority === "low" && "Past"}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className={`status-badge ${task.status}`}>
-                                                {task.status === "completed" && "Bajarilgan"}
-                                                {task.status === "in_progress" && "Jarayonda"}
-                                                {task.status === "pending" && "Kutilmoqda"}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div className="dashboard-row">
                 <div className="dashboard-card">
                     <div className="card-header">
                         <h2>Yangi qo'shilgan xodimlar</h2>
@@ -501,19 +452,36 @@ export default function DirectorDashboard() {
                                 <tr>
                                     <th>Ism</th>
                                     <th>Lavozim</th>
-                                    <th>Bo'lim</th>
+                                    <th>Filial</th>
                                     <th>Sana</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentStaff.map((staff) => (
-                                    <tr key={staff.id}>
-                                        <td>{staff.name}</td>
-                                        <td>{staff.role}</td>
-                                        <td>{staff.department}</td>
-                                        <td>{staff.date}</td>
+                                {newStaff?.recent_staff?.map((staff, index) => (
+                                    <tr key={index}>
+                                        <td>{`${staff.first_name} ${staff.last_name}`}</td>
+                                        <td>
+                                            {staff.role === "doctor"
+                                                ? "Shifokor"
+                                                : staff.role === "nurse"
+                                                    ? "Hamshira"
+                                                    : staff.role === "admin"
+                                                        ? "Admin"
+                                                        : staff.role === "director"
+                                                            ? "Direktor"
+                                                            : staff.role}
+                                        </td>
+                                        <td>{staff.branch__name || "Bosh ofis"}</td>
+                                        <td>{formatDateForDisplay(staff.date_joined)}</td>
                                     </tr>
                                 ))}
+                                {(!newStaff?.recent_staff || newStaff.recent_staff.length === 0) && (
+                                    <tr>
+                                        <td colSpan="4" className="no-data">
+                                            Yangi qo'shilgan xodimlar yo'q
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -522,37 +490,51 @@ export default function DirectorDashboard() {
 
             <div className="dashboard-card">
                 <div className="card-header">
-                    <h2>Bo'limlar samaradorligi</h2>
+                    <h2>Filiallar samaradorligi</h2>
                     <button className="btn btn-text">Batafsil ma'lumot</button>
                 </div>
                 <div className="table-responsive">
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Bo'lim</th>
+                                <th>Filial</th>
                                 <th>Mijozlar soni</th>
                                 <th>Mijoz mamnuniyati</th>
                                 <th>Holat</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {performanceData.map((dept) => (
-                                <tr key={dept.id}>
+                            {performanceData.map((dept, index) => (
+                                <tr key={index}>
                                     <td>{dept.name}</td>
                                     <td>{dept.patients}</td>
                                     <td>
                                         <div className="progress-bar">
-                                            <div className="progress-fill" style={{ width: `${dept.satisfaction}%` }}></div>
-                                            <span>{dept.satisfaction}%</span>
+                                            <div
+                                                className="progress-fill"
+                                                style={{ width: `${dept.satisfaction ? dept.satisfaction : 0}%` }}
+                                            ></div>
+                                            <span>{dept.satisfaction ? `${dept.satisfaction}%` : "Ma'lumot yo'q"}</span>
                                         </div>
                                     </td>
                                     <td>
-                                        <div className={`status-badge ${dept.satisfaction >= 90 ? "high" : "medium"}`}>
-                                            {dept.satisfaction >= 90 ? "A'lo" : "Yaxshi"}
-                                        </div>
+                                        {dept.satisfaction ? (
+                                            <div className={`status-badge ${dept.satisfaction >= 90 ? "high" : "medium"}`}>
+                                                {dept.satisfaction >= 90 ? "A'lo" : "Yaxshi"}
+                                            </div>
+                                        ) : (
+                                            <div className="status-badge pending">Baholanmagan</div>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
+                            {performanceData.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="no-data">
+                                        Filiallar samaradorligi ma'lumotlari yo'q
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -568,18 +550,22 @@ export default function DirectorDashboard() {
                             </h2>
                         </div>
                         <div className="chart-container">
-                            <Pie
-                                data={departmentDistributionData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: "right",
+                            {customersByDepartment?.department_data?.length > 0 ? (
+                                <Pie
+                                    data={departmentDistributionData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: {
+                                                position: "right",
+                                            },
                                         },
-                                    },
-                                }}
-                            />
+                                    }}
+                                />
+                            ) : (
+                                <div className="no-chart-data">Ma'lumot yo'q</div>
+                            )}
                         </div>
                     </div>
 
@@ -590,18 +576,22 @@ export default function DirectorDashboard() {
                             </h2>
                         </div>
                         <div className="chart-container">
-                            <Line
-                                data={monthlyPatientsData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
+                            {monthlyCustomerDynamics?.monthly_data?.length > 0 ? (
+                                <Line
+                                    data={monthlyPatientsData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                            },
                                         },
-                                    },
-                                }}
-                            />
+                                    }}
+                                />
+                            ) : (
+                                <div className="no-chart-data">Ma'lumot yo'q</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -614,18 +604,22 @@ export default function DirectorDashboard() {
                             </h2>
                         </div>
                         <div className="chart-container">
-                            <Bar
-                                data={financialData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
+                            {financialMetrics?.monthly_data?.some((item) => item.income > 0 || item.expenses > 0) ? (
+                                <Bar
+                                    data={financialData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                            },
                                         },
-                                    },
-                                }}
-                            />
+                                    }}
+                                />
+                            ) : (
+                                <div className="no-chart-data">Ma'lumot yo'q</div>
+                            )}
                         </div>
                     </div>
 
@@ -636,19 +630,23 @@ export default function DirectorDashboard() {
                             </h2>
                         </div>
                         <div className="chart-container">
-                            <Bar
-                                data={doctorPerformanceData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    indexAxis: "y",
-                                    scales: {
-                                        x: {
-                                            beginAtZero: true,
+                            {doctorStatistics?.doctor_stats?.length > 0 ? (
+                                <Bar
+                                    data={doctorPerformanceData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        indexAxis: "y",
+                                        scales: {
+                                            x: {
+                                                beginAtZero: true,
+                                            },
                                         },
-                                    },
-                                }}
-                            />
+                                    }}
+                                />
+                            ) : (
+                                <div className="no-chart-data">Ma'lumot yo'q</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -656,4 +654,3 @@ export default function DirectorDashboard() {
         </div>
     )
 }
-

@@ -41,7 +41,66 @@ $patients-color: #8b5cf6;
     }
 }
 
+// Loading and error states
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    padding: 2rem;
 
+    .spinner {
+        font-size: 2rem;
+        color: $accent-color;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    .error-icon {
+        font-size: 2rem;
+        color: $expense-color;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        font-size: 1.1rem;
+        color: $text-color;
+        margin-bottom: 1.5rem;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+// Stats grid
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+
+    @media (max-width: 992px) {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    @media (max-width: 576px) {
+        grid-template-columns: 1fr;
+    }
+}
 
 // Stat cards
 .stat-card {
@@ -120,6 +179,21 @@ $patients-color: #8b5cf6;
 
         &.negative {
             color: $expense-color;
+        }
+    }
+
+    .stat-details {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+
+        .completed {
+            color: $income-color;
+        }
+
+        .pending {
+            color: $profit-color;
         }
     }
 
@@ -235,6 +309,13 @@ $patients-color: #8b5cf6;
             display: flex;
             align-items: center;
             justify-content: center;
+
+            .no-chart-data {
+                color: $text-color;
+                font-size: 1.1rem;
+                opacity: 0.7;
+                text-align: center;
+            }
         }
     }
 }
@@ -290,6 +371,13 @@ $patients-color: #8b5cf6;
     tbody tr {
         transition: background-color 0.2s ease;
     }
+
+    .no-data {
+        text-align: center;
+        color: $text-color;
+        opacity: 0.7;
+        padding: 2rem;
+    }
 }
 
 // Status badge
@@ -314,6 +402,11 @@ $patients-color: #8b5cf6;
     &.pending {
         background-color: rgba($profit-color, 0.1);
         color: $profit-color;
+    }
+
+    &.cancelled {
+        background-color: rgba($expense-color, 0.1);
+        color: $expense-color;
     }
 
     &.high {
@@ -430,61 +523,49 @@ $patients-color: #8b5cf6;
         margin-bottom: 1.5rem;
     }
 
-    .appointments-table {
-        .appointment-doctor {
-            .doctor-avatar {
-                width: 32px;
-                height: 32px;
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+
+        .stat-icon-wrapper {
+            width: 50px;
+            height: 50px;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
+
+    .dashboard-card {
+        .card-header {
+            padding: 1rem;
+
+            h2 {
+                font-size: 1.1rem;
+            }
+        }
+
+        &.chart-card {
+            .chart-container {
+                height: 300px;
+                padding: 1rem;
             }
         }
     }
 
-    // Responsive
-    @media (max-width: 768px) {
-        .page-title {
-            font-size: 1.5rem;
-        }
+    .data-table {
 
-        .stat-card {
-            padding: 1.25rem;
-
-            .stat-icon-wrapper {
-                width: 50px;
-                height: 50px;
-            }
-
-            .stat-icon {
-                font-size: 1.5rem;
-            }
-
-            .stat-value {
-                font-size: 1.5rem;
-            }
-        }
-
-        .dashboard-card {
-            .card-header {
-                padding: 1rem;
-
-                h2 {
-                    font-size: 1.1rem;
-                }
-            }
-
-            &.chart-card {
-                .chart-container {
-                    height: 300px;
-                    padding: 1rem;
-                }
-            }
-        }
-
-        .data-table {
-
-            th,
-            td {
-                padding: 0.75rem 1rem;
-            }
+        th,
+        td {
+            padding: 0.75rem 1rem;
         }
     }
 }
@@ -502,31 +583,10 @@ $patients-color: #8b5cf6;
         margin-bottom: 1rem;
     }
 
-    .appointments-table {
-        .appointment-doctor {
-            .doctor-avatar {
-                width: 28px;
-                height: 28px;
-            }
-        }
-    }
-
-    @media (max-width: 576px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stat-card {
-            .stat-value {
-                font-size: 1.35rem;
-            }
-        }
-
-        .dashboard-card {
-            &.chart-card {
-                .chart-container {
-                    height: 250px;
-                }
+    .dashboard-card {
+        &.chart-card {
+            .chart-container {
+                height: 250px;
             }
         }
     }

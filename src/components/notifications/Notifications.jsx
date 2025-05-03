@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import { useLanguage } from "../../contexts/LanguageContext"
 import {
@@ -7,11 +9,26 @@ import {
     FaBriefcase,
     FaCheck,
     FaCheckDouble,
-    FaTrash,
     FaFilter,
     FaSearch,
     FaBuilding,
+    FaSpinner,
+    FaTimes,
+    FaCalendarAlt,
+    FaUser,
+    FaEllipsisH,
 } from "react-icons/fa"
+import Pagination from "../pagination/Pagination"
+import {
+    getNotifications,
+    getClinicNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    markClinicNotificationAsRead,
+    markAllClinicNotificationsAsRead,
+    getUnreadNotificationsCount,
+    getUnreadClinicNotificationsCount,
+} from "../../api/apiNotifications"
 
 export default function Notifications() {
     const { selectedBranch } = useAuth()
@@ -21,212 +38,71 @@ export default function Notifications() {
     const [showFilters, setShowFilters] = useState(false)
     const [filterRead, setFilterRead] = useState("all") // "all", "read", "unread"
     const [filterBranch, setFilterBranch] = useState(selectedBranch)
-    const [filterPriority, setFilterPriority] = useState("all") // "all", "high", "medium", "low"
 
-    // Mock data for site notifications
-    const initialSiteNotificationsData = {
-        all: [
-            {
-                id: 1,
-                title: "Yangi versiya chiqdi",
-                message: "Klinika CRM tizimining yangi versiyasi chiqdi. Yangi imkoniyatlar bilan tanishing!",
-                date: "2023-05-20T10:30:00",
-                read: false,
-                priority: "high",
-                branch: "all",
-            },
-            {
-                id: 2,
-                title: "Texnik ishlar",
-                message:
-                    "Ertaga soat 02:00 dan 04:00 gacha tizimda texnik ishlar olib boriladi. Noqulayliklar uchun uzr so'raymiz.",
-                date: "2023-05-18T15:45:00",
-                read: true,
-                priority: "medium",
-                branch: "all",
-            },
-            {
-                id: 3,
-                title: "Yangi funksiya qo'shildi",
-                message:
-                    "Hisobotlar bo'limiga yangi funksiyalar qo'shildi. Batafsil ma'lumot uchun qo'llanmaga murojaat qiling.",
-                date: "2023-05-15T09:20:00",
-                read: false,
-                priority: "medium",
-                branch: "all",
-            },
-            {
-                id: 4,
-                title: "Xavfsizlik yangilanishi",
-                message: "Tizim xavfsizligi yangilandi. Barcha foydalanuvchilar parollarini yangilashni tavsiya qilamiz.",
-                date: "2023-05-10T14:15:00",
-                read: true,
-                priority: "high",
-                branch: "all",
-            },
-            {
-                id: 5,
-                title: "Mobil ilova chiqdi",
-                message:
-                    "Klinika CRM tizimining mobil ilovasi chiqdi. App Store va Google Play orqali yuklab olishingiz mumkin.",
-                date: "2023-05-05T11:30:00",
-                read: true,
-                priority: "low",
-                branch: "all",
-            },
-        ],
-        branch1: [],
-        branch2: [],
-        branch3: [],
-    }
+    // State for API data
+    const [siteNotifications, setSiteNotifications] = useState([])
+    const [workNotifications, setWorkNotifications] = useState([])
+    const [filteredNotifications, setFilteredNotifications] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
 
-    // Mock data for work notifications
-    const initialWorkNotificationsData = {
-        all: [
-            {
-                id: 1,
-                title: "Yangi mijoz qo'shildi",
-                message: "Alisher Karimov ismli yangi mijoz qo'shildi. Mijoz ma'lumotlarini tekshirib chiqing.",
-                date: "2023-05-20T09:15:00",
-                read: false,
-                priority: "medium",
-                branch: "branch1",
-            },
-            {
-                id: 2,
-                title: "Shifokor bandligi o'zgartirildi",
-                message: "Dr. Aziz Karimov bandligi 2023-05-25 sanasida o'zgartirildi.",
-                date: "2023-05-19T14:30:00",
-                read: false,
-                priority: "high",
-                branch: "branch1",
-            },
-            {
-                id: 3,
-                title: "Kabinet ta'mirga yopildi",
-                message: "202-kabinet ta'mirga yopildi. Iltimos, mijozlarni boshqa kabinetlarga yo'naltiring.",
-                date: "2023-05-18T11:45:00",
-                read: true,
-                priority: "high",
-                branch: "branch2",
-            },
-            {
-                id: 4,
-                title: "Hisobot tayyorlandi",
-                message: "Oylik hisobot tayyorlandi. Hisobotni ko'rish uchun hisobotlar bo'limiga o'ting.",
-                date: "2023-05-15T16:20:00",
-                read: true,
-                priority: "medium",
-                branch: "branch3",
-            },
-            {
-                id: 5,
-                title: "Yangi shifokor qo'shildi",
-                message: "Dr. Malika Umarova ismli yangi shifokor qo'shildi. Shifokor ma'lumotlarini tekshirib chiqing.",
-                date: "2023-05-12T10:10:00",
-                read: false,
-                priority: "medium",
-                branch: "branch2",
-            },
-            {
-                id: 6,
-                title: "Mijoz qabuli bekor qilindi",
-                message: "Sardor Aliyev ismli mijozning 2023-05-22 sanasidagi qabuli bekor qilindi.",
-                date: "2023-05-10T13:45:00",
-                read: true,
-                priority: "low",
-                branch: "branch1",
-            },
-        ],
-        branch1: [
-            {
-                id: 1,
-                title: "Yangi mijoz qo'shildi",
-                message: "Alisher Karimov ismli yangi mijoz qo'shildi. Mijoz ma'lumotlarini tekshirib chiqing.",
-                date: "2023-05-20T09:15:00",
-                read: false,
-                priority: "medium",
-                branch: "branch1",
-            },
-            {
-                id: 2,
-                title: "Shifokor bandligi o'zgartirildi",
-                message: "Dr. Aziz Karimov bandligi 2023-05-25 sanasida o'zgartirildi.",
-                date: "2023-05-19T14:30:00",
-                read: false,
-                priority: "high",
-                branch: "branch1",
-            },
-            {
-                id: 6,
-                title: "Mijoz qabuli bekor qilindi",
-                message: "Sardor Aliyev ismli mijozning 2023-05-22 sanasidagi qabuli bekor qilindi.",
-                date: "2023-05-10T13:45:00",
-                read: true,
-                priority: "low",
-                branch: "branch1",
-            },
-        ],
-        branch2: [
-            {
-                id: 3,
-                title: "Kabinet ta'mirga yopildi",
-                message: "202-kabinet ta'mirga yopildi. Iltimos, mijozlarni boshqa kabinetlarga yo'naltiring.",
-                date: "2023-05-18T11:45:00",
-                read: true,
-                priority: "high",
-                branch: "branch2",
-            },
-            {
-                id: 5,
-                title: "Yangi shifokor qo'shildi",
-                message: "Dr. Malika Umarova ismli yangi shifokor qo'shildi. Shifokor ma'lumotlarini tekshirib chiqing.",
-                date: "2023-05-12T10:10:00",
-                read: false,
-                priority: "medium",
-                branch: "branch2",
-            },
-        ],
-        branch3: [
-            {
-                id: 4,
-                title: "Hisobot tayyorlandi",
-                message: "Oylik hisobot tayyorlandi. Hisobotni ko'rish uchun hisobotlar bo'limiga o'ting.",
-                date: "2023-05-15T16:20:00",
-                read: true,
-                priority: "medium",
-                branch: "branch3",
-            },
-        ],
-    }
+    // Unread counts
+    const [siteUnreadCount, setSiteUnreadCount] = useState(0)
+    const [workUnreadCount, setWorkUnreadCount] = useState(0)
 
-    const [siteNotifications, setSiteNotifications] = useState(
-        selectedBranch === "all" ? initialSiteNotificationsData.all : initialSiteNotificationsData[selectedBranch],
-    )
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(0) // 0-based for the Pagination component
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
 
-    const [workNotifications, setWorkNotifications] = useState(
-        selectedBranch === "all" ? initialWorkNotificationsData.all : initialWorkNotificationsData[selectedBranch],
-    )
+    // Modal
+    const [showModal, setShowModal] = useState(false)
+    const [selectedNotification, setSelectedNotification] = useState(null)
 
-    const [filteredNotifications, setFilteredNotifications] = useState(
-        activeTab === "site" ? siteNotifications : workNotifications,
-    )
-
-    // Update notifications when branch changes
-    useEffect(() => {
-        if (selectedBranch === "all") {
-            setSiteNotifications(initialSiteNotificationsData.all)
-            setWorkNotifications(initialWorkNotificationsData.all)
-        } else {
-            // For site notifications, we still show all since they're global
-            setSiteNotifications(initialSiteNotificationsData.all)
-            setWorkNotifications(initialWorkNotificationsData[selectedBranch])
+    // Fetch unread counts
+    const fetchUnreadCounts = async () => {
+        try {
+            const [siteData, workData] = await Promise.all([
+                getUnreadNotificationsCount(),
+                getUnreadClinicNotificationsCount(),
+            ])
+            setSiteUnreadCount(siteData.unread_count)
+            setWorkUnreadCount(workData.unread_count)
+        } catch (err) {
+            console.error("Error fetching unread counts:", err)
         }
+    }
 
-        setFilterBranch(selectedBranch)
-    }, [selectedBranch])
+    // Fetch notifications based on active tab
+    const fetchNotifications = async (page = 0) => {
+        setLoading(true)
+        setError(null)
+        try {
+            if (activeTab === "site") {
+                const data = await getNotifications(page + 1, itemsPerPage) // API uses 1-based pagination
+                setSiteNotifications(data.results)
+                setTotalItems(data.count)
+            } else {
+                const data = await getClinicNotifications(page + 1, itemsPerPage) // API uses 1-based pagination
+                setWorkNotifications(data.results)
+                setTotalItems(data.count)
+            }
+        } catch (err) {
+            console.error("Error fetching notifications:", err)
+            setError(t("errorFetchingNotifications"))
+        } finally {
+            setLoading(false)
+        }
+    }
 
-    // Update filtered notifications when tab, search, or filters change
+    // Initial fetch
+    useEffect(() => {
+        fetchNotifications(0)
+        fetchUnreadCounts()
+        setCurrentPage(0)
+    }, [activeTab])
+
+    // Update filtered notifications when data changes
     useEffect(() => {
         let notifications = activeTab === "site" ? siteNotifications : workNotifications
 
@@ -242,32 +118,16 @@ export default function Notifications() {
         // Filter by read status
         if (filterRead !== "all") {
             const isRead = filterRead === "read"
-            notifications = notifications.filter((notification) => notification.read === isRead)
+            notifications = notifications.filter((notification) => notification.is_read === isRead)
         }
 
         // Filter by branch (for work notifications)
         if (activeTab === "work" && selectedBranch === "all" && filterBranch !== "all") {
-            notifications = notifications.filter(
-                (notification) => notification.branch === filterBranch || notification.branch === "all",
-            )
-        }
-
-        // Filter by priority
-        if (filterPriority !== "all") {
-            notifications = notifications.filter((notification) => notification.priority === filterPriority)
+            notifications = notifications.filter((notification) => notification.branch === Number.parseInt(filterBranch))
         }
 
         setFilteredNotifications(notifications)
-    }, [
-        activeTab,
-        searchTerm,
-        filterRead,
-        filterBranch,
-        filterPriority,
-        siteNotifications,
-        workNotifications,
-        selectedBranch,
-    ])
+    }, [activeTab, searchTerm, filterRead, filterBranch, siteNotifications, workNotifications, selectedBranch])
 
     // Format date
     const formatDate = (dateString) => {
@@ -291,104 +151,83 @@ export default function Notifications() {
         }
     }
 
+    // Format full date and time
+    const formatFullDateTime = (dateString) => {
+        const date = new Date(dateString)
+        return `${date.getDate().toString().padStart(2, "0")}.${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}.${date.getFullYear()} ${date.getHours().toString().padStart(2, "0")}:${date
+                .getMinutes()
+                .toString()
+                .padStart(2, "0")}`
+    }
+
+    // Truncate text
+    const truncateText = (text, maxLength = 100) => {
+        if (!text) return ""
+        if (text.length <= maxLength) return text
+        return text.substring(0, maxLength) + "..."
+    }
+
     // Mark notification as read
-    const markAsRead = (id) => {
-        if (activeTab === "site") {
-            const updatedNotifications = siteNotifications.map((notification) =>
-                notification.id === id ? { ...notification, read: true } : notification,
-            )
-            setSiteNotifications(updatedNotifications)
-
-            // Update in all data
-            initialSiteNotificationsData.all = initialSiteNotificationsData.all.map((notification) =>
-                notification.id === id ? { ...notification, read: true } : notification,
-            )
-        } else {
-            const updatedNotifications = workNotifications.map((notification) =>
-                notification.id === id ? { ...notification, read: true } : notification,
-            )
-            setWorkNotifications(updatedNotifications)
-
-            // Update in all data
-            initialWorkNotificationsData.all = initialWorkNotificationsData.all.map((notification) =>
-                notification.id === id ? { ...notification, read: true } : notification,
-            )
-
-            // Update in branch-specific data
-            const notification = initialWorkNotificationsData.all.find((n) => n.id === id)
-            if (notification && notification.branch !== "all") {
-                initialWorkNotificationsData[notification.branch] = initialWorkNotificationsData[notification.branch].map(
-                    (n) => (n.id === id ? { ...n, read: true } : n),
+    const markAsRead = async (id) => {
+        try {
+            if (activeTab === "site") {
+                await markNotificationAsRead(id)
+                // Update local state
+                setSiteNotifications(
+                    siteNotifications.map((notification) =>
+                        notification.id === id ? { ...notification, is_read: true } : notification,
+                    ),
                 )
+                // Update unread count
+                setSiteUnreadCount(Math.max(0, siteUnreadCount - 1))
+            } else {
+                await markClinicNotificationAsRead(id)
+                // Update local state
+                setWorkNotifications(
+                    workNotifications.map((notification) =>
+                        notification.id === id ? { ...notification, is_read: true } : notification,
+                    ),
+                )
+                // Update unread count
+                setWorkUnreadCount(Math.max(0, workUnreadCount - 1))
             }
+        } catch (err) {
+            console.error("Error marking notification as read:", err)
+            setError(t("errorMarkingAsRead"))
         }
     }
 
     // Mark all as read
-    const markAllAsRead = () => {
-        if (activeTab === "site") {
-            const updatedNotifications = siteNotifications.map((notification) => ({
-                ...notification,
-                read: true,
-            }))
-            setSiteNotifications(updatedNotifications)
-
-            // Update in all data
-            initialSiteNotificationsData.all = initialSiteNotificationsData.all.map((notification) => ({
-                ...notification,
-                read: true,
-            }))
-        } else {
-            const updatedNotifications = workNotifications.map((notification) => ({
-                ...notification,
-                read: true,
-            }))
-            setWorkNotifications(updatedNotifications)
-
-            // Update in all data
-            initialWorkNotificationsData.all = initialWorkNotificationsData.all.map((notification) => ({
-                ...notification,
-                read: true,
-            }))
-
-            // Update in branch-specific data
-            Object.keys(initialWorkNotificationsData).forEach((branch) => {
-                if (branch !== "all") {
-                    initialWorkNotificationsData[branch] = initialWorkNotificationsData[branch].map((notification) => ({
+    const markAllAsRead = async () => {
+        try {
+            if (activeTab === "site") {
+                await markAllNotificationsAsRead()
+                // Update local state
+                setSiteNotifications(
+                    siteNotifications.map((notification) => ({
                         ...notification,
-                        read: true,
-                    }))
-                }
-            })
-        }
-    }
-
-    // Delete notification
-    const deleteNotification = (id) => {
-        if (activeTab === "site") {
-            const updatedNotifications = siteNotifications.filter((notification) => notification.id !== id)
-            setSiteNotifications(updatedNotifications)
-
-            // Update in all data
-            initialSiteNotificationsData.all = initialSiteNotificationsData.all.filter(
-                (notification) => notification.id !== id,
-            )
-        } else {
-            const updatedNotifications = workNotifications.filter((notification) => notification.id !== id)
-            setWorkNotifications(updatedNotifications)
-
-            // Update in all data
-            initialWorkNotificationsData.all = initialWorkNotificationsData.all.filter(
-                (notification) => notification.id !== id,
-            )
-
-            // Update in branch-specific data
-            const notification = initialWorkNotificationsData.all.find((n) => n.id === id)
-            if (notification && notification.branch !== "all") {
-                initialWorkNotificationsData[notification.branch] = initialWorkNotificationsData[notification.branch].filter(
-                    (n) => n.id !== id,
+                        is_read: true,
+                    })),
                 )
+                // Update unread count
+                setSiteUnreadCount(0)
+            } else {
+                await markAllClinicNotificationsAsRead()
+                // Update local state
+                setWorkNotifications(
+                    workNotifications.map((notification) => ({
+                        ...notification,
+                        is_read: true,
+                    })),
+                )
+                // Update unread count
+                setWorkUnreadCount(0)
             }
+        } catch (err) {
+            console.error("Error marking all notifications as read:", err)
+            setError(t("errorMarkingAllAsRead"))
         }
     }
 
@@ -397,13 +236,35 @@ export default function Notifications() {
         setShowFilters(!showFilters)
     }
 
-    // Get unread count
-    const getUnreadCount = (notifications) => {
-        return notifications.filter((notification) => !notification.read).length
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+        fetchNotifications(page)
     }
 
-    const siteUnreadCount = getUnreadCount(siteNotifications)
-    const workUnreadCount = getUnreadCount(workNotifications)
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(0) // Reset to first page
+        fetchNotifications(0)
+    }
+
+    // Open notification detail modal
+    const openNotificationModal = (notification) => {
+        setSelectedNotification(notification)
+        setShowModal(true)
+
+        // Mark as read if not already read
+        if (!notification.is_read) {
+            markAsRead(notification.id)
+        }
+    }
+
+    // Close notification detail modal
+    const closeNotificationModal = () => {
+        setShowModal(false)
+        setSelectedNotification(null)
+    }
 
     return (
         <div className="notifications-page">
@@ -459,95 +320,161 @@ export default function Notifications() {
                                 <label>{t("branch")}:</label>
                                 <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)}>
                                     <option value="all">{t("all")}</option>
-                                    <option value="branch1">{t("branch1")}</option>
-                                    <option value="branch2">{t("branch2")}</option>
-                                    <option value="branch3">{t("branch3")}</option>
+                                    <option value="1">{t("branch1")}</option>
+                                    <option value="2">{t("branch2")}</option>
+                                    <option value="3">{t("branch3")}</option>
                                 </select>
                             </div>
                         )}
-
-                        <div className="filter-group">
-                            <label>{t("priority")}:</label>
-                            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-                                <option value="all">{t("all")}</option>
-                                <option value="high">{t("high")}</option>
-                                <option value="medium">{t("medium")}</option>
-                                <option value="low">{t("low")}</option>
-                            </select>
-                        </div>
                     </div>
                 )}
             </div>
 
-            <div className="notifications-list">
-                {filteredNotifications.length > 0 ? (
-                    filteredNotifications.map((notification) => (
-                        <div
-                            key={notification.id}
-                            className={`notification-item ${!notification.read ? "unread" : ""}`}
-                            onClick={() => markAsRead(notification.id)}
-                        >
-                            <div className="notification-icon">
-                                {activeTab === "site" ? (
-                                    <FaGlobe className={`icon priority-${notification.priority}`} />
-                                ) : (
-                                    <FaBriefcase className={`icon priority-${notification.priority}`} />
-                                )}
-                            </div>
-                            <div className="notification-content">
-                                <div className="notification-header">
-                                    <h3 className="notification-title">{notification.title}</h3>
-                                    <div className="notification-date">{formatDate(notification.date)}</div>
+            {loading ? (
+                <div className="loading-container">
+                    <FaSpinner className="spinner" />
+                    <p>{t("loading")}</p>
+                </div>
+            ) : error ? (
+                <div className="error-container">
+                    <p className="error-message">{error}</p>
+                    <button className="btn btn-primary" onClick={() => fetchNotifications(currentPage)}>
+                        {t("tryAgain")}
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <div className="notifications-list">
+                        {filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((notification) => (
+                                <div
+                                    key={notification.id}
+                                    className={`notification-item ${!notification.is_read ? "unread" : ""}`}
+                                    onClick={() => openNotificationModal(notification)}
+                                >
+                                    <div className="notification-icon">
+                                        {activeTab === "site" ? <FaGlobe className="icon" /> : <FaBriefcase className="icon" />}
+                                    </div>
+                                    <div className="notification-content">
+                                        <div className="notification-header">
+                                            <h3 className="notification-title">{notification.title}</h3>
+                                            <div className="notification-date">{formatDate(notification.created_at)}</div>
+                                        </div>
+                                        <div className="notification-message">
+                                            {truncateText(notification.message)}
+                                            {notification.message.length > 100 && (
+                                                <span className="read-more">
+                                                    <FaEllipsisH />
+                                                </span>
+                                            )}
+                                        </div>
+                                        {activeTab === "work" && (
+                                            <div className="notification-branch">
+                                                <FaBuilding />{" "}
+                                                {notification.branch === 1
+                                                    ? t("branch1")
+                                                    : notification.branch === 2
+                                                        ? t("branch2")
+                                                        : notification.branch === 3
+                                                            ? t("branch3")
+                                                            : ""}
+                                            </div>
+                                        )}
+                                        <div className="notification-actions">
+                                            {!notification.is_read ? (
+                                                <button
+                                                    className="action-btn mark-read"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        markAsRead(notification.id)
+                                                    }}
+                                                >
+                                                    <FaCheck /> {t("markAsRead")}
+                                                </button>
+                                            ) : (
+                                                <div className="read-status">
+                                                    <FaCheckDouble /> {t("read")}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="notification-message">{notification.message}</div>
-                                {activeTab === "work" && notification.branch !== "all" && (
-                                    <div className="notification-branch">
-                                        <FaBuilding />{" "}
-                                        {notification.branch === "branch1"
-                                            ? t("branch1")
-                                            : notification.branch === "branch2"
-                                                ? t("branch2")
-                                                : notification.branch === "branch3"
-                                                    ? t("branch3")
-                                                    : ""}
+                            ))
+                        ) : (
+                            <div className="no-notifications">
+                                <FaBell className="empty-icon" />
+                                <p>{t("noNotifications")}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalItems > 0 && (
+                        <Pagination
+                            pageCount={Math.ceil(totalItems / itemsPerPage)}
+                            currentPage={currentPage}
+                            onPageChange={handlePageChange}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={totalItems}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* Notification Detail Modal */}
+            {showModal && selectedNotification && (
+                <div className="notification-modal-overlay" onClick={closeNotificationModal}>
+                    <div className="notification-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">{selectedNotification.title}</h2>
+                            <button className="close-btn" onClick={closeNotificationModal}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="notification-detail-info">
+                                <div className="detail-item">
+                                    <FaCalendarAlt className="detail-icon" />
+                                    <span>{formatFullDateTime(selectedNotification.created_at)}</span>
+                                </div>
+                                {activeTab === "work" && selectedNotification.branch && (
+                                    <div className="detail-item">
+                                        <FaBuilding className="detail-icon" />
+                                        <span>
+                                            {selectedNotification.branch === 1
+                                                ? t("branch1")
+                                                : selectedNotification.branch === 2
+                                                    ? t("branch2")
+                                                    : selectedNotification.branch === 3
+                                                        ? t("branch3")
+                                                        : ""}
+                                        </span>
                                     </div>
                                 )}
-                                <div className="notification-actions">
-                                    {!notification.read ? (
-                                        <button
-                                            className="action-btn mark-read"
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                markAsRead(notification.id)
-                                            }}
-                                        >
-                                            <FaCheck /> {t("markAsRead")}
-                                        </button>
-                                    ) : (
-                                        <div className="read-status">
-                                            <FaCheckDouble /> {t("read")}
-                                        </div>
-                                    )}
-                                    <button
-                                        className="action-btn delete"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            deleteNotification(notification.id)
-                                        }}
-                                    >
-                                        <FaTrash /> {t("delete")}
-                                    </button>
-                                </div>
+                                {selectedNotification.clinic && (
+                                    <div className="detail-item">
+                                        <FaUser className="detail-icon" />
+                                        <span>
+                                            {t("clinic")}: {selectedNotification.clinic}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="notification-detail-message">
+                                {selectedNotification.message.split("\n").map((line, index) => (
+                                    <p key={index}>{line}</p>
+                                ))}
                             </div>
                         </div>
-                    ))
-                ) : (
-                    <div className="no-notifications">
-                        <FaBell className="empty-icon" />
-                        <p>{t("noNotifications")}</p>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={closeNotificationModal}>
+                                {t("close")}
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     )
-};
+}
