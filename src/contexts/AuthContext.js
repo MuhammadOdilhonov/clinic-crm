@@ -11,7 +11,7 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [selectedBranch, setSelectedBranch] = useState(localStorage.getItem("selectedBranch") || "all-filial")
+    const [selectedBranch, setSelectedBranch] = useState(localStorage.getItem("selectedBranch") || "all")
     const [branchesData, setBranchesData] = useState([])
     const [token, setToken] = useState(null)
     const [loginInProgress, setLoginInProgress] = useState(false) // Login jarayoni holati

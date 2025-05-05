@@ -65,7 +65,7 @@ export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
     // State for branches from API
-    const [branches, setBranches] = useState([{ id: "all-filial", name: t("allBranches") }])
+    const [branches, setBranches] = useState([{ id: "all", name: t("allBranches") }])
     const [branchesLoading, setBranchesLoading] = useState(true)
     const [branchesError, setBranchesError] = useState(null)
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
 
                 // Add the "all" option to the beginning of the array
                 setBranches([
-                    { id: "all-filial", name: t("allBranches") },
+                    { id: "all", name: t("allBranches") },
                     ...branchesData.map((branch) => ({
                         id: branch.id.toString(),
                         name: branch.name,
@@ -324,7 +324,7 @@ export default function Dashboard() {
                                                 key={branch.id}
                                                 className={`branch-option ${selectedBranch === branch.id ? "active" : ""}`}
                                                 onClick={() => handleBranchChange(branch.id)}
-                                                title={branch.id !== "all-filial" ? branch.address : ""}
+                                                title={branch.id !== "all" ? branch.address : ""}
                                             >
                                                 <span className="branch-name">{branch.name}</span>
                                             </button>
