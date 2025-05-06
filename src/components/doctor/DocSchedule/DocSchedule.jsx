@@ -190,7 +190,7 @@ export default function DocSchedule() {
                     const params = {
                         page: currentPage + 1,
                         page_size: itemsPerPage,
-                        doctor_id: user?.id, // Filter by current doctor
+                        doctor: user?.id, // Filter by current doctor
                         search: searchTerm,
                         status: filterStatus !== "all" ? reverseStatusMapping[filterStatus] : undefined,
                     }

@@ -50,7 +50,7 @@ export const fetchBusyTimes = async (params) => {
         const queryParams = new URLSearchParams()
 
         if (branchId) queryParams.append("branch_id", branchId)
-        if (doctorId) queryParams.append("doctor_id", doctorId)
+        if (doctorId) queryParams.append("doctor", doctorId)
         if (cabinetId) queryParams.append("cabinet_id", cabinetId)
         if (date) queryParams.append("date", date)
 

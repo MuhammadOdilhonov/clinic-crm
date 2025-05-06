@@ -111,8 +111,14 @@ const DocDoshboard = () => {
                 // Process appointments data
                 const formattedAppointments = appointmentsData.appointments.map((appointment, index) => {
                     // Extract time from ISO date string
-                    const appointmentDate = new Date(appointment.date)
-                    const time = appointmentDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+                    const appointmentDate = new Date(appointment.date);
+                    const hours = appointmentDate.getUTCHours().toString().padStart(2, '0');
+                    const minutes = appointmentDate.getUTCMinutes().toString().padStart(2, '0');
+                    const time = `${hours}:${minutes}`;
+
+                    console.log(time); // 09:00
+
+
 
                     // Get initials from full name
                     const nameParts = appointment.customer__full_name.split(" ")
