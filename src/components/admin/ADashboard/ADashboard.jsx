@@ -18,6 +18,8 @@ import {
     Filler,
 } from "chart.js"
 import { Doughnut, Line, Bar } from "react-chartjs-2"
+import { useAuth } from "../../../contexts/AuthContext"
+
 import { getAllAdminDashboardData } from "../../../api/apiAdminDashboard"
 
 // Register ChartJS components
@@ -36,9 +38,9 @@ ChartJS.register(
 
 const ADashboard = () => {
     const navigate = useNavigate()
+    const { selectedBranch } = useAuth()
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [selectedFilial, setSelectedFilial] = useState("all")
     const [dashboardData, setDashboardData] = useState({
         stats: {
             patients: 0,
@@ -59,7 +61,8 @@ const ADashboard = () => {
         const fetchDashboardData = async () => {
             setLoading(true)
             try {
-                const data = await getAllAdminDashboardData(selectedFilial)
+                const branchId = selectedBranch || "all"
+                const data = await getAllAdminDashboardData(branchId)
 
                 // Transform the data to match the component's expected structure
                 setDashboardData({
@@ -113,7 +116,7 @@ const ADashboard = () => {
         }
 
         fetchDashboardData()
-    }, [selectedFilial])
+    }, [selectedBranch])
 
     // Chart data
     const patientDistributionData = {

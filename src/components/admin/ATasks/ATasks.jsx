@@ -58,7 +58,7 @@ export default function ATasks() {
                 priority: priorityFilter !== "all" ? priorityFilter : undefined,
                 assignee: assigneeFilter !== "all" ? assigneeFilter : undefined,
                 search: searchQuery || undefined,
-                branch: selectedBranch?.id || undefined,
+                branch: selectedBranch !== "all" ? selectedBranch : undefined,
             }
 
             // Fetch tasks from API based on calendar view
@@ -68,20 +68,17 @@ export default function ATasks() {
             if (view === "calendar") {
                 switch (calendarView) {
                     case "day":
-                        response = await apiTasks.fetchDailyTasks(currentDate, selectedBranch?.id)
+                        response = await apiTasks.fetchDailyTasks(currentDate, selectedBranch)
                         break
                     case "week":
-                        response = await apiTasks.fetchWeeklyTasks(currentDate, selectedBranch?.id)
+                        response = await apiTasks.fetchWeeklyTasks(currentDate, selectedBranch)
                         break
                     case "year":
-                        response = await apiTasks.fetchYearlyTasks(currentDate.getFullYear(), selectedBranch?.id)
+                        response = await apiTasks.fetchYearlyTasks(currentDate, selectedBranch)
                         break
                     case "month":
                     default:
-                        response = await apiTasks.fetchMonthlyTasks(
-                            currentDate.getFullYear(),
-                            selectedBranch?.id,
-                        )
+                        response = await apiTasks.fetchMonthlyTasks(currentDate, selectedBranch)
                         break
                 }
 
@@ -181,6 +178,7 @@ export default function ATasks() {
         calendarView,
         view,
         currentDate,
+        selectedBranch,
     ])
 
     // Handle page change
@@ -363,8 +361,8 @@ export default function ATasks() {
         const dayDate = new Date(day.date)
 
         try {
-            // Fetch tasks for the selected day
-            const response = await apiTasks.fetchDailyTasks(dayDate, selectedBranch?.id || null)
+            // Fetch tasks for the selected day with correct branch ID
+            const response = await apiTasks.fetchDailyTasks(dayDate, selectedBranch)
 
             // Format the tasks
             const dayTasks = response.map((task) => ({

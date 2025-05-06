@@ -34,7 +34,7 @@ const fetchTasks = async (page = 1, limit = 10, filters = {}) => {
         }
 
         if (filters.branch && filters.branch !== "all") {
-            queryParams.append("branch", filters.branch)
+            queryParams.append("branch_id", filters.branch)
         }
 
         if (filters.search) {
@@ -126,7 +126,7 @@ const fetchDailyTasks = async (date, branch = null) => {
         queryParams.append("date", formatDateForAPI(date))
 
         if (branch && branch !== "all") {
-            queryParams.append("branch", branch)
+            queryParams.append("branch_id", branch)
         }
 
         const response = await client.get(`${DAILY_TASKS_ENDPOINT}?${queryParams.toString()}`)
@@ -144,7 +144,7 @@ const fetchWeeklyTasks = async (date, branch = null) => {
         queryParams.append("date", formatDateForAPI(date))
 
         if (branch && branch !== "all") {
-            queryParams.append("branch", branch)
+            queryParams.append("branch_id", branch)
         }
 
         const response = await client.get(`${WEEKLY_TASKS_ENDPOINT}?${queryParams.toString()}`)
@@ -162,7 +162,7 @@ const fetchMonthlyTasks = async (date, branch = null) => {
         queryParams.append("date", formatDateForAPI(date))
 
         if (branch && branch !== "all") {
-            queryParams.append("branch", branch)
+            queryParams.append("branch_id", branch)
         }
 
         const response = await client.get(`${MONTHLY_TASKS_ENDPOINT}?${queryParams.toString()}`)
@@ -180,7 +180,7 @@ const fetchYearlyTasks = async (date, branch = null) => {
         queryParams.append("date", formatDateForAPI(date))
 
         if (branch && branch !== "all") {
-            queryParams.append("branch", branch)
+            queryParams.append("branch_id", branch)
         }
 
         const response = await client.get(`${YEARLY_TASKS_ENDPOINT}?${queryParams.toString()}`)

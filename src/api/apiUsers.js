@@ -15,7 +15,7 @@ const fetchUsers = async (page = 1, limit = 10, filters = {}) => {
 
         // Add filters if provided
         if (filters.branch && filters.branch !== "all") {
-            queryParams.append("branch", filters.branch)
+            queryParams.append("branch_id", filters.branch)
         }
 
         if (filters.role && filters.role !== "all") {

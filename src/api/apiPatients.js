@@ -19,7 +19,7 @@ const fetchPatients = async (page = 1, limit = 10, search = "", branchId = null)
 
     // Add branch filter if provided and not "all"
     if (branchId && branchId !== "all") {
-      queryParams.append("branch", branchId)
+      queryParams.append("branch_id", branchId)
     }
 
     const response = await client.get(`${CUSTOMERS_ENDPOINT}?${queryParams.toString()}`)

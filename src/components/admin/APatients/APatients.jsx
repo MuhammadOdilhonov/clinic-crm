@@ -117,18 +117,8 @@ export default function APatients() {
             // Get branch ID for filtering
             const branchId = filterBranch === "all" ? null : filterBranch
 
-            // Prepare filter parameters
-            const filterParams = {
-                gender: filterGender !== "all" ? filterGender : null,
-                age_range: filterAge !== "all" ? filterAge : null,
-                status: filterStatus !== "all" ? filterStatus : null,
-                branch: branchId,
-                search: searchTerm || null,
-                sort_by: sortBy,
-                sort_order: sortOrder,
-            }
-
-            const response = await apiPatients.fetchPatients(apiPage, itemsPerPage, searchTerm, branchId, filterParams)
+            // Call API with correct branch ID
+            const response = await apiPatients.fetchPatients(apiPage, itemsPerPage, searchTerm, branchId)
 
             // Transform API data to match component structure
             const transformedPatients = response.results.map((patient) => ({
@@ -161,7 +151,13 @@ export default function APatients() {
     // Fetch patients when dependencies change
     useEffect(() => {
         fetchPatients()
-    }, [currentPage, itemsPerPage, selectedBranch])
+    }, [currentPage, itemsPerPage, filterBranch])
+
+    // 3. selectedBranch o'zgarganda filterBranch ni yangilash va fetchPatients() ni chaqirish:
+    useEffect(() => {
+        setFilterBranch(selectedBranch)
+        fetchPatients()
+    }, [selectedBranch])
 
     // Handle search input
     const handleSearch = (e) => {

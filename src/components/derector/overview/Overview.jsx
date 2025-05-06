@@ -108,7 +108,7 @@ export default function DirectorDashboard() {
                 setError(null)
 
                 // Use the branch ID from selectedBranch or default to "all-filial"
-                const branchId = selectedBranch || "all-filial"
+                const branchId = selectedBranch || "all"
                 const data = await getAllDashboardData(branchId)
                 setDashboardData(data)
             } catch (err) {
