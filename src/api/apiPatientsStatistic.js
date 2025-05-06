@@ -3,7 +3,7 @@ import client from "./apiService"
 // Get patient statistics based on period and branch
 export const getPatientStatistics = async (period = "year", quarter = null, branchId = null) => {
     try {
-        let url = `/filial/${branchId || "all-filial"}/patient-statistics/?period=${period}`
+        let url = `/filial/${branchId || "all"}/patient-statistics/?period=${period}`
 
         // Add quarter parameter if provided
         if (period === "quarter" && quarter) {

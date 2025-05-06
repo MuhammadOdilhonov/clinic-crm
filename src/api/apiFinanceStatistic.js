@@ -3,7 +3,7 @@ import client from "./apiService"
 // Get financial statistics based on period and branch
 export const getFinancialStatistics = async (period = "year", quarter = null, branchId = null) => {
     try {
-        let url = `/filial/${branchId || "all-filial"}/financial-report/?period=${period}`
+        let url = `/filial/${branchId || "all"}/financial-report/?period=${period}`
 
         // Add quarter parameter if provided
         if (period === "quarter" && quarter) {

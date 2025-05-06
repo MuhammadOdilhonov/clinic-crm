@@ -18,6 +18,7 @@ import {
     Filler,
 } from "chart.js"
 import { Doughnut, Line, Bar } from "react-chartjs-2"
+import { getAllAdminDashboardData } from "../../../api/apiAdminDashboard"
 
 // Register ChartJS components
 ChartJS.register(
@@ -36,52 +37,90 @@ ChartJS.register(
 const ADashboard = () => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
-    const [stats, setStats] = useState({
-        patients: 1245,
-        doctors: 48,
-        rooms: 32,
-        appointments: 156,
-        tasks: 89,
+    const [error, setError] = useState(null)
+    const [selectedFilial, setSelectedFilial] = useState("all")
+    const [dashboardData, setDashboardData] = useState({
+        stats: {
+            patients: 0,
+            doctors: 0,
+            rooms: 0,
+            appointments: 0,
+        },
+        recentPatients: [],
+        pendingTasks: [],
+        cabinetUtilization: [],
+        patientDistribution: { male: 0, female: 0 },
+        weeklyAppointments: {},
+        monthlyCustomerTrend: {},
     })
 
-    const [recentPatients, setRecentPatients] = useState([
-        { id: 1, name: "John Smith", age: 45, diagnosis: "Hypertension", date: "2023-05-01", avatar: "JS" },
-        { id: 2, name: "Sarah Johnson", age: 32, diagnosis: "Diabetes Type 2", date: "2023-05-02", avatar: "SJ" },
-        { id: 3, name: "Michael Brown", age: 58, diagnosis: "Arthritis", date: "2023-05-03", avatar: "MB" },
-        { id: 4, name: "Emily Davis", age: 27, diagnosis: "Migraine", date: "2023-05-04", avatar: "ED" },
-        { id: 5, name: "Robert Wilson", age: 63, diagnosis: "COPD", date: "2023-05-05", avatar: "RW" },
-    ])
-
-    const [pendingTasks, setPendingTasks] = useState([
-        { id: 1, title: "Review lab results", priority: "High", assignee: "Dr. Johnson", dueDate: "2023-05-10" },
-        { id: 2, title: "Update patient records", priority: "Medium", assignee: "Nurse Smith", dueDate: "2023-05-11" },
-        { id: 3, title: "Order medical supplies", priority: "Low", assignee: "Admin Staff", dueDate: "2023-05-12" },
-        { id: 4, title: "Schedule staff meeting", priority: "Medium", assignee: "Admin Staff", dueDate: "2023-05-13" },
-    ])
-
-    const [cabinetUtilization, setCabinetUtilization] = useState([
-        { name: "Cabinet 1", utilization: 85 },
-        { name: "Cabinet 2", utilization: 72 },
-        { name: "Cabinet 3", utilization: 90 },
-        { name: "Cabinet 4", utilization: 65 },
-        { name: "Cabinet 5", utilization: 78 },
-    ])
-
-    // Simulate loading
+    // Fetch dashboard data
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setLoading(false)
-        }, 1000)
+        const fetchDashboardData = async () => {
+            setLoading(true)
+            try {
+                const data = await getAllAdminDashboardData(selectedFilial)
 
-        return () => clearTimeout(timer)
-    }, [])
+                // Transform the data to match the component's expected structure
+                setDashboardData({
+                    stats: {
+                        patients: data.dashboardMetrics.customers.total,
+                        doctors: data.dashboardMetrics.doctors.total,
+                        rooms: data.dashboardMetrics.cabinets.total,
+                        appointments: data.dashboardMetrics.meetings.total,
+                        patientsGrowth: data.dashboardMetrics.customers.growth,
+                        doctorsGrowth: data.dashboardMetrics.doctors.growth,
+                        roomsGrowth: data.dashboardMetrics.cabinets.growth,
+                        appointmentsGrowth: data.dashboardMetrics.meetings.growth,
+                    },
+                    recentPatients: data.recentPatients.recent_patients.map((patient, index) => ({
+                        id: index + 1,
+                        name: patient.full_name,
+                        age: patient.age,
+                        diagnosis: patient.diagnosis,
+                        date: patient.created_at,
+                        avatar: patient.full_name
+                            .split(" ")
+                            .map((name) => name[0])
+                            .join("")
+                            .substring(0, 2),
+                    })),
+                    pendingTasks: data.pendingTasks.pending_tasks.map((task, index) => ({
+                        id: index + 1,
+                        title: task.title,
+                        priority: task.priority,
+                        assignee: task.assignee,
+                        dueDate: task.due_date,
+                    })),
+                    cabinetUtilization: data.cabinetUtilization.cabinet_utilization.map((cabinet) => ({
+                        name: cabinet.cabinet_name,
+                        utilization: cabinet.utilization,
+                    })),
+                    patientDistribution: {
+                        male: data.patientDistribution.male,
+                        female: data.patientDistribution.female,
+                    },
+                    weeklyAppointments: data.weeklyAppointments.weekly_appointments,
+                    monthlyCustomerTrend: data.monthlyCustomerTrend.monthly_customer_trend,
+                })
+                setError(null)
+            } catch (err) {
+                console.error("Failed to fetch dashboard data:", err)
+                setError("Failed to load dashboard data. Please try again later.")
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDashboardData()
+    }, [selectedFilial])
 
     // Chart data
     const patientDistributionData = {
         labels: ["Male", "Female"],
         datasets: [
             {
-                data: [650, 595],
+                data: [dashboardData.patientDistribution.male, dashboardData.patientDistribution.female],
                 backgroundColor: ["#4F46E5", "#EC4899"],
                 borderColor: ["#4338CA", "#DB2777"],
                 borderWidth: 1,
@@ -91,11 +130,11 @@ const ADashboard = () => {
     }
 
     const appointmentData = {
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        labels: Object.keys(dashboardData.weeklyAppointments),
         datasets: [
             {
                 label: "Appointments",
-                data: [28, 35, 42, 30, 21, 15, 5],
+                data: Object.values(dashboardData.weeklyAppointments),
                 backgroundColor: "#4F46E5",
                 borderRadius: 6,
                 barThickness: 12,
@@ -104,11 +143,11 @@ const ADashboard = () => {
     }
 
     const patientTrendData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        labels: Object.keys(dashboardData.monthlyCustomerTrend),
         datasets: [
             {
                 label: "New Patients",
-                data: [65, 78, 90, 81, 95, 110],
+                data: Object.values(dashboardData.monthlyCustomerTrend),
                 borderColor: "#10B981",
                 backgroundColor: "rgba(16, 185, 129, 0.1)",
                 tension: 0.4,
@@ -123,12 +162,12 @@ const ADashboard = () => {
     }
 
     const cabinetUtilizationData = {
-        labels: cabinetUtilization.map((cabinet) => cabinet.name),
+        labels: dashboardData.cabinetUtilization.map((cabinet) => cabinet.name),
         datasets: [
             {
                 label: "Utilization %",
-                data: cabinetUtilization.map((cabinet) => cabinet.utilization),
-                backgroundColor: cabinetUtilization.map((cabinet) =>
+                data: dashboardData.cabinetUtilization.map((cabinet) => cabinet.utilization),
+                backgroundColor: dashboardData.cabinetUtilization.map((cabinet) =>
                     cabinet.utilization > 80 ? "#EF4444" : cabinet.utilization > 60 ? "#F59E0B" : "#10B981",
                 ),
                 borderRadius: 6,
@@ -270,6 +309,9 @@ const ADashboard = () => {
         day: "numeric",
     })
 
+    // Handle filial change
+   
+
     if (loading) {
         return (
             <div className="admin-dashboard">
@@ -281,26 +323,22 @@ const ADashboard = () => {
         )
     }
 
-    return (
-        <div className="admin-dashboard">
-            {/* Dashboard Header */}
-            <div className="dashboard-header">
-                <div className="header-left">
-                    <h1>Admin Dashboard</h1>
-                    <p className="date-display">{currentDate}</p>
-                </div>
-                <div className="header-right">
-                    <div className="search-box">
-                        <FaSearch />
-                        <input type="text" placeholder="Search..." />
-                    </div>
-                    <button className="notification-btn">
-                        <FaBell />
-                        <span className="notification-badge">3</span>
+    if (error) {
+        return (
+            <div className="admin-dashboard">
+                <div className="dashboard-error">
+                    <p>{error}</p>
+                    <button onClick={() => window.location.reload()} className="retry-btn">
+                        Retry
                     </button>
                 </div>
             </div>
+        )
+    }
 
+    return (
+        <div className="admin-dashboard">
+            
             {/* Stats Cards */}
             <div className="stats-container">
                 <div className="stat-card" onClick={() => navigate("/admin/patients")}>
@@ -308,10 +346,15 @@ const ADashboard = () => {
                         <FaUserInjured />
                     </div>
                     <div className="stat-content">
-                        <h3>{stats.patients}</h3>
+                        <h3>{dashboardData.stats.patients}</h3>
                         <p>Total Patients</p>
                     </div>
-                    <div className="stat-trend up">+5.2%</div>
+                    <div
+                        className={`stat-trend ${dashboardData.stats.patientsGrowth > 0 ? "up" : dashboardData.stats.patientsGrowth < 0 ? "down" : ""}`}
+                    >
+                        {dashboardData.stats.patientsGrowth > 0 ? "+" : ""}
+                        {dashboardData.stats.patientsGrowth}%
+                    </div>
                 </div>
 
                 <div className="stat-card" onClick={() => navigate("/admin/staff")}>
@@ -319,10 +362,15 @@ const ADashboard = () => {
                         <FaUserMd />
                     </div>
                     <div className="stat-content">
-                        <h3>{stats.doctors}</h3>
+                        <h3>{dashboardData.stats.doctors}</h3>
                         <p>Doctors</p>
                     </div>
-                    <div className="stat-trend up">+2.1%</div>
+                    <div
+                        className={`stat-trend ${dashboardData.stats.doctorsGrowth > 0 ? "up" : dashboardData.stats.doctorsGrowth < 0 ? "down" : ""}`}
+                    >
+                        {dashboardData.stats.doctorsGrowth > 0 ? "+" : ""}
+                        {dashboardData.stats.doctorsGrowth}%
+                    </div>
                 </div>
 
                 <div className="stat-card" onClick={() => navigate("/admin/rooms")}>
@@ -330,10 +378,15 @@ const ADashboard = () => {
                         <MdMeetingRoom />
                     </div>
                     <div className="stat-content">
-                        <h3>{stats.rooms}</h3>
+                        <h3>{dashboardData.stats.rooms}</h3>
                         <p>Rooms</p>
                     </div>
-                    <div className="stat-trend">0%</div>
+                    <div
+                        className={`stat-trend ${dashboardData.stats.roomsGrowth > 0 ? "up" : dashboardData.stats.roomsGrowth < 0 ? "down" : ""}`}
+                    >
+                        {dashboardData.stats.roomsGrowth > 0 ? "+" : ""}
+                        {dashboardData.stats.roomsGrowth}%
+                    </div>
                 </div>
 
                 <div className="stat-card" onClick={() => navigate("/admin/schedule")}>
@@ -341,10 +394,15 @@ const ADashboard = () => {
                         <FaCalendarAlt />
                     </div>
                     <div className="stat-content">
-                        <h3>{stats.appointments}</h3>
+                        <h3>{dashboardData.stats.appointments}</h3>
                         <p>Appointments</p>
                     </div>
-                    <div className="stat-trend up">+12.3%</div>
+                    <div
+                        className={`stat-trend ${dashboardData.stats.appointmentsGrowth > 0 ? "up" : dashboardData.stats.appointmentsGrowth < 0 ? "down" : ""}`}
+                    >
+                        {dashboardData.stats.appointmentsGrowth > 0 ? "+" : ""}
+                        {dashboardData.stats.appointmentsGrowth}%
+                    </div>
                 </div>
             </div>
 
@@ -412,7 +470,7 @@ const ADashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {recentPatients.map((patient) => (
+                                    {dashboardData.recentPatients.map((patient) => (
                                         <tr key={patient.id}>
                                             <td>
                                                 <div className="patient-info">
@@ -442,7 +500,7 @@ const ADashboard = () => {
                             </button>
                         </div>
                         <div className="tasks-container">
-                            {pendingTasks.map((task) => (
+                            {dashboardData.pendingTasks.map((task) => (
                                 <div key={task.id} className="task-card">
                                     <div className={`priority-badge priority-${task.priority.toLowerCase()}`}>{task.priority}</div>
                                     <h3>{task.title}</h3>
