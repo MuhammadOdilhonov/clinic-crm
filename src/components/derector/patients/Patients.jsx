@@ -17,6 +17,7 @@ import {
   FaStethoscope,
   FaUserMd,
   FaExclamationTriangle,
+  FaExclamation,
 } from "react-icons/fa"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useLanguage } from "../../../contexts/LanguageContext"
@@ -45,7 +46,7 @@ export default function Patients() {
     email: "user@example.com",
     location: "",
     status: "faol",
-    branch: 1,
+    branch: selectedBranch === "all" ? 0 : Number.parseInt(selectedBranch),
   })
   const [filterGender, setFilterGender] = useState("all")
   const [filterAge, setFilterAge] = useState("all")
@@ -55,6 +56,10 @@ export default function Patients() {
   const [viewMode, setViewMode] = useState("table") // table or grid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Validation states
+  const [branchError, setBranchError] = useState(false)
+  const [editBranchError, setEditBranchError] = useState(false)
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(0)
@@ -71,7 +76,7 @@ export default function Patients() {
     confirmText: "",
     cancelText: "",
     type: "warning",
-    onConfirm: () => {},
+    onConfirm: () => { },
   })
   const [successModalProps, setSuccessModalProps] = useState({
     title: "",
@@ -108,8 +113,8 @@ export default function Patients() {
       // Convert currentPage from 0-based to 1-based for API
       const apiPage = currentPage + 1
 
-      // Get branch ID for filtering
-      const branchId = selectedBranch === "all" ? null : selectedBranch
+      // Get branch ID for filtering - use filterBranch instead of selectedBranch
+      const branchId = filterBranch === "all" ? null : Number(filterBranch)
 
       const response = await apiPatients.fetchPatients(apiPage, itemsPerPage, searchTerm, branchId)
 
@@ -143,13 +148,13 @@ export default function Patients() {
   // Fetch patients when dependencies change
   useEffect(() => {
     fetchPatients()
-  }, [currentPage, itemsPerPage, searchTerm, selectedBranch])
+  }, [currentPage, itemsPerPage, searchTerm, filterBranch])
 
   // Update branch in new patient form when selected branch changes
   useEffect(() => {
     setNewPatient({
       ...newPatient,
-      branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
+      branch: selectedBranch === "all" ? 0 : Number.parseInt(selectedBranch),
     })
 
     setFilterBranch(selectedBranch)
@@ -157,6 +162,8 @@ export default function Patients() {
 
   // Apply filters to patients
   const applyFilters = () => {
+    // Reset to first page when applying filters
+    setCurrentPage(0)
     fetchPatients()
   }
 
@@ -169,29 +176,63 @@ export default function Patients() {
   // Handle new patient input change
   const handleNewPatientChange = (e) => {
     const { name, value } = e.target
-    setNewPatient({
-      ...newPatient,
-      [name]: name === "age" || name === "branch" ? (value === "" ? "" : Number.parseInt(value)) : value,
-    })
+
+    // Для поля branch нужно сохранять значение как число без преобразования через parseInt
+    if (name === "branch") {
+      const branchValue = Number(value)
+      setNewPatient({
+        ...newPatient,
+        [name]: branchValue,
+      })
+
+      // Сбрасываем ошибку, если выбран валидный филиал
+      if (branchValue > 0) {
+        setBranchError(false)
+      }
+
+      console.log("Branch selected:", branchValue) // Для отладки
+    } else {
+      setNewPatient({
+        ...newPatient,
+        [name]: name === "age" ? (value === "" ? "" : Number.parseInt(value)) : value,
+      })
+    }
   }
 
   // Handle edit patient input change
   const handleEditPatientChange = (e) => {
     const { name, value } = e.target
-    setCurrentPatient({
-      ...currentPatient,
-      [name]: name === "age" || name === "branch" ? Number.parseInt(value) : value,
-    })
+
+    // Для поля branch нужно сохранять значение как число без преобразования через parseInt
+    if (name === "branch") {
+      const branchValue = Number(value)
+      setCurrentPatient({
+        ...currentPatient,
+        [name]: branchValue,
+      })
+
+      // Сбрасываем ошибку, если выбран валидный филиал
+      if (branchValue > 0) {
+        setEditBranchError(false)
+      }
+    } else {
+      setCurrentPatient({
+        ...currentPatient,
+        [name]: name === "age" ? Number.parseInt(value) : value,
+      })
+    }
   }
 
   // Open add sidebar
   const openAddSidebar = () => {
+    setBranchError(false)
     setShowSidebar(true)
   }
 
   // Close add sidebar
   const closeAddSidebar = () => {
     setShowSidebar(false)
+    setBranchError(false)
     setNewPatient({
       full_name: "",
       age: 18,
@@ -200,12 +241,14 @@ export default function Patients() {
       email: "user@example.com",
       location: "",
       status: "faol",
-      branch: selectedBranch === "all" ? 1 : Number.parseInt(selectedBranch),
+      branch: selectedBranch === "all" ? 0 : Number.parseInt(selectedBranch),
     })
   }
 
   // Open edit sidebar
   const openEditSidebar = (patient) => {
+    setEditBranchError(false)
+
     // Transform patient data to match API format
     const apiPatient = {
       id: patient.id,
@@ -232,6 +275,7 @@ export default function Patients() {
   // Close edit sidebar
   const closeEditSidebar = () => {
     setShowEditSidebar(false)
+    setEditBranchError(false)
     setCurrentPatient(null)
   }
 
@@ -245,9 +289,26 @@ export default function Patients() {
     setViewMode(viewMode === "table" ? "grid" : "table")
   }
 
+  // Validate form before submission
+  const validateForm = (patient) => {
+    // Проверяем, выбран ли филиал (branch > 0)
+    if (!patient.branch || patient.branch <= 0) {
+      return false
+    }
+    return true
+  }
+
   // Add new patient
   const addPatient = async (e) => {
     e.preventDefault()
+
+    // Проверяем валидность формы
+    if (!validateForm(newPatient)) {
+      // Если филиал не выбран, показываем ошибку
+      setBranchError(true)
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -277,6 +338,14 @@ export default function Patients() {
   // Update patient
   const updatePatient = async (e) => {
     e.preventDefault()
+
+    // Проверяем валидность формы
+    if (!validateForm(currentPatient)) {
+      // Если филиал не выбран, показываем ошибку
+      setEditBranchError(true)
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -489,7 +558,6 @@ export default function Patients() {
           </button>
         </div>
       </div>
-
       <div className="mijoz-filters-container">
         <div className="mijoz-search-filter">
           <div className="mijoz-search-input">
@@ -558,7 +626,6 @@ export default function Patients() {
           </div>
         )}
       </div>
-
       {viewMode === "table" ? (
         <div className="mijoz-card">
           <div className="mijoz-table-responsive">
@@ -755,7 +822,6 @@ export default function Patients() {
           )}
         </div>
       )}
-
       {/* Add Patient Sidebar */}
       <div className={`mijoz-panel-overlay ${showSidebar ? "active" : ""}`} onClick={closeAddSidebar}></div>
       <div className={`mijoz-panel ${showSidebar ? "active" : ""}`}>
@@ -817,7 +883,13 @@ export default function Patients() {
             <div className="mijoz-form-row">
               <div className="mijoz-form-group">
                 <label>{t("branch")}</label>
-                <select name="branch" value={newPatient.branch} onChange={handleNewPatientChange}>
+                <select
+                  name="branch"
+                  value={newPatient.branch}
+                  onChange={handleNewPatientChange}
+                  className={branchError ? "mijoz-input-error" : ""}
+                >
+                  <option value={0}>Филиал танланг</option>
                   {branchesLoading ? (
                     <option value="">{t("loading")}</option>
                   ) : (
@@ -828,6 +900,11 @@ export default function Patients() {
                     ))
                   )}
                 </select>
+                {branchError && (
+                  <div className="mijoz-error-message">
+                    <FaExclamation /> Илтимос, филиални танланг
+                  </div>
+                )}
               </div>
 
               <div className="mijoz-form-group">
@@ -855,7 +932,6 @@ export default function Patients() {
           </form>
         </div>
       </div>
-
       {/* Edit Patient Sidebar */}
       <div className={`mijoz-panel-overlay ${showEditSidebar ? "active" : ""}`} onClick={closeEditSidebar}></div>
       <div className={`mijoz-panel ${showEditSidebar ? "active" : ""}`}>
@@ -930,7 +1006,13 @@ export default function Patients() {
                 <div className="mijoz-form-row">
                   <div className="mijoz-form-group">
                     <label>{t("branch")}</label>
-                    <select name="branch" value={currentPatient.branch} onChange={handleEditPatientChange}>
+                    <select
+                      name="branch"
+                      value={currentPatient.branch}
+                      onChange={handleEditPatientChange}
+                      className={editBranchError ? "mijoz-input-error" : ""}
+                    >
+                      <option value={0}>Филиал танланг</option>
                       {branchesLoading ? (
                         <option value="">{t("loading")}</option>
                       ) : (
@@ -941,6 +1023,11 @@ export default function Patients() {
                         ))
                       )}
                     </select>
+                    {editBranchError && (
+                      <div className="mijoz-error-message">
+                        <FaExclamation /> Илтимос, филиални танланг
+                      </div>
+                    )}
                   </div>
 
                   <div className="mijoz-form-group">
@@ -970,7 +1057,6 @@ export default function Patients() {
           </>
         )}
       </div>
-
       {/* Confirm Modal for Delete */}
       <ConfirmModal
         isOpen={showConfirmModal}
@@ -983,7 +1069,6 @@ export default function Patients() {
         type={confirmModalProps.type}
         isLoading={loading}
       />
-
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccessModal}

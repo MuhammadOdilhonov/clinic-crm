@@ -740,7 +740,11 @@ export default function APatients() {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor="branch">{t("branch")}</label>
+
                                         <select name="branch" value={newPatient.branch} onChange={handleNewPatientChange}>
+                                            <option value={0}>
+                                                Filial tanlang
+                                            </option>
                                             {branchesLoading ? (
                                                 <option value="">{t("loading")}</option>
                                             ) : (
