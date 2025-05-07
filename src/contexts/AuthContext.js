@@ -112,7 +112,19 @@ export function AuthProvider({ children }) {
 
     // Check user role
     const hasRole = (role) => {
-        return user && user.role === role
+        if (!user) return false
+
+        // Agar role string bo'lsa
+        if (typeof role === "string") {
+            return user.role === role
+        }
+
+        // Agar role array bo'lsa (bir nechta rollarni tekshirish uchun)
+        if (Array.isArray(role)) {
+            return role.includes(user.role)
+        }
+
+        return false
     }
 
     // Change branch

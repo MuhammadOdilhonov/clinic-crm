@@ -46,6 +46,7 @@ import Lid from "../../components/derector/Lid/Lid"
 // Import ApiBranches
 import ApiBranches from "../../api/apiBranches"
 import Help from "../help/Help"
+import ProtectedRoute from "../../components/protectedRoute/ProtectedRoute"
 
 export default function Dashboard() {
     const { user, hasRole, selectedBranch, changeBranch, branchesData } = useAuth()
@@ -339,69 +340,283 @@ export default function Dashboard() {
                 <main className="main-content">
                     <Routes>
                         <Route path="/" element={<Navigate to={getDashboardRoute()} />} />
+
                         {/* Director Routes */}
-                        <Route path="/director" element={<DirectorDashboard />} />
-                        <Route path="/director/lid" element={<Lid />} />
-                        <Route path="/director/staff" element={<DirectorStaff />} />
-                        <Route path="/director/staff/doctors" element={<StaffDoctors />} />
-                        <Route path="/director/staff/nurses" element={<StaffNurses />} />
-                        <Route path="/director/cabinets" element={<DirectorCabinets />} />
-                        <Route path="/director/patients" element={<DirectorPatients />} />
-                        <Route path="/director/patients/:id" element={<PatientDetails />} />
-                        <Route path="/director/appointments" element={<DirectorAppointments />} />
-                        <Route path="/director/reports" element={<DirectorReports />} />
-                        <Route path="/director/settings" element={<DirectorSettings />} />
-                        <Route path="/director/rooms" element={<DirectorRooms />} />
-                        <Route path="/director/tasks" element={<DirectorTasks />} />
-
-                        {/* Admin Routes */}
-                        <Route path="/admin" element={<AdminDashboard />} />
-                        <Route path="/admin/patients" element={<APatients />} />
-                        <Route path="/admin/patients/:id" element={<PatientDetails />} />
-                        <Route path="/admin/schedule" element={<ASchedule />} />
-                        <Route path="/admin/cabinets" element={<ACabinets />} />
-                        <Route path="/admin/rooms" element={<ARooms />} />
-                        <Route path="/admin/tasks" element={<ATasks />} />
-
-                        {/* Doctor Routes */}
-                        <Route path="/doctor" element={<DoctorDashboard />} />
-                        <Route path="/doctor/tasks" element={<DocTasks />} />
-                        <Route path="/doctor/schedule" element={<DocSchedule />} />
-
-                        {/* Nurse Routes */}
-                        <Route path="/nurse" element={<NurseDashboard />} />
-                        <Route path="/nurse/tasks" element={<NurseTasks />} />
-                        <Route path="/nurse/rooms" element={<NurseRooms />} />
-                        <Route path="/nurse/patients" element={<NursePatientCare />} />
-                        <Route path="/nurse/vitals" element={<NurseVitalSigns />} />
-                        <Route path="/nurse/medications" element={<NurseMedications />} />
-                        <Route path="/nurse/schedule" element={<NurseSchedule />} />
-
-                        {/* Common Routes */}
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/help" element={<Help />} />
-
-                        {/* Redirect to role-specific dashboard */}
                         <Route
-                            path="/"
+                            path="/director"
                             element={
-                                user.role === "director" ? (
-                                    <Navigate to="/director" />
-                                ) : user.role === "admin" ? (
-                                    <Navigate to="/admin" />
-                                ) : user.role === "doctor" ? (
-                                    <Navigate to="/doctor" />
-                                ) : user.role === "nurse" ? (
-                                    <Navigate to="/nurse" />
-                                ) : (
-                                    <Navigate to="/login" />
-                                )
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/lid"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <Lid />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/staff"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorStaff />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/staff/doctors"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <StaffDoctors />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/staff/nurses"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <StaffNurses />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/cabinets"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorCabinets />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/patients"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorPatients />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/patients/:id"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <PatientDetails />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/appointments"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorAppointments />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/reports"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorReports />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/settings"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorSettings />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/rooms"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorRooms />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/director/tasks"
+                            element={
+                                <ProtectedRoute allowedRoles={["director"]}>
+                                    <DirectorTasks />
+                                </ProtectedRoute>
                             }
                         />
 
-                        {/* Fallback */}
-                        <Route path="*" element={<Navigate to="/" />} />
+                        {/* Admin Routes */}
+                        <Route
+                            path="/admin"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <AdminDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/patients"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <APatients />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/patients/:id"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <PatientDetails />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/schedule"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <ASchedule />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/cabinets"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <ACabinets />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/rooms"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <ARooms />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/tasks"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <ATasks />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Doctor Routes */}
+                        <Route
+                            path="/doctor"
+                            element={
+                                <ProtectedRoute allowedRoles={["doctor"]}>
+                                    <DoctorDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/doctor/tasks"
+                            element={
+                                <ProtectedRoute allowedRoles={["doctor"]}>
+                                    <DocTasks />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/doctor/schedule"
+                            element={
+                                <ProtectedRoute allowedRoles={["doctor"]}>
+                                    <DocSchedule />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Nurse Routes */}
+                        <Route
+                            path="/nurse"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/tasks"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseTasks />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/rooms"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseRooms />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/patients"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NursePatientCare />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/vitals"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseVitalSigns />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/medications"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseMedications />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/nurse/schedule"
+                            element={
+                                <ProtectedRoute allowedRoles={["nurse"]}>
+                                    <NurseSchedule />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Common Routes - barcha rollar uchun ruxsat etilgan */}
+                        <Route
+                            path="/notifications"
+                            element={
+                                <ProtectedRoute>
+                                    <Notifications />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/profile"
+                            element={
+                                <ProtectedRoute>
+                                    <Profile />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/help"
+                            element={
+                                <ProtectedRoute>
+                                    <Help />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Redirect to role-specific dashboard */}
+                        <Route path="*" element={<Navigate to={getDashboardRoute()} />} />
                     </Routes>
                 </main>
 
